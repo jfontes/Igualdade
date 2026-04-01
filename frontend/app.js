@@ -1,6 +1,7 @@
 /**
  * SISTEMA DE CADASTRO - IGUALDADE ACREANA
  * Funções de Interface e Comunicação com a API
+ * Versão: Bordô Customizado (#560710)
  */
 
 // 1. MÁSCARA DE CPF (000.000.000-00)
@@ -41,7 +42,6 @@ async function buscarCEP(valor) {
                 document.getElementById('cidade').value = dados.localidade.toUpperCase();
                 document.getElementById('estado').value = dados.uf.toUpperCase();
                 
-                // Remove o readonly para permitir ajustes se necessário e foca no número
                 document.getElementById('logradouro').readOnly = false;
                 document.getElementById('numero').focus();
             } else {
@@ -59,31 +59,30 @@ async function buscarCEP(valor) {
 function adicionarCampoFamiliar() {
     const container = document.getElementById('lista-familiares');
     const div = document.createElement('div');
-    div.className = "p-4 bg-blue-50 rounded-xl border border-blue-100 relative mb-4 shadow-sm animate-fade-in";
+    // Ajustado para fundo rosado claro e bordas em harmonia com o bordô
+    div.className = "p-4 bg-[#fff5f5] rounded-xl border border-red-100 relative mb-4 shadow-sm animate-fade-in";
     
     div.innerHTML = `
-        <select class="tipo-familiar w-full p-3 mb-3 rounded-lg border-blue-200 text-blue-900 font-bold bg-white outline-none focus:ring-2 focus:ring-blue-400">
+        <select style="color: #560710;" class="tipo-familiar w-full p-3 mb-3 rounded-lg border-red-200 font-bold bg-white outline-none focus:ring-2 focus:ring-[#560710]">
             <option value="Cunhada">CUNHADA</option>
             <option value="Sobrinho">SOBRINHO</option>
             <option value="Sobrinha">SOBRINHA</option>
         </select>
-        <input type="text" class="nome-familiar w-full p-3 mb-3 rounded-lg border-blue-200 uppercase outline-none focus:ring-2 focus:ring-blue-400" placeholder="NOME DO FAMILIAR">
+        <input type="text" class="nome-familiar w-full p-3 mb-3 rounded-lg border-red-200 uppercase outline-none focus:ring-2 focus:ring-[#560710]" placeholder="NOME DO FAMILIAR">
         <div class="flex flex-col">
-            <label class="text-[10px] font-bold text-blue-600 ml-1 mb-1">DATA DE NASCIMENTO</label>
-            <input type="date" class="data-familiar w-full p-3 rounded-lg border-blue-200 bg-white text-blue-900 outline-none">
+            <label style="color: #560710;" class="text-[10px] font-bold ml-1 mb-1 opacity-80">DATA DE NASCIMENTO</label>
+            <input type="date" style="color: #560710;" class="data-familiar w-full p-3 rounded-lg border-red-200 bg-white outline-none">
         </div>
-        <button type="button" onclick="this.parentElement.remove()" class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold shadow-md border-2 border-white">×</button>
+        <button type="button" onclick="this.parentElement.remove()" class="absolute -top-2 -right-2 bg-red-600 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold shadow-md border-2 border-white">×</button>
     `;
     container.appendChild(div);
 }
 
-// 5. ENVIO DOS DADOS PARA O RENDER (BACKEND)
-// Função auxiliar para marcar erro visualmente
+// 5. ENVIO DOS DADOS E VALIDAÇÃO
 function marcarErro(id) {
     const campo = document.getElementById(id);
     campo.classList.add('border-red-500', 'bg-red-50', 'ring-1', 'ring-red-200');
     campo.placeholder = "CAMPO OBRIGATÓRIO";
-    // Remove o erro quando o usuário clica no campo
     campo.onfocus = () => {
         campo.classList.remove('border-red-500', 'bg-red-50', 'ring-1', 'ring-red-200');
     };
@@ -92,11 +91,9 @@ function marcarErro(id) {
 async function enviarDados() {
     const btn = document.getElementById('btnSalvar');
     
-    // Lista de IDs obrigatórios
     const obrigatorios = ['nome', 'cim', 'cpf', 'cep', 'logradouro', 'numero', 'bairro', 'cidade', 'estado'];
     let formValido = true;
 
-    // Validação inicial
     obrigatorios.forEach(id => {
         const campo = document.getElementById(id);
         if (!campo.value.trim()) {
@@ -107,12 +104,12 @@ async function enviarDados() {
 
     if (!formValido) {
         alert("POR FAVOR, PREENCHA TODOS OS CAMPOS EM DESTAQUE.");
-        window.scrollTo(0, 0); // Sobe a tela para o usuário ver os erros
+        window.scrollTo(0, 0);
         return;
     }
 
-    // Se chegou aqui, o formulário está válido. Prossegue com o envio...
     btn.disabled = true;
+    const textoOriginal = btn.innerText;
     btn.innerText = "PROCESSANDO...";
 
     const dados = {
@@ -134,7 +131,6 @@ async function enviarDados() {
         familiares: []
     };
 
-    // Coleta Familiares (Valida se o nome do familiar foi preenchido caso o bloco exista)
     const blocosFamiliares = document.querySelectorAll('#lista-familiares > div');
     let familiarSemNome = false;
 
@@ -155,11 +151,12 @@ async function enviarDados() {
     if (familiarSemNome) {
         alert("PREENCHA O NOME DO FAMILIAR ADICIONADO OU REMOVA O BLOCO.");
         btn.disabled = false;
-        btn.innerText = "SALVAR CADASTRO";
+        btn.innerText = textoOriginal;
         return;
     }
 
     try {
+        // Lembre-se de atualizar esta URL com o endereço real do seu Render
         const urlAPI = 'https://seu-projeto-no-render.onrender.com/obreiros/';
         const resposta = await fetch(urlAPI, {
             method: 'POST',
@@ -174,9 +171,9 @@ async function enviarDados() {
             alert("ERRO NO SERVIDOR ao salvar.");
         }
     } catch (e) {
-        alert("FALHA DE CONEXÃO. O servidor pode estar offline.");
+        alert("FALHA DE CONEXÃO. O servidor pode estar iniciando (aguarde 30s) ou está offline.");
     } finally {
         btn.disabled = false;
-        btn.innerText = "SALVAR CADASTRO";
+        btn.innerText = textoOriginal;
     }
 }
