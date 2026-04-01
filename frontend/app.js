@@ -93,3 +93,43 @@ async function enviarDados() {
         btn.innerText = "SALVAR CADASTRO";
     }
 }
+// 1. Máscara de CEP (00000-000)
+function mascaraCEP(i) {
+    let v = i.value.replace(/\D/g, ""); // Remove tudo que não é dígito
+    if (v.length > 5) {
+        v = v.substring(0, 5) + "-" + v.substring(5, 8);
+    }
+    i.value = v;
+}
+
+// 2. Máscara de CPF (Já ajustada para garantir apenas números antes da formatação)
+function mascaraCPF(i) {
+    let v = i.value.replace(/\D/g, ""); 
+    if (v.length <= 11) {
+        v = v.replace(/(\={3})(\d)/, "$1.$2");
+        v = v.replace(/(\d{3})(\d)/, "$1.$2");
+        v = v.replace(/(\d{3})(\d{1,2})$/, "$1-$2");
+    }
+    i.value = v;
+}
+
+// 3. Função de Envio (Garantindo que CIM e Número subam como texto limpo ou número)
+async function enviarDados() {
+    // ... (lógica anterior de captura)
+    
+    const dados = {
+        nome: document.getElementById('nome').value.toUpperCase(),
+        cim: document.getElementById('cim').value.replace(/\D/g, ""), // Remove qualquer caractere não numérico antes de enviar
+        cpf: document.getElementById('cpf').value,
+        // ... datas ...
+        cep: document.getElementById('cep').value,
+        logradouro: document.getElementById('logradouro').value.toUpperCase(),
+        numero: document.getElementById('numero').value.replace(/\D/g, ""), // Garante apenas números
+        bairro: document.getElementById('bairro').value.toUpperCase(),
+        cidade: document.getElementById('cidade').value.toUpperCase(),
+        estado: document.getElementById('estado').value.toUpperCase(),
+        familiares: []
+    };
+
+    // ... (resto do fetch)
+}
