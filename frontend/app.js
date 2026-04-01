@@ -133,3 +133,29 @@ async function enviarDados() {
 
     // ... (resto do fetch)
 }
+// Função para buscar CEP e preencher campos
+async function buscarCEP(valor) {
+    const cep = valor.replace(/\D/g, ""); // Remove o traço da máscara
+
+    if (cep.length === 8) {
+        try {
+            const resposta = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+            const dados = await resposta.json();
+
+            if (!dados.erro) {
+                // Preenche os campos e converte para MAIÚSCULAS
+                document.getElementById('logradouro').value = dados.logradouro.toUpperCase();
+                document.getElementById('bairro').value = dados.bairro.toUpperCase();
+                document.getElementById('cidade').value = dados.localidade.toUpperCase();
+                document.getElementById('estado').value = dados.uf.toUpperCase();
+                
+                // Foca o campo Número automaticamente para agilizar o preenchimento
+                document.getElementById('numero').focus();
+            } else {
+                alert("CEP não encontrado.");
+            }
+        } catch (erro) {
+            console.error("Erro ao buscar CEP:", erro);
+        }
+    }
+}
