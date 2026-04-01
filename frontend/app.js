@@ -78,55 +78,89 @@ function adicionarCampoFamiliar() {
 }
 
 // 5. ENVIO DOS DADOS PARA O RENDER (BACKEND)
+// Função auxiliar para marcar erro visualmente
+function marcarErro(id) {
+    const campo = document.getElementById(id);
+    campo.classList.add('border-red-500', 'bg-red-50', 'ring-1', 'ring-red-200');
+    campo.placeholder = "CAMPO OBRIGATÓRIO";
+    // Remove o erro quando o usuário clica no campo
+    campo.onfocus = () => {
+        campo.classList.remove('border-red-500', 'bg-red-50', 'ring-1', 'ring-red-200');
+    };
+}
+
 async function enviarDados() {
     const btn = document.getElementById('btnSalvar');
-    const originalText = btn.innerText;
     
+    // Lista de IDs obrigatórios
+    const obrigatorios = ['nome', 'cim', 'cpf', 'cep', 'logradouro', 'numero', 'bairro', 'cidade', 'estado'];
+    let formValido = true;
+
+    // Validação inicial
+    obrigatorios.forEach(id => {
+        const campo = document.getElementById(id);
+        if (!campo.value.trim()) {
+            marcarErro(id);
+            formValido = false;
+        }
+    });
+
+    if (!formValido) {
+        alert("POR FAVOR, PREENCHA TODOS OS CAMPOS EM DESTAQUE.");
+        window.scrollTo(0, 0); // Sobe a tela para o usuário ver os erros
+        return;
+    }
+
+    // Se chegou aqui, o formulário está válido. Prossegue com o envio...
     btn.disabled = true;
     btn.innerText = "PROCESSANDO...";
 
-    // Coleta e Higienização dos Dados (Tudo em Maiúsculas onde aplicável)
     const dados = {
         nome: document.getElementById('nome').value.toUpperCase(),
-        cim: document.getElementById('cim').value.replace(/\D/g, ""), // Apenas números
+        cim: document.getElementById('cim').value.replace(/\D/g, ""),
         cpf: document.getElementById('cpf').value,
         data_nascimento: document.getElementById('data_nascimento').value || null,
-        
-        // Datas Maçônicas
         data_iniciacao: document.getElementById('data_iniciacao').value || null,
         data_elevacao: document.getElementById('data_elevacao').value || null,
         data_exaltacao: document.getElementById('data_exaltacao').value || null,
         data_filiacao: document.getElementById('data_filiacao').value || null,
         data_afastamento: document.getElementById('data_afastamento').value || null,
-
-        // Endereço
         cep: document.getElementById('cep').value,
         logradouro: document.getElementById('logradouro').value.toUpperCase(),
-        numero: document.getElementById('numero').value.replace(/\D/g, ""), // Apenas números
+        numero: document.getElementById('numero').value.replace(/\D/g, ""),
         bairro: document.getElementById('bairro').value.toUpperCase(),
         cidade: document.getElementById('cidade').value.toUpperCase(),
         estado: document.getElementById('estado').value.toUpperCase(),
-        
         familiares: []
     };
 
-    // Coleta os familiares da lista dinâmica
+    // Coleta Familiares (Valida se o nome do familiar foi preenchido caso o bloco exista)
     const blocosFamiliares = document.querySelectorAll('#lista-familiares > div');
+    let familiarSemNome = false;
+
     blocosFamiliares.forEach(bloco => {
-        const nomeFam = bloco.querySelector('.nome-familiar').value;
-        if (nomeFam) { // Só adiciona se o nome estiver preenchido
+        const inputNome = bloco.querySelector('.nome-familiar');
+        if (!inputNome.value.trim()) {
+            inputNome.classList.add('border-red-500', 'bg-red-50');
+            familiarSemNome = true;
+        } else {
             dados.familiares.push({
                 tipo_parentesco: bloco.querySelector('.tipo-familiar').value,
-                nome: nomeFam.toUpperCase(),
+                nome: inputNome.value.toUpperCase(),
                 data_nascimento: bloco.querySelector('.data-familiar').value || null
             });
         }
     });
 
+    if (familiarSemNome) {
+        alert("PREENCHA O NOME DO FAMILIAR ADICIONADO OU REMOVA O BLOCO.");
+        btn.disabled = false;
+        btn.innerText = "SALVAR CADASTRO";
+        return;
+    }
+
     try {
-        // --- SUBSTITUA PELA SUA URL DO RENDER ---
         const urlAPI = 'https://seu-projeto-no-render.onrender.com/obreiros/';
-        
         const resposta = await fetch(urlAPI, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -135,17 +169,14 @@ async function enviarDados() {
 
         if (resposta.ok) {
             alert("CADASTRO REALIZADO COM SUCESSO!");
-            window.scrollTo(0, 0);
-            location.reload(); // Limpa o formulário
+            location.reload();
         } else {
-            const erro = await resposta.json();
-            alert("ERRO AO SALVAR: " + (erro.detail || "Verifique os dados."));
+            alert("ERRO NO SERVIDOR ao salvar.");
         }
     } catch (e) {
-        alert("FALHA DE CONEXÃO: O servidor pode estar iniciando. Tente novamente em 30 segundos.");
-        console.error(e);
+        alert("FALHA DE CONEXÃO. O servidor pode estar offline.");
     } finally {
         btn.disabled = false;
-        btn.innerText = originalText;
+        btn.innerText = "SALVAR CADASTRO";
     }
 }
