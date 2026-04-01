@@ -1,12 +1,10 @@
 /**
  * SISTEMA DE CADASTRO - IGUALDADE ACREANA
- * Funções de Interface e Comunicação com a API
- * Versão: Bordô Suave e Rosé (#560710)
+ * Versão: Bordô Consolidado (#560710)
  */
 
-// 1. MÁSCARA DE CPF (000.000.000-00)
 function mascaraCPF(i) {
-    let v = i.value.replace(/\D/g, ""); 
+    let v = i.value.replace(/\D/g, "");
     if (v.length <= 11) {
         v = v.replace(/(\d{3})(\d)/, "$1.$2");
         v = v.replace(/(\d{3})(\d)/, "$1.$2");
@@ -15,7 +13,6 @@ function mascaraCPF(i) {
     i.value = v;
 }
 
-// 2. MÁSCARA DE CEP (00000-000)
 function mascaraCEP(i) {
     let v = i.value.replace(/\D/g, "");
     if (v.length > 5) {
@@ -24,24 +21,19 @@ function mascaraCEP(i) {
     i.value = v;
 }
 
-// 3. BUSCA AUTOMÁTICA DE CEP (VIA CEP)
 async function buscarCEP(valor) {
     const cep = valor.replace(/\D/g, "");
     const loader = document.getElementById('loader-cep');
-
     if (cep.length === 8) {
-        loader.classList.remove('hidden'); 
-        
+        loader.classList.remove('hidden');
         try {
             const resposta = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
             const dados = await resposta.json();
-
             if (!dados.erro) {
                 document.getElementById('logradouro').value = dados.logradouro.toUpperCase();
                 document.getElementById('bairro').value = dados.bairro.toUpperCase();
                 document.getElementById('cidade').value = dados.localidade.toUpperCase();
                 document.getElementById('estado').value = dados.uf.toUpperCase();
-                
                 document.getElementById('logradouro').readOnly = false;
                 document.getElementById('numero').focus();
             } else {
@@ -50,17 +42,15 @@ async function buscarCEP(valor) {
         } catch (erro) {
             console.error("Erro na busca do CEP:", erro);
         } finally {
-            loader.classList.add('hidden'); 
+            loader.classList.add('hidden');
         }
     }
 }
 
-// 4. ADICIONAR CAMPOS DE FAMILIAR DINAMICAMENTE
 function adicionarCampoFamiliar() {
     const container = document.getElementById('lista-familiares');
     const div = document.createElement('div');
-    
-    // Cores alteradas: Fundo bordô claríssimo (#fdf2f2) e borda bordô suave (#ecdada)
+    // Cores: Fundo bordô claríssimo (#fdf2f2) e borda bordô suave (#ecdada)
     div.className = "p-4 bg-[#fdf2f2] rounded-xl border border-[#ecdada] relative mb-4 shadow-sm animate-fade-in";
     
     div.innerHTML = `
@@ -79,7 +69,6 @@ function adicionarCampoFamiliar() {
     container.appendChild(div);
 }
 
-// 5. ENVIO DOS DADOS E VALIDAÇÃO
 function marcarErro(id) {
     const campo = document.getElementById(id);
     campo.classList.add('border-red-500', 'bg-red-50', 'ring-1', 'ring-red-200');
