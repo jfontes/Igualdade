@@ -145,7 +145,7 @@ async function enviarDados() {
     }
 
     try {
-        const urlAPI = 'https://seu-projeto-no-render.onrender.com/obreiros/';
+        const urlAPI = 'https://igualdade.onrender.com';
         const resposta = await fetch(urlAPI, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
