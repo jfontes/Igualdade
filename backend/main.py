@@ -8,15 +8,20 @@ import os
 # 1. Configuração do Banco de Dados
 DATABASE_URL = os.getenv("DATABASE_URL")
 
-# Correção automática para o driver do SQLAlchemy
+# Correção para o driver do SQLAlchemy caso comece com postgres://
 if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
-engine = create_engine(DATABASE_URL)
+# Adicionado pool_pre_ping=True para evitar erros de conexão inativa
+engine = create_engine(
+    DATABASE_URL, 
+    pool_pre_ping=True,
+    pool_recycle=300
+)
 
 app = FastAPI()
 
-# 2. Configuração de CORS (Essencial para o PWA salvar)
+# 2. Configuração de CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -25,7 +30,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# 3. Modelos de Dados (Tabelas)
+# 3. Modelos de Dados
 class Familiar(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     nome: str
@@ -39,13 +44,11 @@ class Obreiro(SQLModel, table=True):
     cim: str = Field(unique=True)
     cpf: str = Field(unique=True)
     data_nascimento: Optional[date] = None
-    # Datas Maçônicas
     data_iniciacao: Optional[date] = None
     data_elevacao: Optional[date] = None
     data_exaltacao: Optional[date] = None
     data_filiacao: Optional[date] = None
     data_afastamento: Optional[date] = None
-    # Endereço
     cep: Optional[str] = None
     logradouro: Optional[str] = None
     numero: Optional[str] = None
@@ -53,15 +56,17 @@ class Obreiro(SQLModel, table=True):
     cidade: Optional[str] = None
     estado: Optional[str] = None
     
-    # Relacionamento com familiares
     familiares: List[Familiar] = Relationship(sa_relationship_kwargs={"cascade": "all, delete-orphan"})
 
 # 4. Criar tabelas no startup
 @app.on_event("startup")
 def on_startup():
-    SQLModel.metadata.create_all(engine)
+    try:
+        SQLModel.metadata.create_all(engine)
+    except Exception as e:
+        print(f"Erro ao criar tabelas: {e}")
 
-# 5. Rota de Cadastro (Onde a mágica acontece)
+# 5. Rota de Cadastro
 @app.post("/cadastrar")
 async def cadastrar(dados: Obreiro):
     with Session(engine) as session:
@@ -69,8 +74,7 @@ async def cadastrar(dados: Obreiro):
             session.add(dados)
             session.commit()
             session.refresh(dados)
-            return {"status": "sucesso", "mensagem": f"Obreiro {dados.nome} cadastrado com ID {dados.id}!"}
+            return {"status": "sucesso", "mensagem": f"Obreiro {dados.nome} cadastrado!"}
         except Exception as e:
             session.rollback()
-            # Se der erro (ex: CIM ou CPF já existente), avisa o app
-            raise HTTPException(status_code=400, detail=str(e))
+            raise HTTPException(status_code=400, detail=f"Erro ao salvar: {str(e)}")
