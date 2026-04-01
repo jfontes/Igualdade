@@ -5,8 +5,10 @@ from typing import List, Optional
 from datetime import date
 import os
 
-# Pega a URL do Supabase das variáveis de ambiente do Render
+# 1. Configuração do Banco de Dados
 DATABASE_URL = os.getenv("DATABASE_URL")
+
+# Correção automática para o driver do SQLAlchemy
 if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
@@ -14,6 +16,7 @@ engine = create_engine(DATABASE_URL)
 
 app = FastAPI()
 
+# 2. Configuração de CORS (Essencial para o PWA salvar)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -22,7 +25,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# --- MODELOS DE BANCO DE DADOS ---
+# 3. Modelos de Dados (Tabelas)
 class Familiar(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     nome: str
@@ -50,13 +53,15 @@ class Obreiro(SQLModel, table=True):
     cidade: Optional[str] = None
     estado: Optional[str] = None
     
+    # Relacionamento com familiares
     familiares: List[Familiar] = Relationship(sa_relationship_kwargs={"cascade": "all, delete-orphan"})
 
-# Cria as tabelas no Supabase ao iniciar
+# 4. Criar tabelas no startup
 @app.on_event("startup")
 def on_startup():
     SQLModel.metadata.create_all(engine)
 
+# 5. Rota de Cadastro (Onde a mágica acontece)
 @app.post("/cadastrar")
 async def cadastrar(dados: Obreiro):
     with Session(engine) as session:
@@ -64,7 +69,8 @@ async def cadastrar(dados: Obreiro):
             session.add(dados)
             session.commit()
             session.refresh(dados)
-            return {"status": "sucesso", "id": dados.id}
+            return {"status": "sucesso", "mensagem": f"Obreiro {dados.nome} cadastrado com ID {dados.id}!"}
         except Exception as e:
             session.rollback()
+            # Se der erro (ex: CIM ou CPF já existente), avisa o app
             raise HTTPException(status_code=400, detail=str(e))
