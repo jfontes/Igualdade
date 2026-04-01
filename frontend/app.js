@@ -145,7 +145,7 @@ async function enviarDados() {
     }
 
     try {
-        const urlAPI = 'https://igualdade.onrender.com/cadastrar';
+        const urlAPI = 'https://igualdade.onrender.com/cadastrar'; // Sem a barra extra no final se não houver no Python
         const resposta = await fetch(urlAPI, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
