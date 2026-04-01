@@ -31,11 +31,21 @@
         <section class="bg-white p-5 rounded-xl shadow-sm border-l-4 border-blue-400">
             <h2 class="text-blue-800 font-bold mb-4 uppercase text-xs tracking-wider">Endereço Residencial</h2>
             <div class="grid grid-cols-3 gap-2 mb-3">
-                <input type="text" id="cep" placeholder="00000-000" maxlength="9" 
-                   oninput="mascaraCEP(this)" 
-                   onkeyup="buscarCEP(this.value)"
-                   class="col-span-1 p-3 border border-blue-100 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
-                <input type="text" id="logradouro" placeholder="LOGRADOURO" class="col-span-2 p-3 border border-blue-100 rounded-lg uppercase">
+                <div class="col-span-1 relative">
+                    <input type="text" id="cep" placeholder="00000-000" maxlength="9" 
+                           oninput="mascaraCEP(this)" 
+                           onkeyup="buscarCEP(this.value)"
+                           class="w-full p-3 border border-blue-100 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
+                    
+                    <div id="loader-cep" class="hidden absolute right-2 top-3">
+                        <svg class="animate-spin h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                    </div>
+                </div>
+                
+                <input type="text" id="logradouro" placeholder="LOGRADOURO" class="col-span-2 p-3 border border-blue-100 rounded-lg uppercase bg-gray-50" readonly>
             </div>
             <div class="grid grid-cols-4 gap-2">
                 <input type="text" id="numero" placeholder="Nº" 
