@@ -3,8 +3,8 @@
   "short_name": "Igualdade",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#eff6ff",
-  "theme_color": "#1e3a8a",
+  "background_color": "#560710",
+  "theme_color": "#560710",
   "icons": [
     {
       "src": "icon-192.png",
