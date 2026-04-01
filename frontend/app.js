@@ -1,7 +1,7 @@
 /**
  * SISTEMA DE CADASTRO - IGUALDADE ACREANA
  * Funções de Interface e Comunicação com a API
- * Versão: Bordô Customizado (#560710)
+ * Versão: Bordô Suave e Rosé (#560710)
  */
 
 // 1. MÁSCARA DE CPF (000.000.000-00)
@@ -30,7 +30,7 @@ async function buscarCEP(valor) {
     const loader = document.getElementById('loader-cep');
 
     if (cep.length === 8) {
-        loader.classList.remove('hidden'); // Mostra spinner
+        loader.classList.remove('hidden'); 
         
         try {
             const resposta = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
@@ -50,7 +50,7 @@ async function buscarCEP(valor) {
         } catch (erro) {
             console.error("Erro na busca do CEP:", erro);
         } finally {
-            loader.classList.add('hidden'); // Esconde spinner
+            loader.classList.add('hidden'); 
         }
     }
 }
@@ -59,21 +59,22 @@ async function buscarCEP(valor) {
 function adicionarCampoFamiliar() {
     const container = document.getElementById('lista-familiares');
     const div = document.createElement('div');
-    // Ajustado para fundo rosado claro e bordas em harmonia com o bordô
-    div.className = "p-4 bg-[#fff5f5] rounded-xl border border-red-100 relative mb-4 shadow-sm animate-fade-in";
+    
+    // Cores alteradas: Fundo bordô claríssimo (#fdf2f2) e borda bordô suave (#ecdada)
+    div.className = "p-4 bg-[#fdf2f2] rounded-xl border border-[#ecdada] relative mb-4 shadow-sm animate-fade-in";
     
     div.innerHTML = `
-        <select style="color: #560710;" class="tipo-familiar w-full p-3 mb-3 rounded-lg border-red-200 font-bold bg-white outline-none focus:ring-2 focus:ring-[#560710]">
+        <select style="color: #560710;" class="tipo-familiar w-full p-3 mb-3 rounded-lg border-[#ecdada] font-bold bg-white outline-none focus:ring-2 focus:ring-[#560710]">
             <option value="Cunhada">CUNHADA</option>
             <option value="Sobrinho">SOBRINHO</option>
             <option value="Sobrinha">SOBRINHA</option>
         </select>
-        <input type="text" class="nome-familiar w-full p-3 mb-3 rounded-lg border-red-200 uppercase outline-none focus:ring-2 focus:ring-[#560710]" placeholder="NOME DO FAMILIAR">
+        <input type="text" class="nome-familiar w-full p-3 mb-3 rounded-lg border-[#ecdada] uppercase outline-none focus:ring-2 focus:ring-[#560710]" placeholder="NOME DO FAMILIAR">
         <div class="flex flex-col">
-            <label style="color: #560710;" class="text-[10px] font-bold ml-1 mb-1 opacity-80">DATA DE NASCIMENTO</label>
-            <input type="date" style="color: #560710;" class="data-familiar w-full p-3 rounded-lg border-red-200 bg-white outline-none">
+            <label style="color: #560710;" class="text-[10px] font-bold ml-1 mb-1 opacity-70">DATA DE NASCIMENTO</label>
+            <input type="date" style="color: #560710;" class="data-familiar w-full p-3 rounded-lg border-[#ecdada] bg-white outline-none">
         </div>
-        <button type="button" onclick="this.parentElement.remove()" class="absolute -top-2 -right-2 bg-red-600 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold shadow-md border-2 border-white">×</button>
+        <button type="button" onclick="this.parentElement.remove()" class="absolute -top-2 -right-2 bg-[#560710] text-white rounded-full w-8 h-8 flex items-center justify-center font-bold shadow-md border-2 border-white">×</button>
     `;
     container.appendChild(div);
 }
@@ -90,7 +91,6 @@ function marcarErro(id) {
 
 async function enviarDados() {
     const btn = document.getElementById('btnSalvar');
-    
     const obrigatorios = ['nome', 'cim', 'cpf', 'cep', 'logradouro', 'numero', 'bairro', 'cidade', 'estado'];
     let formValido = true;
 
@@ -156,7 +156,6 @@ async function enviarDados() {
     }
 
     try {
-        // Lembre-se de atualizar esta URL com o endereço real do seu Render
         const urlAPI = 'https://seu-projeto-no-render.onrender.com/obreiros/';
         const resposta = await fetch(urlAPI, {
             method: 'POST',
@@ -171,7 +170,7 @@ async function enviarDados() {
             alert("ERRO NO SERVIDOR ao salvar.");
         }
     } catch (e) {
-        alert("FALHA DE CONEXÃO. O servidor pode estar iniciando (aguarde 30s) ou está offline.");
+        alert("FALHA DE CONEXÃO. O servidor pode estar iniciando ou está offline.");
     } finally {
         btn.disabled = false;
         btn.innerText = textoOriginal;
