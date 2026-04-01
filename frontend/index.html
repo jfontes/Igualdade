@@ -23,6 +23,22 @@
             </div>
         </section>
 
+        <section class="bg-white p-5 rounded-xl shadow-sm border-l-4 border-blue-400">
+            <h2 class="text-blue-800 font-bold mb-4 uppercase text-xs tracking-wider">Endereço Residencial</h2>
+            <div class="grid grid-cols-3 gap-2 mb-3">
+                <input type="text" id="cep" placeholder="CEP" class="col-span-1 p-3 border border-blue-100 rounded-lg">
+                <input type="text" id="logradouro" placeholder="LOGRADOURO (RUA/AV)" class="col-span-2 p-3 border border-blue-100 rounded-lg uppercase">
+            </div>
+            <div class="grid grid-cols-4 gap-2">
+                <input type="text" id="numero" placeholder="Nº" class="col-span-1 p-3 border border-blue-100 rounded-lg uppercase">
+                <input type="text" id="bairro" placeholder="BAIRRO" class="col-span-3 p-3 border border-blue-100 rounded-lg uppercase">
+            </div>
+            <div class="grid grid-cols-2 gap-2 mt-3">
+                <input type="text" id="cidade" placeholder="CIDADE" class="p-3 border border-blue-100 rounded-lg uppercase">
+                <input type="text" id="estado" placeholder="UF" maxlength="2" class="p-3 border border-blue-100 rounded-lg uppercase text-center">
+            </div>
+        </section>
+        
         <section class="bg-blue-100 p-5 rounded-xl shadow-sm">
             <h2 class="text-blue-900 font-bold mb-4 uppercase text-xs tracking-wider">Datas Importantes</h2>
             <div class="space-y-3">
@@ -45,22 +61,6 @@
             <button type="button" onclick="adicionarCampoFamiliar()" class="w-full py-3 border-2 border-dashed border-blue-300 text-blue-600 rounded-lg font-medium active:bg-blue-50">
                 + Adicionar Sobrinho(a) ou Cunhada
             </button>
-        </section>
-
-        <section class="bg-white p-5 rounded-xl shadow-sm border-l-4 border-blue-400">
-            <h2 class="text-blue-800 font-bold mb-4 uppercase text-xs tracking-wider">Endereço Residencial</h2>
-            <div class="grid grid-cols-3 gap-2 mb-3">
-                <input type="text" id="cep" placeholder="CEP" class="col-span-1 p-3 border border-blue-100 rounded-lg">
-                <input type="text" id="logradouro" placeholder="LOGRADOURO (RUA/AV)" class="col-span-2 p-3 border border-blue-100 rounded-lg uppercase">
-            </div>
-            <div class="grid grid-cols-4 gap-2">
-                <input type="text" id="numero" placeholder="Nº" class="col-span-1 p-3 border border-blue-100 rounded-lg uppercase">
-                <input type="text" id="bairro" placeholder="BAIRRO" class="col-span-3 p-3 border border-blue-100 rounded-lg uppercase">
-            </div>
-            <div class="grid grid-cols-2 gap-2 mt-3">
-                <input type="text" id="cidade" placeholder="CIDADE" class="p-3 border border-blue-100 rounded-lg uppercase">
-                <input type="text" id="estado" placeholder="UF" maxlength="2" class="p-3 border border-blue-100 rounded-lg uppercase text-center">
-            </div>
         </section>
 
         <button onclick="enviarDados()" id="btnSalvar" class="w-full bg-blue-700 hover:bg-blue-800 text-white font-bold py-4 rounded-xl shadow-blue-200 shadow-lg transition-all active:scale-95">
