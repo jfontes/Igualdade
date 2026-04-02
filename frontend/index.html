@@ -6,39 +6,36 @@
     <title>Painel Principal</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="font-sans min-h-screen flex flex-col" style="background-color: #fffafa;">
-    
-    <!-- Cabeçalho -->
-    <header style="background-color: #560710;" class="text-white p-6 shadow-lg rounded-b-3xl mb-8 flex flex-col justify-center items-center min-h-[100px]">
+<body class="font-sans pb-10 min-h-screen" style="background-color: #fffafa;">
+    <header style="background-color: #560710;" class="text-white p-6 shadow-lg rounded-b-3xl mb-8 flex flex-col justify-center items-center min-h-[100px] relative">
+        <button onclick="sairSistema()" class="absolute right-5 top-5 text-white opacity-80 hover:opacity-100 font-bold text-xs uppercase tracking-wider bg-black/20 px-3 py-1 rounded-full">Sair</button>
         <img src="icon-192.png" alt="Logo" class="h-20 object-contain">
-        <h1 class="text-white font-bold mt-3 text-lg text-center tracking-wide uppercase">Igualdade Acreana Nº 2</h1>
+        <h1 class="text-white font-bold mt-3 text-lg text-center tracking-wide">IGUALDADE ACREANA Nº 2</h1>
     </header>
 
-    <!-- Conteúdo Principal -->
-    <main class="px-5 max-w-md mx-auto w-full flex-grow">
+    <main class="px-5 max-w-md mx-auto">
         <div class="grid grid-cols-2 gap-4">
-            <a href="informacoes.html" class="flex flex-col items-center justify-center p-6 bg-white rounded-2xl shadow-sm border-2 border-transparent hover:border-red-100 transition-all active:scale-95 h-40">
+            <a href="informacoes.html" class="flex flex-col items-center justify-center p-6 bg-white rounded-2xl shadow-sm border-2 border-transparent hover:border-red-100 transition-colors h-40">
                 <span class="text-4xl mb-3">👤</span>
                 <span class="text-[11px] font-bold text-center uppercase tracking-wide" style="color: #560710;">Minhas<br>Informações</span>
             </a>
             
-            <a href="familiares.html" class="flex flex-col items-center justify-center p-6 bg-white rounded-2xl shadow-sm border-2 border-transparent hover:border-red-100 transition-all active:scale-95 h-40">
+            <a href="familiares.html" class="flex flex-col items-center justify-center p-6 bg-white rounded-2xl shadow-sm border-2 border-transparent hover:border-red-100 transition-colors h-40">
                 <span class="text-4xl mb-3">👨‍👩‍👧‍👦</span>
                 <span class="text-[11px] font-bold text-center uppercase tracking-wide" style="color: #560710;">Meus<br>Familiares</span>
             </a>
 
-            <a href="aniversariantes.html" class="flex flex-col items-center justify-center p-6 bg-white rounded-2xl shadow-sm border-2 border-transparent hover:border-red-100 transition-all active:scale-95 h-40">
+            <a href="aniversariantes.html" class="flex flex-col items-center justify-center p-6 bg-white rounded-2xl shadow-sm border-2 border-transparent hover:border-red-100 transition-colors h-40">
                 <span class="text-4xl mb-3">🎂</span>
                 <span class="text-[11px] font-bold text-center uppercase tracking-wide" style="color: #560710;">Aniversariantes<br>do Mês</span>
             </a>
 
-            <a href="obreiros.html" class="flex flex-col items-center justify-center p-6 bg-white rounded-2xl shadow-sm border-2 border-transparent hover:border-red-100 transition-all active:scale-95 h-40">
+            <a href="obreiros.html" class="flex flex-col items-center justify-center p-6 bg-white rounded-2xl shadow-sm border-2 border-transparent hover:border-red-100 transition-colors h-40">
                 <span class="text-4xl mb-3">🏛️</span>
                 <span class="text-[11px] font-bold text-center uppercase tracking-wide" style="color: #560710;">Obreiros</span>
             </a>
         </div>
     </main>
-
     <!-- Rodapé Elegante Corrigido -->
     <footer class="mt-10 pt-6 pb-10 text-center border-t border-red-50 px-5">
         <p class="text-[10px] font-bold tracking-[0.2em] uppercase opacity-70 mb-2" style="color: #560710;">
@@ -53,6 +50,5 @@
         <p class="text-[9px] italic opacity-40 mb-4" style="color: #560710;">By Ir. Jaime, 33</p>
 
     </footer>
-
 </body>
 </html>
