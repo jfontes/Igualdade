@@ -144,8 +144,10 @@ async function enviarDados() {
         return;
     }
 
+    // DEBUG: Mostra no console do navegador o objeto que será enviado para a API
+    console.log("DEBUG - Dados montados para envio:", JSON.stringify(dados, null, 2));
+
     try {
-        print("---------------SALVANDO------------------")
         const urlAPI = 'https://igualdade.onrender.com/cadastrar'; // Sem a barra extra no final se não houver no Python
         const resposta = await fetch(urlAPI, {
             method: 'POST',
@@ -157,9 +159,14 @@ async function enviarDados() {
             alert("CADASTRO REALIZADO COM SUCESSO!");
             location.reload();
         } else {
-            alert("ERRO NO SERVIDOR ao salvar.");
+            // DEBUG: Extrai o erro detalhado enviado pelo FastAPI (geralmente no campo 'detail')
+            const erroDetalhado = await resposta.json();
+            console.error("DEBUG - Erro retornado pelo servidor HTTP " + resposta.status + ":", erroDetalhado);
+            alert(`ERRO NO SERVIDOR: ${erroDetalhado.detail || "Verifique o console para mais detalhes."}`);
         }
     } catch (e) {
+        // DEBUG: Captura falhas de rede (ex: servidor offline, erro de CORS)
+        console.error("DEBUG - Falha na requisição (Network/CORS):", e);
         alert("FALHA DE CONEXÃO. O servidor pode estar iniciando ou está offline.");
     } finally {
         btn.disabled = false;
