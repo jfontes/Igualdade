@@ -3,6 +3,33 @@
  * Versão: Bordô Consolidado (#560710)
  */
 
+// --- SISTEMA DE LOGIN ---
+async function fazerLogin(event) {
+    event.preventDefault();
+    const cim = document.getElementById('cimLogin').value.replace(/\D/g, "");
+    const senha = document.getElementById('senhaLogin').value;
+
+    if (!cim) {
+        alert("Por favor, digite o seu CIM.");
+        return;
+    }
+
+    if (senha === "1906") {
+        localStorage.setItem('usuarioCIM', cim);
+        window.location.href = 'INDEX.HTML'; // Redireciona para o painel principal
+    } else {
+        alert("Senha incorreta. Tente novamente.");
+    }
+}
+
+function sairSistema() {
+    if (confirm("Deseja realmente sair do sistema?")) {
+        localStorage.removeItem('usuarioCIM');
+        window.location.href = 'login.html';
+    }
+}
+
+// --- FUNÇÕES DE MÁSCARA ---
 function mascaraCPF(i) {
     let v = i.value.replace(/\D/g, "");
     if (v.length <= 11) {
@@ -47,7 +74,7 @@ async function buscarCEP(valor) {
     }
 }
 
-async function buscarCIM() {
+async function buscarCIM(silencioso = false) {
     const cimInput = document.getElementById('cim');
     const cim = cimInput.value.replace(/\D/g, "");
     if (!cim) {
@@ -109,7 +136,9 @@ async function buscarCIM() {
             if (erroInfo.detail === "Not Found") {
                 alert("SISTEMA DESATUALIZADO: O servidor ainda está aplicando a atualização (Deploy no Render). Aguarde 1 a 2 minutinhos e tente de novo!");
             } else {
-                alert("CIM NÃO ENCONTRADO. Pode prosseguir com o novo cadastro.");
+                if (!silencioso) {
+                    alert("CIM NÃO ENCONTRADO. Pode prosseguir com o novo cadastro.");
+                }
             }
         } else {
             alert("ERRO AO BUSCAR DADOS NO SERVIDOR.");
@@ -377,3 +406,24 @@ async function carregarObreiros() {
         container.innerHTML = '<p class="text-center text-red-500 text-sm mt-10">Erro ao carregar obreiros.</p>';
     }
 }
+
+// --- AUTO-CARREGAMENTO E PROTEÇÃO DE ROTAS ---
+document.addEventListener('DOMContentLoaded', () => {
+    const cimSalvo = localStorage.getItem('usuarioCIM');
+    const url = window.location.href.toLowerCase();
+    
+    // Segurança: Redireciona para o login se tentar acessar qualquer tela sem estar logado
+    if (!cimSalvo && !url.includes('login.html')) {
+        window.location.href = 'login.html';
+        return;
+    }
+
+    // Se estiver logado e acessar as telas de cadastro, preenche e busca automaticamente
+    if (cimSalvo && (url.includes('informacoes.html') || url.includes('familiares.html'))) {
+        const cimInput = document.getElementById('cim');
+        if (cimInput) {
+            cimInput.value = cimSalvo;
+            setTimeout(() => buscarCIM(true), 200); // Dispara silenciosamente para não mostrar erro se for o primeiro cadastro do usuário
+        }
+    }
+});
