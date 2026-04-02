@@ -145,6 +145,7 @@ async function enviarDados() {
     }
 
     try {
+        print("---------------SALVANDO------------------")
         const urlAPI = 'https://igualdade.onrender.com/cadastrar'; // Sem a barra extra no final se não houver no Python
         const resposta = await fetch(urlAPI, {
             method: 'POST',
