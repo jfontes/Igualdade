@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Igualdade Acreana</title>
+    <link rel="manifest" href="/manifest.json?v=5">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .animate-fade-in { animation: fadeIn 0.6s ease-out; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="font-sans min-h-screen flex items-center justify-center p-5 relative overflow-hidden" style="background-color: #560710;">
+    <!-- Fundo decorativo (Logo gigante e bem transparente ao fundo) -->
+    <div class="absolute inset-0 opacity-10 flex items-center justify-center pointer-events-none">
+        <img src="icon-512.png" class="w-[600px] h-[600px] object-cover" alt="">
+    </div>
+
+    <main class="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-sm animate-fade-in flex flex-col items-center relative z-10">
+        <img src="icon-512.png" alt="Logo Igualdade Acreana" class="w-28 h-28 object-contain mb-3 drop-shadow-md">
+        
+        <h1 class="text-xl font-bold text-center tracking-widest uppercase mb-1" style="color: #560710;">Igualdade Acreana</h1>
+        <p class="text-[10px] text-gray-400 text-center uppercase tracking-widest mb-8 font-bold">Acesso Restrito</p>
+
+        <form onsubmit="fazerLogin(event)" class="w-full space-y-4">
+            <div>
+                <label for="cimLogin" class="text-[10px] font-bold ml-1 mb-1 opacity-70 uppercase" style="color: #560710;">Seu CIM</label>
+                <input type="text" id="cimLogin" placeholder="Digite apenas os números" inputmode="numeric" oninput="this.value = this.value.replace(/[^0-9]/g, '')" required class="w-full p-4 border border-red-50 rounded-xl outline-none focus:ring-2 focus:ring-[#560710] transition-all bg-[#fffafa]" style="color: #560710;">
+            </div>
+            <div>
+                <label for="senhaLogin" class="text-[10px] font-bold ml-1 mb-1 opacity-70 uppercase" style="color: #560710;">Senha de Acesso</label>
+                <input type="password" id="senhaLogin" placeholder="••••" required class="w-full p-4 border border-red-50 rounded-xl outline-none focus:ring-2 focus:ring-[#560710] transition-all bg-[#fffafa]" style="color: #560710;">
+            </div>
+            
+            <button type="submit" class="w-full text-white font-bold py-4 rounded-xl shadow-lg transition-all active:scale-95 mt-2 text-sm tracking-wider" style="background-color: #560710;">
+                ENTRAR NO SISTEMA
+            </button>
+        </form>
+    </main>
+    <script src="app.js"></script>
+</body>
+</html>
