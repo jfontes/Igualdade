@@ -50,6 +50,7 @@ class Obreiro(SQLModel, table=True):
     data_elevacao: Optional[date] = None
     data_exaltacao: Optional[date] = None
     data_filiacao: Optional[date] = None
+    data_instalacao: Optional[date] = None
     data_afastamento: Optional[date] = None
     cep: Optional[str] = None
     logradouro: Optional[str] = None
@@ -75,6 +76,7 @@ class ObreiroCreate(SQLModel):
     data_elevacao: Optional[date] = None
     data_exaltacao: Optional[date] = None
     data_filiacao: Optional[date] = None
+    data_instalacao: Optional[date] = None
     data_afastamento: Optional[date] = None
     cep: Optional[str] = None
     logradouro: Optional[str] = None
@@ -106,8 +108,8 @@ async def cadastrar(dados: ObreiroCreate):
                 
             db_obreiro = db_obreiros[0] if db_obreiros else None
             
-            # Pydantic V1/V2 compatibility (converte para dicionário ignorando familiares por enquanto)
-            dados_dict = dados.model_dump(exclude={"familiares"}) if hasattr(dados, "model_dump") else dados.dict(exclude={"familiares"})
+            # Pydantic V1/V2: O exclude_unset=True impede que falhas de cache do frontend apaguem campos no banco
+            dados_dict = dados.model_dump(exclude={"familiares"}, exclude_unset=True) if hasattr(dados, "model_dump") else dados.dict(exclude={"familiares"}, exclude_unset=True)
             
             if db_obreiro:
                 # Atualiza os campos do obreiro existente
