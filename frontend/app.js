@@ -16,7 +16,7 @@ async function fazerLogin(event) {
 
     if (senha === "1906") {
         localStorage.setItem('usuarioCIM', cim);
-        window.location.href = 'INDEX.HTML'; // Redireciona para o painel principal
+        window.location.href = 'index.html'; // Redireciona para o painel principal
     } else {
         alert("Senha incorreta. Tente novamente.");
     }
