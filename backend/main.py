@@ -132,3 +132,24 @@ async def cadastrar(dados: ObreiroCreate):
         except Exception as e:
             session.rollback()
             raise HTTPException(status_code=400, detail=f"Erro ao salvar: {str(e)}")
+
+# 6. Rota de Busca por CIM
+@app.get("/obreiros/{cim}")
+async def buscar_obreiro(cim: str):
+    with Session(engine) as session:
+        try:
+            statement = select(Obreiro).where(Obreiro.cim == cim)
+            db_obreiro = session.exec(statement).first()
+            
+            if not db_obreiro:
+                raise HTTPException(status_code=404, detail="Obreiro não encontrado.")
+            
+            # Prepara os dados convertendo em um dicionário para a API enviar (incluindo familiares)
+            resultado = db_obreiro.model_dump() if hasattr(db_obreiro, "model_dump") else db_obreiro.dict()
+            resultado["familiares"] = [fam.model_dump() if hasattr(fam, "model_dump") else fam.dict() for fam in db_obreiro.familiares]
+            
+            return resultado
+        except HTTPException:
+            raise
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Erro interno ao buscar: {str(e)}")
