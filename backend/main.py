@@ -138,7 +138,7 @@ async def cadastrar(dados: ObreiroCreate):
 async def buscar_obreiro(cim: str):
     with Session(engine) as session:
         try:
-            statement = select(Obreiro).where(Obreiro.cim == cim)
+            statement = select(Obreiro).where(Obreiro.cim == cim.strip())
             db_obreiro = session.exec(statement).first()
             
             if not db_obreiro:
