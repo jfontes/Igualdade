@@ -88,6 +88,7 @@ async function buscarCIM() {
             document.getElementById('data_elevacao').value = dados.data_elevacao || "";
             document.getElementById('data_exaltacao').value = dados.data_exaltacao || "";
             document.getElementById('data_filiacao').value = dados.data_filiacao || "";
+            document.getElementById('data_afastamento').value = dados.data_afastamento || "";
             
             const containerFamiliares = document.getElementById('lista-familiares');
             containerFamiliares.innerHTML = ""; 
