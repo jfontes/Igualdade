@@ -26,8 +26,13 @@
             <h2 style="color: #560710;" class="font-bold mb-4 uppercase text-xs tracking-wider">Identificação</h2>
             <input type="text" id="nome" placeholder="NOME COMPLETO" class="w-full p-3 border border-red-50 rounded-lg mb-3 uppercase outline-none focus:ring-2 focus:ring-[#560710]">
             <div class="grid grid-cols-2 gap-3">
-                <input type="text" id="cim" placeholder="CIM (APENAS NÚMEROS)" inputmode="numeric" pattern="[0-9]*" oninput="this.value = this.value.replace(/[^0-9]/g, '')" class="p-3 border border-red-50 rounded-lg outline-none focus:ring-2 focus:ring-[#560710]">
-                <input type="text" id="cpf" placeholder="000.000.000-00" maxlength="14" oninput="mascaraCPF(this)" class="p-3 border border-red-50 rounded-lg outline-none focus:ring-2 focus:ring-[#560710]">
+                <div class="relative w-full">
+                    <input type="text" id="cim" placeholder="CIM (APENAS NÚMEROS)" inputmode="numeric" pattern="[0-9]*" oninput="this.value = this.value.replace(/[^0-9]/g, '')" class="w-full p-3 pr-12 border border-red-50 rounded-lg outline-none focus:ring-2 focus:ring-[#560710]">
+                    <button type="button" onclick="buscarCIM()" id="btn-buscar-cim" class="absolute right-1 top-1 p-2 text-[#560710] hover:bg-red-50 rounded-lg transition-colors" title="Buscar por CIM">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                    </button>
+                </div>
+                <input type="text" id="cpf" placeholder="000.000.000-00" maxlength="14" oninput="mascaraCPF(this)" class="w-full p-3 border border-red-50 rounded-lg outline-none focus:ring-2 focus:ring-[#560710]">
             </div>
             <div class="mt-3">
                 <label for="data_nascimento" class="text-[10px] font-bold text-[#560710] ml-1 mb-1 opacity-70 uppercase">Data de Nascimento</label>
