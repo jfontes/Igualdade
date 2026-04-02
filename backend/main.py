@@ -1,6 +1,6 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from sqlmodel import SQLModel, Session, create_engine, Field, Relationship, select
+from sqlmodel import SQLModel, Session, create_engine, Field, Relationship, select, or_
 from typing import List, Optional
 from datetime import date
 import os
@@ -96,9 +96,14 @@ def on_startup():
 async def cadastrar(dados: ObreiroCreate):
     with Session(engine) as session:
         try:
-            # Verifica se o obreiro já existe pelo CPF
-            statement = select(Obreiro).where(Obreiro.cpf == dados.cpf)
-            db_obreiro = session.exec(statement).first()
+            # Verifica se o obreiro já existe pelo CPF OU pelo CIM
+            statement = select(Obreiro).where(or_(Obreiro.cpf == dados.cpf, Obreiro.cim == dados.cim))
+            db_obreiros = session.exec(statement).all()
+            
+            if len(db_obreiros) > 1:
+                raise ValueError("Conflito: O CPF e o CIM informados pertencem a pessoas diferentes no banco.")
+                
+            db_obreiro = db_obreiros[0] if db_obreiros else None
             
             # Pydantic V1/V2 compatibility (converte para dicionário ignorando familiares por enquanto)
             dados_dict = dados.model_dump(exclude={"familiares"}) if hasattr(dados, "model_dump") else dados.dict(exclude={"familiares"})
