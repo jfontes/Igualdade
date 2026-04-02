@@ -1,6 +1,7 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlmodel import SQLModel, Session, create_engine, Field, Relationship, select, or_
+from sqlalchemy import text
 from typing import List, Optional
 from datetime import date
 import os
@@ -81,7 +82,7 @@ class ObreiroCreate(SQLModel):
     bairro: Optional[str] = None
     cidade: Optional[str] = None
     estado: Optional[str] = None
-    familiares: List[FamiliarCreate] = []
+    familiares: Optional[List[FamiliarCreate]] = None
 
 # 4. Criar tabelas no startup
 @app.on_event("startup")
@@ -112,18 +113,18 @@ async def cadastrar(dados: ObreiroCreate):
                 # Atualiza os campos do obreiro existente
                 for key, value in dados_dict.items():
                     setattr(db_obreiro, key, value)
-                # Limpa familiares antigos para recriar (o cascade delete-orphan cuida da exclusão no banco)
-                db_obreiro.familiares.clear()
                 acao = "atualizado"
             else:
                 # Cria um novo obreiro
                 db_obreiro = Obreiro(**dados_dict)
                 acao = "cadastrado"
             
-            # Vincula e adiciona os familiares adequadamente na instância do banco
-            for fam_dados in dados.familiares:
-                fam_dict = fam_dados.model_dump() if hasattr(fam_dados, "model_dump") else fam_dados.dict()
-                db_obreiro.familiares.append(Familiar(**fam_dict))
+            # Se a lista de familiares foi enviada explícitamente, atualizamos (Evita limpar ao atualizar Minhas Informações)
+            if dados.familiares is not None:
+                db_obreiro.familiares.clear()
+                for fam_dados in dados.familiares:
+                    fam_dict = fam_dados.model_dump() if hasattr(fam_dados, "model_dump") else fam_dados.dict()
+                    db_obreiro.familiares.append(Familiar(**fam_dict))
                 
             session.add(db_obreiro)
             session.commit()
@@ -153,3 +154,69 @@ async def buscar_obreiro(cim: str):
             raise
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Erro interno ao buscar: {str(e)}")
+
+# 7. Rota de Busca de Aniversariantes do Mês
+@app.get("/aniversariantes")
+async def listar_aniversariantes():
+    with Session(engine) as session:
+        try:
+            query = text("""
+                SELECT 
+                    nome AS aniversariante, 
+                    'Obreiro' AS tipo, 
+                    EXTRACT(DAY FROM data_nascimento) AS dia
+                FROM obreiro
+                WHERE EXTRACT(MONTH FROM data_nascimento) = EXTRACT(MONTH FROM CURRENT_DATE)
+                
+                UNION ALL
+                
+                SELECT 
+                    nome AS aniversariante, 
+                    tipo_parentesco AS tipo, 
+                    EXTRACT(DAY FROM data_nascimento) AS dia
+                FROM familiar
+                WHERE EXTRACT(MONTH FROM data_nascimento) = EXTRACT(MONTH FROM CURRENT_DATE)
+                
+                ORDER BY dia;
+            """)
+            resultado = session.exec(query).fetchall()
+            return [{"nome": r[0], "tipo": r[1], "dia": int(r[2])} for r in resultado]
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Erro interno: {str(e)}")
+
+# 8. Rota de Busca da Lista de Obreiros
+@app.get("/obreiros_lista")
+async def listar_obreiros():
+    with Session(engine) as session:
+        try:
+            query = text("""
+                SELECT nome, cim, data_nascimento
+                FROM obreiro
+                ORDER BY nome;
+            """)
+            resultado = session.exec(query).fetchall()
+            return [{"nome": r[0], "cim": r[1], "data_nascimento": r[2]} for r in resultado]
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Erro interno: {str(e)}")
+
+# 9. Rota Específica para Salvar apenas Familiares
+@app.post("/obreiros/{cim}/familiares")
+async def salvar_familiares(cim: str, familiares: List[FamiliarCreate]):
+    with Session(engine) as session:
+        try:
+            statement = select(Obreiro).where(Obreiro.cim == cim.strip())
+            db_obreiro = session.exec(statement).first()
+            if not db_obreiro:
+                raise HTTPException(status_code=404, detail="Obreiro não encontrado pelo CIM.")
+            
+            db_obreiro.familiares.clear()
+            for fam in familiares:
+                fam_dict = fam.model_dump() if hasattr(fam, "model_dump") else fam.dict()
+                db_obreiro.familiares.append(Familiar(**fam_dict))
+            
+            session.add(db_obreiro)
+            session.commit()
+            return {"status": "sucesso", "mensagem": "Familiares atualizados com sucesso!"}
+        except Exception as e:
+            session.rollback()
+            raise HTTPException(status_code=400, detail=f"Erro ao salvar: {str(e)}")
