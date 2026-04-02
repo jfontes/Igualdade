@@ -47,7 +47,65 @@ async function buscarCEP(valor) {
     }
 }
 
-function adicionarCampoFamiliar() {
+async function buscarCIM() {
+    const cimInput = document.getElementById('cim');
+    const cim = cimInput.value.replace(/\D/g, "");
+    if (!cim) {
+        alert("POR FAVOR, DIGITE UM CIM PARA BUSCAR.");
+        cimInput.focus();
+        return;
+    }
+
+    const btnBuscar = document.getElementById('btn-buscar-cim');
+    const svgBusca = btnBuscar.innerHTML;
+    btnBuscar.innerHTML = `<svg class="animate-spin h-5 w-5 text-[#560710]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>`;
+    btnBuscar.disabled = true;
+
+    try {
+        const urlAPI = `https://igualdade.onrender.com/obreiros/${cim}`;
+        const resposta = await fetch(urlAPI);
+
+        if (resposta.ok) {
+            const dados = await resposta.json();
+            
+            document.getElementById('nome').value = dados.nome || "";
+            document.getElementById('cpf').value = dados.cpf || "";
+            if(dados.cpf) mascaraCPF(document.getElementById('cpf'));
+            document.getElementById('data_nascimento').value = dados.data_nascimento || "";
+            
+            document.getElementById('cep').value = dados.cep || "";
+            if(dados.cep) mascaraCEP(document.getElementById('cep'));
+            document.getElementById('logradouro').value = dados.logradouro || "";
+            document.getElementById('numero').value = dados.numero || "";
+            document.getElementById('bairro').value = dados.bairro || "";
+            document.getElementById('cidade').value = dados.cidade || "";
+            document.getElementById('estado').value = dados.estado || "";
+            
+            document.getElementById('data_iniciacao').value = dados.data_iniciacao || "";
+            document.getElementById('data_elevacao').value = dados.data_elevacao || "";
+            document.getElementById('data_exaltacao').value = dados.data_exaltacao || "";
+            document.getElementById('data_filiacao').value = dados.data_filiacao || "";
+            
+            const containerFamiliares = document.getElementById('lista-familiares');
+            containerFamiliares.innerHTML = ""; 
+            if (dados.familiares && dados.familiares.length > 0) {
+                dados.familiares.forEach(fam => adicionarCampoFamiliar(fam));
+            }
+        } else if (resposta.status === 404) {
+            alert("CIM NÃO ENCONTRADO. Pode prosseguir com o novo cadastro.");
+        } else {
+            alert("ERRO AO BUSCAR DADOS NO SERVIDOR.");
+        }
+    } catch (erro) {
+        console.error("Erro na busca:", erro);
+        alert("FALHA DE CONEXÃO AO BUSCAR CIM.");
+    } finally {
+        btnBuscar.innerHTML = svgBusca;
+        btnBuscar.disabled = false;
+    }
+}
+
+function adicionarCampoFamiliar(dadosFamiliar = null) {
     const container = document.getElementById('lista-familiares');
     const div = document.createElement('div');
     // Cores: Fundo bordô claríssimo (#fdf2f2) e borda bordô suave (#ecdada)
@@ -67,6 +125,14 @@ function adicionarCampoFamiliar() {
         <button type="button" onclick="this.parentElement.remove()" class="absolute -top-2 -right-2 bg-[#560710] text-white rounded-full w-8 h-8 flex items-center justify-center font-bold shadow-md border-2 border-white">×</button>
     `;
     container.appendChild(div);
+    
+    if (dadosFamiliar) {
+        div.querySelector('.tipo-familiar').value = dadosFamiliar.tipo_parentesco || "Cunhada";
+        div.querySelector('.nome-familiar').value = dadosFamiliar.nome || "";
+        if (dadosFamiliar.data_nascimento) {
+            div.querySelector('.data-familiar').value = dadosFamiliar.data_nascimento;
+        }
+    }
 }
 
 function marcarErro(id) {
