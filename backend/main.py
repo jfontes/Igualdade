@@ -1,6 +1,6 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from sqlmodel import SQLModel, Session, create_engine, Field, Relationship
+from sqlmodel import SQLModel, Session, create_engine, Field, Relationship, select
 from typing import List, Optional
 from datetime import date
 import os
@@ -96,9 +96,24 @@ def on_startup():
 async def cadastrar(dados: ObreiroCreate):
     with Session(engine) as session:
         try:
+            # Verifica se o obreiro já existe pelo CPF
+            statement = select(Obreiro).where(Obreiro.cpf == dados.cpf)
+            db_obreiro = session.exec(statement).first()
+            
             # Pydantic V1/V2 compatibility (converte para dicionário ignorando familiares por enquanto)
             dados_dict = dados.model_dump(exclude={"familiares"}) if hasattr(dados, "model_dump") else dados.dict(exclude={"familiares"})
-            db_obreiro = Obreiro(**dados_dict)
+            
+            if db_obreiro:
+                # Atualiza os campos do obreiro existente
+                for key, value in dados_dict.items():
+                    setattr(db_obreiro, key, value)
+                # Limpa familiares antigos para recriar (o cascade delete-orphan cuida da exclusão no banco)
+                db_obreiro.familiares.clear()
+                acao = "atualizado"
+            else:
+                # Cria um novo obreiro
+                db_obreiro = Obreiro(**dados_dict)
+                acao = "cadastrado"
             
             # Vincula e adiciona os familiares adequadamente na instância do banco
             for fam_dados in dados.familiares:
@@ -108,7 +123,7 @@ async def cadastrar(dados: ObreiroCreate):
             session.add(db_obreiro)
             session.commit()
             session.refresh(db_obreiro)
-            return {"status": "sucesso", "mensagem": f"Obreiro {db_obreiro.nome} cadastrado com sucesso!"}
+            return {"status": "sucesso", "mensagem": f"Obreiro {db_obreiro.nome} {acao} com sucesso!"}
         except Exception as e:
             session.rollback()
             raise HTTPException(status_code=400, detail=f"Erro ao salvar: {str(e)}")
