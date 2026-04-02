@@ -80,7 +80,7 @@ function marcarErro(id) {
 
 async function enviarDados() {
     const btn = document.getElementById('btnSalvar');
-    const obrigatorios = ['nome', 'cim', 'cpf', 'cep', 'logradouro', 'numero', 'bairro', 'cidade', 'estado'];
+    const obrigatorios = ['nome', 'cim', 'cpf', 'data_nascimento', 'cep', 'logradouro', 'numero', 'bairro', 'cidade', 'estado'];
     let formValido = true;
 
     obrigatorios.forEach(id => {
