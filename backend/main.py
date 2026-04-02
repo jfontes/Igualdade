@@ -37,6 +37,7 @@ class Familiar(SQLModel, table=True):
     tipo_parentesco: str
     data_nascimento: Optional[date] = None
     obreiro_id: Optional[int] = Field(default=None, foreign_key="obreiro.id")
+    obreiro: Optional["Obreiro"] = Relationship(back_populates="familiares")
 
 class Obreiro(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
@@ -56,7 +57,31 @@ class Obreiro(SQLModel, table=True):
     cidade: Optional[str] = None
     estado: Optional[str] = None
     
-    familiares: List[Familiar] = Relationship(sa_relationship_kwargs={"cascade": "all, delete-orphan"})
+    familiares: List[Familiar] = Relationship(back_populates="obreiro", sa_relationship_kwargs={"cascade": "all, delete-orphan"})
+
+# 3.1 Modelos de Criação (Schemas de Entrada para o FastAPI)
+class FamiliarCreate(SQLModel):
+    nome: str
+    tipo_parentesco: str
+    data_nascimento: Optional[date] = None
+
+class ObreiroCreate(SQLModel):
+    nome: str
+    cim: str
+    cpf: str
+    data_nascimento: Optional[date] = None
+    data_iniciacao: Optional[date] = None
+    data_elevacao: Optional[date] = None
+    data_exaltacao: Optional[date] = None
+    data_filiacao: Optional[date] = None
+    data_afastamento: Optional[date] = None
+    cep: Optional[str] = None
+    logradouro: Optional[str] = None
+    numero: Optional[str] = None
+    bairro: Optional[str] = None
+    cidade: Optional[str] = None
+    estado: Optional[str] = None
+    familiares: List[FamiliarCreate] = []
 
 # 4. Criar tabelas no startup
 @app.on_event("startup")
@@ -68,13 +93,22 @@ def on_startup():
 
 # 5. Rota de Cadastro
 @app.post("/cadastrar")
-async def cadastrar(dados: Obreiro):
+async def cadastrar(dados: ObreiroCreate):
     with Session(engine) as session:
         try:
-            session.add(dados)
+            # Pydantic V1/V2 compatibility (converte para dicionário ignorando familiares por enquanto)
+            dados_dict = dados.model_dump(exclude={"familiares"}) if hasattr(dados, "model_dump") else dados.dict(exclude={"familiares"})
+            db_obreiro = Obreiro(**dados_dict)
+            
+            # Vincula e adiciona os familiares adequadamente na instância do banco
+            for fam_dados in dados.familiares:
+                fam_dict = fam_dados.model_dump() if hasattr(fam_dados, "model_dump") else fam_dados.dict()
+                db_obreiro.familiares.append(Familiar(**fam_dict))
+                
+            session.add(db_obreiro)
             session.commit()
-            session.refresh(dados)
-            return {"status": "sucesso", "mensagem": f"Obreiro {dados.nome} cadastrado!"}
+            session.refresh(db_obreiro)
+            return {"status": "sucesso", "mensagem": f"Obreiro {db_obreiro.nome} cadastrado com sucesso!"}
         except Exception as e:
             session.rollback()
             raise HTTPException(status_code=400, detail=f"Erro ao salvar: {str(e)}")
