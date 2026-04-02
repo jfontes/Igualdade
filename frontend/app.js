@@ -63,7 +63,10 @@ async function buscarCIM() {
 
     try {
         const urlAPI = `https://igualdade.onrender.com/obreiros/${cim}`;
-        const resposta = await fetch(urlAPI);
+        const resposta = await fetch(urlAPI, {
+            method: 'GET',
+            cache: 'no-store'
+        });
 
         if (resposta.ok) {
             const dados = await resposta.json();
@@ -92,7 +95,13 @@ async function buscarCIM() {
                 dados.familiares.forEach(fam => adicionarCampoFamiliar(fam));
             }
         } else if (resposta.status === 404) {
-            alert("CIM NÃO ENCONTRADO. Pode prosseguir com o novo cadastro.");
+            // Verifica se o 404 é da nossa API (Obreiro não encontrado) ou do FastAPI (Rota não encontrada)
+            const erroInfo = await resposta.json().catch(() => ({}));
+            if (erroInfo.detail === "Not Found") {
+                alert("SISTEMA DESATUALIZADO: O servidor ainda está aplicando a atualização (Deploy no Render). Aguarde 1 a 2 minutinhos e tente de novo!");
+            } else {
+                alert("CIM NÃO ENCONTRADO. Pode prosseguir com o novo cadastro.");
+            }
         } else {
             alert("ERRO AO BUSCAR DADOS NO SERVIDOR.");
         }
