@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% from "_macros.html" import avatar, url_foto_obreiro, url_foto_familiar %}
+{% block titulo %}{{ o.nome }}{% endblock %}
+{% block conteudo %}
+<div class="estreito">
+  <a class="voltar" href="{{ url_for('main.obreiros') }}">← Quadro de Obreiros</a>
+  <div class="cabecalho perfil-topo">
+    {{ avatar(o.nome, url_foto_obreiro(o), 'grande') }}
+    <div class="perfil-id">
+      <h2>{{ o.nome }}</h2>
+      <div class="suave">CIM {{ o.cim }}
+        {% if o.data_afastamento %}<span class="selo cinza">Afastado em {{ o.data_afastamento | data }}</span>
+        {% else %}<span class="selo">Ativo</span>{% endif %}
+        {% if o.admin %}<span class="selo ouro">Secretaria</span>{% endif %}
+      </div>
+    </div>
+    {% if current_user.admin %}
+      <a class="btn" href="{{ url_for('admin.editar', obreiro_id=o.id) }}">✏️ Editar</a>
+    {% elif o.id == current_user.id %}
+      <a class="btn" href="{{ url_for('main.minhas_informacoes') }}">✏️ Editar</a>
+    {% endif %}
+  </div>
+
+  <section class="cartao">
+    <h3>Contato</h3>
+    {% if o.telefone or o.email %}
+    <div class="contatos">
+      {% if o.telefone %}
+        <a class="btn sec" href="tel:+55{{ o.telefone }}">📞 {{ o.telefone | tel }}</a>
+        {% if o.telefone | length == 11 %}
+        <a class="btn sec" href="https://wa.me/55{{ o.telefone }}" target="_blank" rel="noopener">💬 WhatsApp</a>
+        {% endif %}
+      {% endif %}
+      {% if o.email %}<a class="btn sec" href="mailto:{{ o.email }}">✉️ {{ o.email }}</a>{% endif %}
+    </div>
+    {% else %}
+    <p class="suave" style="margin:0">Telefone e e-mail não informados.</p>
+    {% endif %}
+  </section>
+
+  <section class="cartao">
+    <h3>Vida maçônica</h3>
+    <ul class="linha-tempo">
+      {% for campo, rotulo in DATAS_MACONICAS %}
+        <li class="{{ 'vazio' if not o[campo] }}"><strong>{{ rotulo }}</strong> — {{ o[campo] | data or 'não informada' }}</li>
+      {% endfor %}
+    </ul>
+  </section>
+
+  <section class="cartao">
+    <h3>Dados pessoais</h3>
+    <dl class="dados">
+      <div><dt>Aniversário</dt><dd>{{ (o.data_nascimento | data)[:5] if o.data_nascimento else '—' }}</dd></div>
+      {% if completo %}
+        <div><dt>Data de nascimento</dt><dd>{{ o.data_nascimento | data or '—' }}{% if o.data_nascimento and o.data_nascimento is not com_ano %} <span class="suave">(ano não informado)</span>{% endif %}</dd></div>
+        <div><dt>CPF</dt><dd>{{ o.cpf | cpf }}</dd></div>
+        <div><dt>Endereço</dt><dd>
+          {% if o.logradouro %}{{ o.logradouro }}{% if o.numero %}, {{ o.numero }}{% endif %}<br>{% endif %}
+          {% if o.bairro %}{{ o.bairro }} · {% endif %}{{ o.cidade or '' }}{% if o.estado %}/{{ o.estado }}{% endif %}
+          {% if o.cep %}<br>CEP {{ o.cep | cep }}{% endif %}
+          {% if not (o.logradouro or o.cidade or o.cep) %}—{% endif %}
+        </dd></div>
+      {% endif %}
+    </dl>
+    {% if not completo %}<p class="dica">CPF e endereço são visíveis apenas para o próprio obreiro e a Secretaria.</p>{% endif %}
+  </section>
+
+  {% if completo %}
+  <section class="cartao">
+    <div class="cabecalho" style="margin-bottom:6px">
+      <h3 style="margin:0">Familiares</h3>
+      <a class="btn sec pequeno" href="{{ url_for('main.familiares', obreiro_id=o.id) }}">Gerenciar</a>
+    </div>
+    {% if familiares %}
+    <ul class="lista">
+      {% for f in familiares %}
+      <li><div class="item">{{ avatar(f.nome, url_foto_familiar(f)) }}
+        <div class="corpo"><div class="nome">{{ f.nome }}</div>
+          <div class="sub">{{ f.parentesco }}{% if f.data_nascimento %} · 🎂 {{ f.data_nascimento | data }}{% endif %}</div></div></div></li>
+      {% endfor %}
+    </ul>
+    {% else %}<p class="suave">Nenhum familiar cadastrado.</p>{% endif %}
+  </section>
+  {% endif %}
+
+  {% if current_user.admin and o.id != current_user.id %}
+  <section class="cartao">
+    <h3>Secretaria</h3>
+    <div class="botoes">
+      <form class="inline" method="post" action="{{ url_for('admin.redefinir_senha', obreiro_id=o.id) }}"
+            data-confirmar="Redefinir a senha de {{ o.nome }} para o CPF?">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="btn sec" type="submit">🔑 Redefinir senha</button>
+      </form>
+      <form class="inline" method="post" action="{{ url_for('admin.excluir', obreiro_id=o.id) }}"
+            data-confirmar="Excluir DEFINITIVAMENTE {{ o.nome }} e todos os seus familiares? Para manter o histórico, prefira registrar o Afastamento.">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="btn perigo" type="submit">🗑️ Excluir cadastro</button>
+      </form>
+    </div>
+    <p class="dica">Para desligamento, licença ou falecimento, use <strong>Editar → Afastamento</strong>: o histórico é preservado.</p>
+  </section>
+  {% endif %}
+</div>
+{% endblock %}

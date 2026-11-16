@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block titulo %}Obreiros antigos{% endblock %}
+{% block conteudo %}
+<a class="voltar" href="{{ url_for('main.obreiros') }}">← Quadro de Obreiros</a>
+<div class="cabecalho">
+  <div>
+    <h2>📜 Obreiros antigos</h2>
+    <div class="suave">Arquivo histórico da Loja, com {{ total }} registros de cadastros anteriores (GLEAC 2012, 2019 e 2025).</div>
+  </div>
+</div>
+
+<form class="filtros" method="get" role="search">
+  <input type="search" name="q" value="{{ q }}" placeholder="Buscar por nome ou CIM" aria-label="Buscar">
+  <select name="situacao" aria-label="Situação" onchange="this.form.submit()">
+    <option value="">Todas as situações</option>
+    {% for s in situacoes %}
+      <option value="{{ s.s }}" {{ 'selected' if situacao == s.s }}>{{ s.s }} ({{ s.n }})</option>
+    {% endfor %}
+  </select>
+  <button class="btn sec" type="submit">Buscar</button>
+</form>
+
+<div class="cartao">
+  <p class="suave" style="margin-top:0">{{ lista | length }} registro{{ 's' if lista | length != 1 }}</p>
+  {% if lista %}
+  <ul class="lista">
+    {% for h in lista %}
+    <li>
+      <a class="item" href="{{ url_for('main.historico_detalhe', registro_id=h.id) }}">
+        <span class="avatar">{{ h.nome.split()[0][:1] }}{{ h.nome.split()[-1][:1] if h.nome.split() | length > 1 }}</span>
+        <div class="corpo">
+          <div class="nome">{{ h.nome }}</div>
+          <div class="sub">
+            {% if h.cim %}CIM {{ h.cim }}{% endif %}
+            {% if h.data_iniciacao %} · iniciado em {{ h.data_iniciacao[:4] }}{% endif %}
+            {% if h.situacao %}<span class="selo cinza">{{ h.situacao }}</span>{% endif %}
+          </div>
+        </div>
+        <span aria-hidden="true">›</span>
+      </a>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <div class="vazio-msg"><span class="ic">🔎</span>Nenhum registro encontrado.</div>
+  {% endif %}
+</div>
+<p class="dica">Os registros vêm de cadastros antigos e podem estar desatualizados. A situação é a que constava na fonte de origem.</p>
+{% endblock %}

@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+# Banco de dados e chave secreta — nunca versionar
+instance/
+*.db
+# Dados pessoais de origem (CPF, endereços) — nunca versionar
+data/
+# Script da importação inicial: contém CPF, datas e nomes de familiares — fica só no computador
+scripts/importar_dados.py

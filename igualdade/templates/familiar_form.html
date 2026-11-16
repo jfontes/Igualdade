@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% from "_macros.html" import data_nascimento, campo_foto, url_foto_familiar %}
+{% block titulo %}{{ 'Editar familiar' if familiar_id else 'Incluir familiar' }}{% endblock %}
+{% block conteudo %}
+<div class="estreito">
+  <a class="voltar" href="{{ url_for('main.familiares', obreiro_id=obreiro.id) }}">← Familiares</a>
+  <h2>{{ self.titulo() }}</h2>
+  {% if obreiro.id != current_user.id %}<p class="suave">Familiar de {{ obreiro.nome }}</p>{% endif %}
+  <form method="post" class="cartao grade" enctype="multipart/form-data" novalidate>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    {{ campo_foto(f.nome if f else '', url_foto_familiar(f) if f and f.id else None) }}
+    <div class="campo">
+      <label for="nome">Nome completo *</label>
+      <input id="nome" name="nome" value="{{ f.nome if f else '' }}" required data-maiusculas {{ "autofocus" if not familiar_id }}>
+    </div>
+    <div class="campo">
+      <label for="parentesco">Grau de parentesco *</label>
+      <select id="parentesco" name="parentesco" required>
+        <option value="">Selecione…</option>
+        {% for p in PARENTESCOS %}<option {{ 'selected' if f and f.parentesco == p }}>{{ p }}</option>{% endfor %}
+      </select>
+    </div>
+    {{ data_nascimento(f.data_nascimento if f else None) }}
+    <div class="botoes">
+      <button class="btn" type="submit">Salvar</button>
+      <a class="btn sec" href="{{ url_for('main.familiares', obreiro_id=obreiro.id) }}">Cancelar</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

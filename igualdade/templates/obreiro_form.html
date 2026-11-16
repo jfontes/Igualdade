@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+{% from "_macros.html" import data_nascimento, campo_foto, url_foto_obreiro %}
+{% set admin_modo = modo in ('novo', 'editar') %}
+{% block titulo %}{{ {'proprio': 'Minhas Informações', 'novo': 'Novo obreiro', 'editar': 'Editar obreiro'}[modo] }}{% endblock %}
+
+{% macro data(campo, rotulo) -%}
+  <div class="campo">
+    <label for="{{ campo }}">{{ rotulo }}</label>
+    <input id="{{ campo }}" name="{{ campo }}" type="date" value="{{ o[campo] or '' }}" max="9999-12-31">
+  </div>
+{%- endmacro %}
+
+{% block conteudo %}
+<div class="estreito">
+  {% if modo == 'editar' %}<a class="voltar" href="{{ url_for('main.perfil', obreiro_id=o.id) }}">← Voltar ao perfil</a>{% endif %}
+  <div class="cabecalho">
+    <h2>{{ self.titulo() }}</h2>
+    {% if modo == 'proprio' %}<a class="btn sec pequeno" href="{{ url_for('auth.trocar_senha') }}">🔑 Trocar senha</a>{% endif %}
+  </div>
+
+  <form method="post" enctype="multipart/form-data" novalidate>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    <section class="cartao">
+      <h3>Dados pessoais</h3>
+      {{ campo_foto(o.nome, url_foto_obreiro(o) if o.id else None) }}
+      <div class="grade duas">
+        <div class="campo largo">
+          <label for="nome">Nome completo *</label>
+          <input id="nome" name="nome" value="{{ o.nome or '' }}" required autocomplete="name" data-maiusculas>
+        </div>
+        <div class="campo">
+          <label for="cim">CIM *</label>
+          <input id="cim" name="cim" value="{{ o.cim or '' }}" inputmode="numeric"
+                 {% if admin_modo %}required{% else %}readonly{% endif %}>
+        </div>
+        <div class="campo">
+          <label for="cpf">CPF *</label>
+          <input id="cpf" name="cpf" value="{{ o.cpf | cpf }}" inputmode="numeric" maxlength="14" data-mascara="cpf"
+                 {% if admin_modo %}required{% else %}readonly{% endif %}>
+        </div>
+        {{ data_nascimento(o.data_nascimento) }}
+      </div>
+      {% if not admin_modo %}<p class="dica">CIM e CPF só podem ser alterados pela Secretaria.</p>{% endif %}
+    </section>
+
+    <section class="cartao">
+      <h3>Contato</h3>
+      <div class="grade duas">
+        <div class="campo">
+          <label for="telefone">Telefone / WhatsApp</label>
+          <input id="telefone" name="telefone" type="tel" value="{{ o.telefone | tel }}" inputmode="tel"
+                 maxlength="15" data-mascara="tel" placeholder="(68) 99999-9999" autocomplete="tel">
+        </div>
+        <div class="campo">
+          <label for="email">E-mail</label>
+          <input id="email" name="email" type="email" value="{{ o.email or '' }}" inputmode="email"
+                 placeholder="nome@exemplo.com" autocomplete="email" autocapitalize="off" spellcheck="false">
+        </div>
+      </div>
+    </section>
+
+    <section class="cartao">
+      <h3>Vida maçônica</h3>
+      <div class="grade duas">
+        {% for campo, rotulo in DATAS_MACONICAS %}{{ data(campo, rotulo) }}{% endfor %}
+        {% if admin_modo %}
+          {{ data('data_afastamento', 'Afastamento') }}
+        {% endif %}
+      </div>
+      <p class="dica">Preencha as datas que já ocorreram. Elas devem seguir a ordem Iniciação → Elevação → Exaltação → Instalação.
+        {% if admin_modo %}Informe o <strong>Afastamento</strong> para desligamento, licença ou falecimento — o obreiro deixa de aparecer como ativo e perde o acesso.{% endif %}</p>
+    </section>
+
+    <section class="cartao">
+      <h3>Endereço residencial</h3>
+      <div class="grade duas">
+        <div class="campo">
+          <label for="cep">CEP</label>
+          <input id="cep" name="cep" value="{{ o.cep | cep }}" inputmode="numeric" maxlength="9" data-mascara="cep" autocomplete="postal-code" aria-describedby="cep-status">
+          <small id="cep-status" class="cep-status" aria-live="polite"></small>
+        </div>
+        <div class="campo largo">
+          <label for="logradouro">Logradouro</label>
+          <input id="logradouro" name="logradouro" value="{{ o.logradouro or '' }}" data-maiusculas autocomplete="address-line1">
+        </div>
+        <div class="campo">
+          <label for="numero">Número</label>
+          <input id="numero" name="numero" value="{{ o.numero or '' }}">
+        </div>
+        <div class="campo">
+          <label for="bairro">Bairro</label>
+          <input id="bairro" name="bairro" value="{{ o.bairro or '' }}" data-maiusculas>
+        </div>
+        <div class="campo">
+          <label for="cidade">Cidade</label>
+          <input id="cidade" name="cidade" value="{{ o.cidade or '' }}" data-maiusculas autocomplete="address-level2">
+        </div>
+        <div class="campo">
+          <label for="estado">Estado</label>
+          <select id="estado" name="estado">
+            <option value="">—</option>
+            {% for uf in UFS %}<option {{ 'selected' if o.estado == uf }}>{{ uf }}</option>{% endfor %}
+          </select>
+        </div>
+      </div>
+    </section>
+
+    {% if admin_modo %}
+    <section class="cartao">
+      <h3>Acesso ao sistema</h3>
+      <label class="check"><input type="checkbox" name="admin" value="1" {{ 'checked' if o.admin }}> Administrador (Secretaria)</label>
+      {% if modo == 'novo' %}<p class="dica">A senha inicial será o CPF (somente números). O obreiro deverá trocá-la no primeiro acesso.</p>{% endif %}
+    </section>
+    {% endif %}
+
+    <div class="botoes">
+      <button class="btn" type="submit">Salvar</button>
+      <a class="btn sec" href="{{ url_for('main.perfil', obreiro_id=o.id) if modo == 'editar' else (url_for('main.obreiros') if modo == 'novo' else url_for('main.painel')) }}">Cancelar</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

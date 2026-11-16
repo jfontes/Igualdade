@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% from "_macros.html" import avatar, url_foto_obreiro %}
+{% block titulo %}Obreiros{% endblock %}
+{% macro grau(o) -%}
+  {%- if o.data_exaltacao %}Mestre{% elif o.data_elevacao %}Companheiro{% elif o.data_iniciacao %}Aprendiz{% endif -%}
+{%- endmacro %}
+{% block conteudo %}
+<div class="cabecalho">
+  <h2>🏛️ Quadro de Obreiros</h2>
+  {% if current_user.admin %}<a class="btn" href="{{ url_for('admin.novo') }}">＋ Cadastrar</a>{% endif %}
+</div>
+
+<form class="filtros" method="get" role="search">
+  <input type="search" name="q" value="{{ q }}" placeholder="Buscar por nome ou CIM" aria-label="Buscar">
+  <select name="situacao" aria-label="Situação" onchange="this.form.submit()">
+    <option value="ativos" {{ 'selected' if situacao == 'ativos' }}>Ativos</option>
+    <option value="afastados" {{ 'selected' if situacao == 'afastados' }}>Afastados</option>
+    <option value="todos" {{ 'selected' if situacao == 'todos' }}>Todos</option>
+  </select>
+  <button class="btn sec" type="submit">Buscar</button>
+</form>
+
+<div class="cartao">
+  <p class="suave" style="margin-top:0">{{ lista | length }} obreiro{{ 's' if lista | length != 1 }}</p>
+  {% if lista %}
+  <ul class="lista">
+    {% for o in lista %}
+    <li>
+      <a class="item" href="{{ url_for('main.perfil', obreiro_id=o.id) }}">
+        {{ avatar(o.nome, url_foto_obreiro(o)) }}
+        <div class="corpo">
+          <div class="nome">{{ o.nome }}</div>
+          <div class="sub">CIM {{ o.cim }}{% if grau(o) %} · {{ grau(o) }}{% endif %}
+            {% if o.data_afastamento %}<span class="selo cinza">Afastado</span>{% endif %}
+            {% if o.admin %}<span class="selo">Secretaria</span>{% endif %}
+          </div>
+        </div>
+        <span aria-hidden="true">›</span>
+      </a>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <div class="vazio-msg"><span class="ic">🔎</span>Nenhum obreiro encontrado.</div>
+  {% endif %}
+</div>
+
+<a class="cartao item" href="{{ url_for('main.historico', q=q) }}" style="text-decoration:none">
+  <span class="avatar">📜</span>
+  <div class="corpo">
+    <div class="nome">Obreiros antigos</div>
+    <div class="sub">Arquivo histórico com ex-obreiros da Loja{% if q %} · buscar "{{ q }}"{% endif %}</div>
+  </div>
+  <span aria-hidden="true">›</span>
+</a>
+{% endblock %}

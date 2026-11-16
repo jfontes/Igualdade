@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% from "_macros.html" import avatar, url_foto_obreiro, url_foto_familiar %}
+{% block titulo %}Aniversariantes{% endblock %}
+{% block conteudo %}
+<div class="estreito">
+  <div class="cabecalho">
+    <h2>🎂 Aniversariantes de {{ MESES[mes - 1] }}</h2>
+  </div>
+
+  <nav class="abas" aria-label="Escolher mês">
+    {% for nome in MESES %}
+      <a href="{{ url_for('main.aniversariantes', mes=loop.index) }}" class="{{ 'ativo' if loop.index == mes }}"
+         {% if loop.index == mes %}aria-current="page" data-rolar{% endif %}>{{ nome[:3] }}</a>
+    {% endfor %}
+  </nav>
+
+  <div class="cartao">
+    {% if lista %}
+    <ul class="lista">
+      {% for a in lista %}
+      {% set eh_hoje = mes == hoje.month and a.dia == hoje.day %}
+      <li class="{{ 'hoje' if eh_hoje }}">
+        <a class="item" href="{{ url_for('main.perfil', obreiro_id=a.obreiro_id) }}">
+          <span class="dia"><b>{{ '%02d' | format(a.dia) }}</b><small>{{ MESES[mes - 1][:3] }}</small></span>
+          {% if a.familiar_id is none %}
+            {{ avatar(a.nome, url_foto_obreiro({'id': a.obreiro_id, 'foto': a.foto})) }}
+          {% elif current_user.admin or a.obreiro_id == current_user.id %}
+            {{ avatar(a.nome, url_foto_familiar({'id': a.familiar_id, 'foto': a.foto})) }}
+          {% else %}
+            {{ avatar(a.nome) }}
+          {% endif %}
+          <div class="corpo">
+            <div class="nome">{{ a.nome }} {% if eh_hoje %}<span class="selo ouro">Hoje!</span>{% endif %}</div>
+            <div class="sub">
+              {% if a.vinculo == 'Obreiro' %}Obreiro{% else %}{{ a.vinculo }} do Ir∴ {{ a.de }}{% endif %}
+              {% if a.data_nascimento is com_ano %}· {{ ano - (a.data_nascimento[:4] | int) }} anos{% endif %}
+            </div>
+          </div>
+        </a>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <div class="vazio-msg"><span class="ic">🗓️</span>Nenhum aniversariante cadastrado em {{ MESES[mes - 1] }}.</div>
+    {% endif %}
+  </div>
+  <p class="dica">Inclui obreiros ativos e seus familiares. A idade mostrada é a que completam em {{ ano }}.</p>
+</div>
+{% endblock %}

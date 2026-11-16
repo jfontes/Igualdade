@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block titulo %}Início{% endblock %}
+{% block conteudo %}
+<section class="cartao institucional">
+  <img src="{{ url_for('static', filename='brasao.png') }}" alt="Brasão da Loja {{ LOJA.nome }}">
+  <div class="titulo">{{ LOJA.titulo }}</div>
+  <h1>{{ LOJA.nome }}</h1>
+  <div class="info">
+    <span>📜 {{ LOJA.fundacao }}</span>
+    <span>📍 {{ LOJA.endereco }}<br>{{ LOJA.cidade }}</span>
+    <span class="cnpj">CNPJ {{ LOJA.cnpj }}</span>
+  </div>
+</section>
+
+<p class="saudacao">Olá, Ir∴ <strong>{{ current_user.primeiro_nome }}</strong>.</p>
+
+<div class="atalhos">
+  <a class="atalho" href="{{ url_for('main.minhas_informacoes') }}">
+    <span class="ic">👤</span>Minhas Informações
+  </a>
+  <a class="atalho" href="{{ url_for('main.meus_familiares') }}">
+    <span class="ic">👨‍👩‍👧‍👦</span>Meus Familiares
+  </a>
+  <a class="atalho" href="{{ url_for('main.aniversariantes') }}">
+    <span class="ic">🎂</span>Aniversariantes do Mês
+    <small>{{ aniversarios }} em {{ mes_nome }}</small>
+  </a>
+  <a class="atalho" href="{{ url_for('main.obreiros') }}">
+    <span class="ic">🏛️</span>Obreiros
+    <small>{{ total_ativos }} ativos</small>
+  </a>
+</div>
+
+{% if current_user.admin %}
+<div class="botoes" style="margin-top:16px">
+  <a class="btn" href="{{ url_for('admin.novo') }}">＋ Cadastrar obreiro</a>
+</div>
+{% endif %}
+{% endblock %}

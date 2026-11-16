@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block titulo %}Trocar senha{% endblock %}
+{% block conteudo %}
+<div class="estreito">
+  <h2>Definir nova senha</h2>
+  <p class="suave">Escolha uma senha pessoal com pelo menos 6 caracteres. Ela não pode ser igual ao seu CPF.</p>
+  <form method="post" class="cartao grade">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="campo">
+      <label for="atual">Senha atual</label>
+      <input id="atual" name="atual" type="password" autocomplete="current-password" required>
+    </div>
+    <div class="campo">
+      <label for="nova">Nova senha</label>
+      <input id="nova" name="nova" type="password" autocomplete="new-password" minlength="6" required>
+    </div>
+    <div class="campo">
+      <label for="confirma">Repita a nova senha</label>
+      <input id="confirma" name="confirma" type="password" autocomplete="new-password" minlength="6" required>
+    </div>
+    <div class="botoes"><button class="btn" type="submit">Salvar senha</button></div>
+  </form>
+</div>
+{% endblock %}

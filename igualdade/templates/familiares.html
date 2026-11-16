@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% from "_macros.html" import avatar, url_foto_familiar %}
+{% set proprio = obreiro.id == current_user.id %}
+{% block titulo %}{{ 'Meus Familiares' if proprio else 'Familiares' }}{% endblock %}
+{% block conteudo %}
+<div class="estreito">
+  {% if not proprio %}<a class="voltar" href="{{ url_for('main.perfil', obreiro_id=obreiro.id) }}">← {{ obreiro.nome }}</a>{% endif %}
+  <div class="cabecalho">
+    <div>
+      <h2>{{ self.titulo() }}</h2>
+      {% if not proprio %}<div class="suave">de {{ obreiro.nome }}</div>{% endif %}
+    </div>
+    <a class="btn" href="{{ url_for('main.familiar_form', obreiro_id=obreiro.id) }}">＋ Incluir</a>
+  </div>
+
+  <div class="cartao">
+    {% if familiares %}
+    <ul class="lista">
+      {% for f in familiares %}
+      <li>
+        <div class="item">
+          {{ avatar(f.nome, url_foto_familiar(f)) }}
+          <div class="corpo">
+            <div class="nome">{{ f.nome }}</div>
+            <div class="sub">{{ f.parentesco }}{% if f.data_nascimento %} · 🎂 {{ f.data_nascimento | data }}{% endif %}</div>
+          </div>
+          <div class="acoes">
+            <a class="btn sec pequeno" href="{{ url_for('main.familiar_form', obreiro_id=obreiro.id, familiar_id=f.id) }}" aria-label="Editar {{ f.nome }}">✏️</a>
+            <form class="inline" method="post" action="{{ url_for('main.familiar_excluir', obreiro_id=obreiro.id, familiar_id=f.id) }}"
+                  data-confirmar="Remover {{ f.nome }} da lista de familiares?">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button class="btn perigo pequeno" type="submit" aria-label="Remover {{ f.nome }}">🗑️</button>
+            </form>
+          </div>
+        </div>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <div class="vazio-msg"><span class="ic">👨‍👩‍👧‍👦</span>Nenhum familiar cadastrado ainda.<br>
+      Toque em <strong>Incluir</strong> para adicionar cônjuge, filhos, pais…</div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
