@@ -51,6 +51,9 @@
               {% endif %}
             </div>
           {% if current_user.admin %}</a>{% else %}</div>{% endif %}
+          {% if i.balaustre %}
+          <div class="acao-balaustre"><a class="btn sec pequeno" href="{{ url_for('balaustre_ver.ver', sessao_id=s.id) }}">📜 Balaústre</a></div>
+          {% endif %}
         </li>
       {% else %}
         {% set a = i.a %}
@@ -86,7 +89,7 @@
       <a class="btn sec" href="{{ url_for('sessoes.gerar', ano=a) }}">🗓️ Gerar sessões de {{ a }}</a>
       {% endfor %}
     </div>
-    <p class="dica">Toque em uma sessão da lista para alterar o grau, a ordem do dia, registrar o cancelamento ou lavrar o balaústre. A mesa do balaústre vem da diretoria vigente na data da sessão.</p>
+    <p class="dica">Toque em uma sessão da lista para alterar o grau, a ordem do dia, registrar o cancelamento ou registrar o balaústre. A mesa do balaústre vem da diretoria vigente na data da sessão.</p>
   </section>
   {% endif %}
 </div>

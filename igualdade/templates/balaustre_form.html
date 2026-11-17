@@ -4,10 +4,23 @@
   {% if campo in erros %}<span class="erro-campo">{{ erros[campo] }}</span>{% endif %}
 {%- endmacro %}
 {% macro texto(campo, rotulo, valor, linhas=2, dica='') -%}
+  {% set obrig = campo in OBRIGATORIOS %}
   <div class="campo {{ 'com-erro' if campo in erros }}">
-    <label for="{{ campo }}">{{ rotulo }}</label>
-    <textarea id="{{ campo }}" name="{{ campo }}" rows="{{ linhas }}" maxlength="4000">{{ valor or '' }}</textarea>
+    <label for="{{ campo }}">{{ rotulo }}{{ ' *' if obrig }}</label>
+    <textarea id="{{ campo }}" name="{{ campo }}" rows="{{ linhas }}" maxlength="4000" {{ 'required' if obrig }}>{{ valor or '' }}</textarea>
     {% if dica %}<span class="dica">{{ dica }}</span>{% endif %}
+    {{ erro(campo) }}
+  </div>
+{%- endmacro %}
+{% macro hora(campo, rotulo, automatica=False) -%}
+  <div class="campo {{ 'com-erro' if campo in erros }}">
+    <label for="{{ campo }}">{{ rotulo }} *</label>
+    <div class="campo-hora">
+      <input id="{{ campo }}" name="{{ campo }}" type="time" value="{{ d[campo] or '' }}" required
+             {% if automatica %}data-hora-automatica{% endif %}>
+      <button class="btn sec pequeno" type="button" data-agora="{{ campo }}">Agora</button>
+    </div>
+    {% if automatica %}<span class="dica">Atualizado sozinho com a hora atual a cada {{ AUTOSAVE_SEGUNDOS }} segundos, até você alterá-lo.</span>{% endif %}
     {{ erro(campo) }}
   </div>
 {%- endmacro %}
@@ -15,40 +28,24 @@
 <div class="estreito">
   <a class="voltar" href="{{ url_for('main.agenda', ano=s.data[:4] | int, mes=s.data[5:7] | int) }}">← Agenda</a>
   <h2>📜 Balaústre</h2>
-  <p class="suave">{{ s.data | extenso }} · Sessão {{ s.tipo }} · {{ s.grau }} Maçom
-    {% if registro %}<br>Salvo em {{ registro.atualizado_em[:10] | data }} às {{ registro.atualizado_em[11:16] }}{% endif %}</p>
+  <p class="suave">{{ s.data | extenso }} · Sessão {{ s.tipo }} · {{ s.grau }} Maçom</p>
+  <p class="autosave" data-autosave-status>{% if registro %}✓ Salvo em {{ registro.atualizado_em[:10] | data }} às {{ registro.atualizado_em[11:16] }}{% else %}Salvamento automático a cada {{ AUTOSAVE_SEGUNDOS }} segundos.{% endif %}</p>
 
   {% if not modelo_ok %}
   <p class="aviso-cancelada">⚠️ O modelo <code>secretaria/modelo_balaustre.docx</code> não foi encontrado no servidor. O documento não poderá ser gerado.</p>
   {% endif %}
 
-  {% if faltando %}
-  <div class="lembrete" role="alert">
-    <strong>Atenção:</strong> {{ faltando | join(', ') }} não {{ 'foi informado' if faltando | length == 1 else 'foram informados' }}.
-    Informe {{ 'o dado' if faltando | length == 1 else 'os dados' }} abaixo ou gere o documento assim mesmo.
-  </div>
-  {% endif %}
 
   <datalist id="obreiros-ativos">
     {% for _id, nome in ativos %}<option value="{{ nome }}">{% endfor %}
   </datalist>
 
-  <form method="post" class="cartao grade" data-uma-vez>
+  <form method="post" class="cartao grade" data-uma-vez
+        data-autosave="{{ url_for('balaustre.autosave', sessao_id=s.id) }}" data-intervalo="{{ AUTOSAVE_SEGUNDOS }}">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
     <h3>Abertura e mesa</h3>
-    <div class="grade duas">
-      {% for campo, rotulo in [('hora_abertura', 'Abertura'), ('hora_encerramento', 'Encerramento')] %}
-      <div class="campo {{ 'com-erro' if campo in erros }}">
-        <label for="{{ campo }}">{{ rotulo }}</label>
-        <div class="filtros" style="margin:0">
-          <input id="{{ campo }}" name="{{ campo }}" type="time" value="{{ d[campo] or '' }}" style="flex:1">
-          <button class="btn sec pequeno" type="button" data-agora="{{ campo }}">Agora</button>
-        </div>
-        {{ erro(campo) }}
-      </div>
-      {% endfor %}
-    </div>
+    {{ hora('hora_abertura', 'Abertura') }}
     {% for c in CARGOS_MESA %}
     {% set campo = 'mesa_' ~ c %}
     <div class="campo {{ 'com-erro' if campo in erros }}">
@@ -67,43 +64,58 @@
     {{ texto('balaustre_anterior', 'Balaústre anterior', d.balaustre_anterior, 1) }}
     {{ texto('expediente', 'Expediente', d.expediente, 2) }}
     <div class="campo {{ 'com-erro' if 'landmark' in erros }}">
-      <label for="landmark">Landmark lido (número)</label>
-      <input id="landmark" name="landmark" value="{{ (d.landmark or '') | replace('º', '') }}" inputmode="numeric" maxlength="2" placeholder="Ex.: 21">
+      <label for="landmark">Landmark lido (número) *</label>
+      <input id="landmark" name="landmark" value="{{ (d.landmark or '') | replace('º', '') }}" inputmode="numeric" maxlength="2" placeholder="Ex.: 21" required>
       {{ erro('landmark') }}
     </div>
-    <div class="grade duas">
-      <div class="campo {{ 'com-erro' if 'bolsa_colunas' in erros }}">
-        <label for="bolsa_colunas">Bolsa de Propostas: colunas gravadas</label>
-        <input id="bolsa_colunas" name="bolsa_colunas" type="number" min="0" max="99" value="{{ d.bolsa.colunas or 0 }}">
+    <div class="campo {{ 'com-erro' if 'bolsa_colunas' in erros }}">
+        <label for="bolsa_colunas">Bolsa de Propostas: colunas gravadas *</label>
+        <input id="bolsa_colunas" name="bolsa_colunas" type="number" min="0" max="99" value="{{ d.bolsa.colunas if d.bolsa.colunas is not none else '' }}" required>
         <span class="dica">0 = bolsa limpa.</span>
         {{ erro('bolsa_colunas') }}
-      </div>
-      <div class="campo {{ 'com-erro' if 'tronco' in erros }}">
-        <label for="tronco">Tronco de Solidariedade (R$)</label>
-        <input id="tronco" name="tronco" value="{{ d.tronco or '' }}" inputmode="decimal" placeholder="Ex.: 125,00">
-        {{ erro('tronco') }}
-      </div>
     </div>
     {{ texto('bolsa_descricao', 'Teor das colunas gravadas', d.bolsa.descricao, 2, 'Só quando houver colunas. O texto ritual e o número por extenso são escritos automaticamente.') }}
     {{ texto('ordem_do_dia', 'Ordem do dia', d.ordem_do_dia, 3) }}
+    <div class="campo {{ 'com-erro' if 'tronco' in erros }}">
+      <label for="tronco">Tronco de Solidariedade (R$) *</label>
+      <input id="tronco" name="tronco" value="{{ d.tronco or '' }}" inputmode="decimal" placeholder="Ex.: 125,00" required>
+      {{ erro('tronco') }}
+    </div>
     <label class="check"><input type="checkbox" name="visitantes" value="1" {{ 'checked' if d.visitantes }}> Houve visitantes</label>
 
     <h3>Palavra a bem da Ordem</h3>
-    <p class="dica">Deixe em branco onde reinou silêncio. Use o tratamento do grau (ex.: o Ir∴ Lucas agradeceu...).</p>
+    <p class="dica">Escreva livremente o que foi dito. Deixe em branco onde reinou silêncio.</p>
     {{ texto('palavra_sul', 'Col∴ do Sul', d.palavra.sul) }}
     {{ texto('palavra_norte', 'Col∴ do Norte', d.palavra.norte) }}
     {{ texto('palavra_oriente', 'Oriente', d.palavra.oriente) }}
     {{ texto('palavra_trono', 'Trono', d.palavra.trono) }}
 
+    <h3>Encerramento</h3>
+    {{ hora('hora_encerramento', 'Encerramento', automatica=sessao_hoje) }}
+
+    <p class="autosave" data-autosave-status></p>
     <div class="botoes">
-      <button class="btn sec" type="submit" name="acao" value="salvar">💾 Salvar</button>
-      {% if faltando %}
-      <button class="btn" type="submit" name="acao" value="gerar_confirmado">📄 Gerar assim mesmo</button>
-      {% else %}
-      <button class="btn" type="submit" name="acao" value="gerar" {{ 'disabled' if not modelo_ok }}>📄 Salvar e gerar .docx</button>
-      {% endif %}
+      <button class="btn" type="submit" name="acao" value="gerar" {{ 'disabled' if not modelo_ok }}>📄 Gerar .docx</button>
     </div>
   </form>
-  <p class="dica">Salve durante a sessão quantas vezes quiser. O documento é gerado no modelo oficial (cabeçalho, brasão e assinaturas) e pode ser baixado de novo a qualquer momento.</p>
+  <p class="dica">O balaústre é salvo sozinho a cada {{ AUTOSAVE_SEGUNDOS }} segundos e ao sair da página, mesmo com campos em branco. * Obrigatórios apenas para gerar o documento no modelo oficial.</p>
+
+  {% if registro %}
+  <section class="cartao">
+    <h3>Este balaústre</h3>
+    <div class="botoes">
+      {% if pronto %}
+      <a class="btn sec" href="{{ url_for('balaustre_ver.ver', sessao_id=s.id) }}">👁️ Ver balaústre</a>
+      <a class="btn sec" href="{{ url_for('balaustre.baixar', sessao_id=s.id) }}">⬇️ Baixar .docx</a>
+      {% endif %}
+      <form class="inline" method="post" action="{{ url_for('balaustre.excluir', sessao_id=s.id) }}"
+            data-confirmar="Excluir o balaústre desta sessão? A sessão continua na agenda; só o registro do balaústre é apagado.">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="btn perigo" type="submit">🗑️ Excluir balaústre</button>
+      </form>
+    </div>
+    <p class="dica">Excluir apaga apenas o balaústre. A sessão continua na agenda, e um novo balaústre pode ser registrado depois.</p>
+  </section>
+  {% endif %}
 </div>
 {% endblock %}

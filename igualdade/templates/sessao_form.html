@@ -59,18 +59,17 @@
     </div>
   </form>
 
-  {% if sessao_id and not s.cancelada %}
-  <div class="botoes">
-    <a class="btn" href="{{ url_for('balaustre.form', sessao_id=sessao_id) }}">📜 Lavrar balaústre</a>
-  </div>
-  {% endif %}
-
   {% if sessao_id %}
-  <form method="post" action="{{ url_for('sessoes.excluir', sessao_id=sessao_id) }}"
-        data-confirmar="Excluir esta sessão da agenda? Para manter o registro, prefira marcar como cancelada.">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-    <button class="btn perigo" type="submit">🗑️ Excluir sessão</button>
-  </form>
+  <div class="botoes">
+    {% if not s.cancelada %}
+    <a class="btn sec" href="{{ url_for('balaustre.form', sessao_id=sessao_id) }}">📜 Balaústre</a>
+    {% endif %}
+    <form class="inline" method="post" action="{{ url_for('sessoes.excluir', sessao_id=sessao_id) }}"
+          data-confirmar="Excluir esta sessão da agenda? Para manter o registro, prefira marcar como cancelada.">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="btn perigo" type="submit">🗑️ Excluir sessão</button>
+    </form>
+  </div>
   <p class="dica">Se a sessão não vai acontecer, prefira marcar <strong>Sessão cancelada</strong> e informar o motivo. Assim os Irmãos veem o aviso na agenda.</p>
   {% endif %}
 </div>

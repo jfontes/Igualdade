@@ -10,7 +10,7 @@
   <link rel="apple-touch-icon" href="{{ url_for('static', filename='icon-192.png') }}">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="Igualdade">
-  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=9">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=12">
 </head>
 <body class="{% block body_class %}{% endblock %}">
 {% block corpo %}
@@ -40,6 +40,6 @@
     {% block conteudo %}{% endblock %}
   </main>
 {% endblock %}
-<script src="{{ url_for('static', filename='app.js') }}?v=7" defer></script>
+<script src="{{ url_for('static', filename='app.js') }}?v=9" defer></script>
 </body>
 </html>

@@ -51,6 +51,15 @@ def mesa_na_data(data_iso: str) -> dict | None:
     return {c: (cargos[c]["nome"] if c in cargos else "") for c in CARGOS_MESA}
 
 
+def proximo_ano_sem_gestao() -> int:
+    """Ano atual, se ainda não tiver gestão; senão o primeiro ano seguinte sem gestão cadastrada."""
+    ano = date.today().year
+    while get_db().execute("SELECT 1 FROM gestao WHERE inicio <= ? AND fim >= ? LIMIT 1",
+                           (f"{ano}-12-31", f"{ano}-01-01")).fetchone():
+        ano += 1
+    return ano
+
+
 def _periodo(g) -> str:
     return f"{g['inicio'][:4]}–{g['fim'][:4]}" if g["inicio"][:4] != g["fim"][:4] else g["inicio"][:4]
 
@@ -78,7 +87,7 @@ def ver():
 
 def _ler_form(form):
     erros = {}
-    dados = {"observacao": " ".join((form.get("observacao") or "").split()) or None}
+    dados = {}
     for campo in ("inicio", "fim"):
         try:
             dados[campo] = ler_data(form.get(campo))
@@ -127,12 +136,12 @@ def form(gestao_id=None):
             erros["inicio"] = f"O período coincide com a gestão {_periodo(outra)}. Ajuste as datas."
         if not erros:
             if gestao is None:
-                gestao_id = db.execute("INSERT INTO gestao (inicio, fim, observacao) VALUES (?, ?, ?)",
-                                       (dados["inicio"], dados["fim"], dados["observacao"])).lastrowid
+                gestao_id = db.execute("INSERT INTO gestao (inicio, fim) VALUES (?, ?)",
+                                       (dados["inicio"], dados["fim"])).lastrowid
                 flash("Diretoria cadastrada.", "ok")
             else:
-                db.execute("UPDATE gestao SET inicio = ?, fim = ?, observacao = ? WHERE id = ?",
-                           (dados["inicio"], dados["fim"], dados["observacao"], gestao_id))
+                db.execute("UPDATE gestao SET inicio = ?, fim = ? WHERE id = ?",
+                           (dados["inicio"], dados["fim"], gestao_id))
                 flash("Diretoria atualizada.", "ok")
             db.execute("DELETE FROM diretoria WHERE gestao_id = ?", (gestao_id,))
             db.executemany(
@@ -152,8 +161,8 @@ def form(gestao_id=None):
         valores = {c: r["nome"] for c, r in cargos_da_gestao(gestao_id).items()}
     else:
         # Nova gestão: começa com os nomes da gestão mais recente (só os cargos que mudam são digitados)
-        ano = date.today().year
-        g = {"inicio": f"{ano}-01-01", "fim": f"{ano + 1}-12-31"}
+        ano = proximo_ano_sem_gestao()
+        g = {"inicio": f"{ano}-01-01", "fim": f"{ano}-12-31"}
         ultima = db.execute("SELECT id FROM gestao ORDER BY inicio DESC, id DESC LIMIT 1").fetchone()
         valores = {c: r["nome"] for c, r in cargos_da_gestao(ultima["id"]).items()} if ultima else {}
     return render_template("diretoria_form.html", g=g, gestao_id=gestao_id, valores=valores,

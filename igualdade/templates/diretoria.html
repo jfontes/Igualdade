@@ -20,7 +20,6 @@
     <p class="suave" style="margin-top:0">
       De {{ g.inicio | data }} a {{ g.fim | data }}
       {% if vigente and vigente.id == g.id %}<span class="selo ouro">Vigente</span>{% endif %}
-      {% if g.observacao %}<br>{{ g.observacao }}{% endif %}
     </p>
     <dl class="dados">
       {% for chave, rotulo in CARGOS %}

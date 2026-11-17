@@ -358,3 +358,23 @@ textarea:focus { outline: 2px solid var(--bordo); outline-offset: 0; border-colo
 /* erro ao lado do campo */
 .campo.com-erro input, .campo.com-erro select, .campo.com-erro textarea { border-color: var(--erro); background: var(--erro-fundo); }
 .erro-campo { color: var(--erro); font-size: .85rem; font-weight: 600; }
+
+/* balaústre: salvamento automático e campo de hora com botão "Agora" */
+.autosave { margin: 0 0 10px; font-size: .85rem; color: var(--suave); min-height: 1.2em; }
+.autosave.ok { color: var(--ok); }
+.autosave.erro { color: var(--erro); font-weight: 600; }
+.campo-hora { display: flex; gap: 8px; align-items: stretch; }
+.campo-hora input { flex: 1; }
+.campo-hora .btn { min-height: 46px; }
+
+/* balaústre: visualização do documento */
+.acao-balaustre { padding: 0 0 10px 60px; }
+.documento { padding: 22px 20px; }
+.documento .doc-titulo { text-align: center; font-weight: 800; font-size: 1rem; margin: 0 0 4px; color: var(--texto); }
+.documento .doc-subtitulo { text-align: center; font-weight: 700; font-size: .9rem; margin: 0 0 16px; color: var(--texto); }
+.documento .doc-corpo { text-align: justify; line-height: 1.7; margin: 0; hyphens: auto; }
+.documento .doc-mesa { margin: 34px 0 0; display: grid; grid-template-columns: 1fr 1fr; gap: 34px 28px; }
+.documento .doc-mesa .assina-veneravel { grid-column: 1 / -1; justify-self: center; width: min(100%, 50%); }
+.documento .doc-mesa div { border-top: 1px solid var(--texto); padding-top: 4px; text-align: center; font-size: .82rem; }
+.documento .doc-mesa strong { display: block; font-size: .88rem; }
+@media (max-width: 480px) { .documento .doc-mesa { gap: 30px 14px; } .documento .doc-mesa .assina-veneravel { width: 70%; } }

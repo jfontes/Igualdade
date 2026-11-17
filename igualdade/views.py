@@ -1,4 +1,5 @@
 """Telas do obreiro: painel, minhas informações, familiares, aniversariantes e quadro."""
+import json
 from datetime import date
 
 from flask import (Blueprint, abort, flash, redirect, render_template, request,
@@ -306,7 +307,10 @@ def agenda():
             raise ValueError
     except ValueError:
         mes, ano = hoje.month, hoje.year
-    itens = [{"tipo": "sessao", "dia": int(s["data"][8:]), "s": s} for s in sessoes_do_mes(ano, mes)]
+    from .balaustre import concluido
+    itens = [{"tipo": "sessao", "dia": int(s["data"][8:]), "s": s,
+              "balaustre": bool(s["balaustre_dados"]) and concluido(json.loads(s["balaustre_dados"]))}
+             for s in sessoes_do_mes(ano, mes)]
     itens += [{"tipo": "aniversario", "dia": a["dia"], "a": a}
               for a in consultar_aniversariantes(f"{mes:02d}")]
     itens.sort(key=lambda i: (i["dia"], i["tipo"] != "sessao"))

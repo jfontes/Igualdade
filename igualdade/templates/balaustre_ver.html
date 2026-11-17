@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block titulo %}Balaústre de {{ s.data | data }}{% endblock %}
+{% block conteudo %}
+<div class="estreito">
+  <a class="voltar" href="{{ url_for('main.agenda', ano=s.data[:4] | int, mes=s.data[5:7] | int) }}">← Agenda</a>
+
+  <article class="cartao documento">
+    <p class="doc-titulo">{{ titulo }}</p>
+    <p class="doc-subtitulo">{{ subtitulo }}</p>
+    <p class="doc-corpo">{% for texto, negrito in partes %}{% if negrito %}<strong>{{ texto }}</strong>{% else %}{{ texto }}{% endif %}{% endfor %}</p>
+
+    <div class="doc-mesa">
+      {% for c in ASSINAM %}
+      <div class="assina-{{ c }}"><strong>{{ mesa.get(c, '') }}</strong>{{ pres if c == 'veneravel' else NOMES_CARGOS[c] }}</div>
+      {% endfor %}
+    </div>
+  </article>
+
+  {% if current_user.admin %}
+  <div class="botoes">
+    <a class="btn sec" href="{{ url_for('balaustre.form', sessao_id=s.id) }}">✏️ Editar balaústre</a>
+    <a class="btn sec" href="{{ url_for('balaustre.baixar', sessao_id=s.id) }}">⬇️ Baixar .docx</a>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

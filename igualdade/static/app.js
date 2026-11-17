@@ -167,12 +167,27 @@
       if (e.defaultPrevented) return;
       if (form.dataset.enviando) { e.preventDefault(); return; }
       form.dataset.enviando = "1";
-      setTimeout(() => form.querySelectorAll('button[type="submit"]').forEach((b) => {
+      const botoes = [...form.querySelectorAll('button[type="submit"]')];
+      setTimeout(() => botoes.forEach((b) => {
+        if (b.disabled) return;  // já estava desativado (ex.: modelo ausente): não mexe
+        b.dataset.texto = b.innerHTML;
         b.disabled = true;
         b.textContent = "Aguarde…";
       }), 0);
+      // Se a página não for trocada (ex.: download do .docx), libera os botões de novo
+      setTimeout(() => liberar(form), 4000);
     });
   });
+  function liberar(form) {
+    delete form.dataset.enviando;
+    form.querySelectorAll('button[type="submit"][data-texto]').forEach((b) => {
+      b.disabled = false;
+      b.innerHTML = b.dataset.texto;
+      delete b.dataset.texto;
+    });
+  }
+  // Voltar com o botão "voltar" do navegador também libera
+  window.addEventListener("pageshow", () => document.querySelectorAll("form[data-uma-vez]").forEach(liberar));
 
   // Caixa de seleção que mostra/oculta um bloco (ex.: motivo do cancelamento da sessão)
   document.querySelectorAll("[data-mostra]").forEach((chk) => {
@@ -187,12 +202,67 @@
   });
 
   // Botão "Agora": preenche o horário (HH:MM) com a hora do aparelho
+  const horaAgora = () => {
+    const d = new Date();
+    return String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0");
+  };
   document.querySelectorAll("[data-agora]").forEach((btn) => {
     btn.addEventListener("click", () => {
       const alvo = document.getElementById(btn.dataset.agora);
-      const d = new Date();
-      if (alvo) alvo.value = String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0");
+      if (alvo) { alvo.value = horaAgora(); alvo.dispatchEvent(new Event("change", { bubbles: true })); }
     });
+  });
+
+  // Salvamento automático (balaústre): a cada N segundos, ao alterar um campo e ao sair da página.
+  // O campo marcado com data-hora-automatica recebe a hora atual a cada ciclo, até ser editado à mão.
+  document.querySelectorAll("form[data-autosave]").forEach((form) => {
+    const url = form.dataset.autosave;
+    const intervalo = (Number(form.dataset.intervalo) || 30) * 1000;
+    const avisos = document.querySelectorAll("[data-autosave-status]");
+    const horaAuto = form.querySelector("[data-hora-automatica]");
+    const serializar = () => new URLSearchParams(new FormData(form)).toString();
+    let ultimo = serializar();
+    let salvando = false;
+    let editadaAMao = false;
+    const aviso = (texto, tipo) => avisos.forEach((el) => {
+      el.textContent = texto;
+      el.className = "autosave" + (tipo ? " " + tipo : "");
+    });
+    const salvar = async () => {
+      const atual = serializar();
+      if (salvando || atual === ultimo) return;
+      salvando = true;
+      aviso("Salvando…");
+      try {
+        const resp = await fetch(url, { method: "POST", body: new FormData(form), credentials: "same-origin" });
+        const r = await resp.json();
+        if (r.ok) {
+          ultimo = atual;
+          aviso("✓ Salvo às " + r.hora, "ok");
+        } else {
+          aviso("Não foi salvo: " + Object.values(r.erros)[0], "erro");
+        }
+      } catch (_) {
+        aviso("Sem conexão: o salvamento será tentado de novo em instantes.", "erro");
+      } finally {
+        salvando = false;
+      }
+    };
+    horaAuto?.addEventListener("input", () => { editadaAMao = true; });
+    setInterval(() => {
+      if (horaAuto && !editadaAMao) horaAuto.value = horaAgora();
+      salvar();
+    }, intervalo);
+    form.addEventListener("change", salvar);
+    // Ao sair (fechar a aba, trocar de app no celular), envia o que faltou salvar
+    const enviarAoSair = () => {
+      if (serializar() !== ultimo && navigator.sendBeacon) {
+        navigator.sendBeacon(url, new FormData(form));
+        ultimo = serializar();
+      }
+    };
+    window.addEventListener("pagehide", enviarAoSair);
+    document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") enviarAoSair(); });
   });
 
   // Mantém o mês selecionado visível na barra de meses

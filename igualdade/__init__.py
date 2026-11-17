@@ -50,6 +50,7 @@ def create_app() -> Flask:
     app.register_blueprint(sessoes.bp)
     app.register_blueprint(diretoria.bp)
     app.register_blueprint(balaustre.bp)
+    app.register_blueprint(balaustre.ver_bp)
     app.register_blueprint(fotos.bp)
     app.register_blueprint(auth.bp)
     app.register_blueprint(views.bp)

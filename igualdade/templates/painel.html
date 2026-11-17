@@ -21,14 +21,14 @@
   <p class="aviso-cancelada">⚠️ <strong>Não haverá sessão em {{ cancelada.data | extenso }}</strong> — {{ cancelada.motivo_cancelamento }}.</p>
   {% endif %}
   {% if proxima %}
-  <div class="item">
+  {% if current_user.admin %}<a class="item" href="{{ url_for('balaustre.form', sessao_id=proxima.id) }}" title="Abrir o balaústre">{% else %}<div class="item">{% endif %}
     <span class="dia grau-{{ proxima.grau | lower }}"><b>{{ proxima.data[8:] }}</b><small>{{ MESES_CURTOS[proxima.data[5:7] | int - 1] }}</small></span>
     <div class="corpo">
       <div class="nome">{% if proxima.data == hoje %}<span class="selo ouro">Hoje!</span> {% endif %}{{ proxima.data | extenso }}</div>
       <div class="sub">Sessão {{ proxima.tipo }} · {{ proxima.grau }} Maçom</div>
       {% if proxima.ordem_do_dia %}<div class="ordem">{{ proxima.ordem_do_dia }}</div>{% endif %}
     </div>
-  </div>
+  {% if current_user.admin %}</a>{% else %}</div>{% endif %}
   {% endif %}
 </section>
 {% endif %}
