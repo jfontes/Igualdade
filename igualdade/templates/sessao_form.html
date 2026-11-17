@@ -59,6 +59,12 @@
     </div>
   </form>
 
+  {% if sessao_id and not s.cancelada %}
+  <div class="botoes">
+    <a class="btn" href="{{ url_for('balaustre.form', sessao_id=sessao_id) }}">📜 Lavrar balaústre</a>
+  </div>
+  {% endif %}
+
   {% if sessao_id %}
   <form method="post" action="{{ url_for('sessoes.excluir', sessao_id=sessao_id) }}"
         data-confirmar="Excluir esta sessão da agenda? Para manter o registro, prefira marcar como cancelada.">

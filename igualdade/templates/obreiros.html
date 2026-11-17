@@ -7,7 +7,10 @@
 {% block conteudo %}
 <div class="cabecalho">
   <h2>🏛️ Quadro de Obreiros</h2>
-  {% if current_user.admin %}<a class="btn" href="{{ url_for('admin.novo') }}">＋ Cadastrar</a>{% endif %}
+  <div class="botoes" style="margin:0">
+    <a class="btn sec" href="{{ url_for('diretoria.ver') }}">🏛️ Diretoria</a>
+    {% if current_user.admin %}<a class="btn" href="{{ url_for('admin.novo') }}">＋ Cadastrar</a>{% endif %}
+  </div>
 </div>
 
 <form class="filtros" method="get" role="search">

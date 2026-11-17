@@ -44,10 +44,12 @@ def create_app() -> Flask:
     db.init_app(app)
     csrf.init_app(app)
 
-    from . import auth, views, admin, fotos, assistente, sessoes
+    from . import auth, views, admin, fotos, assistente, sessoes, diretoria, balaustre
     auth.init_app(app)
     app.register_blueprint(assistente.bp)
     app.register_blueprint(sessoes.bp)
+    app.register_blueprint(diretoria.bp)
+    app.register_blueprint(balaustre.bp)
     app.register_blueprint(fotos.bp)
     app.register_blueprint(auth.bp)
     app.register_blueprint(views.bp)

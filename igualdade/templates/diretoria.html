@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block titulo %}Diretoria{% endblock %}
+{% block conteudo %}
+<div class="estreito">
+  <div class="cabecalho">
+    <h2>🏛️ Diretoria{% if g %} {{ periodo(g) }}{% endif %}</h2>
+    {% if current_user.admin %}<a class="btn" href="{{ url_for('diretoria.form') }}">＋ Nova gestão</a>{% endif %}
+  </div>
+
+  {% if gestoes | length > 1 %}
+  <nav class="abas" aria-label="Escolher gestão">
+    {% for x in gestoes %}
+      <a href="{{ url_for('diretoria.ver', gestao=x.id) }}" class="{{ 'ativo' if g and x.id == g.id }}">{{ periodo(x) }}</a>
+    {% endfor %}
+  </nav>
+  {% endif %}
+
+  {% if g %}
+  <div class="cartao">
+    <p class="suave" style="margin-top:0">
+      De {{ g.inicio | data }} a {{ g.fim | data }}
+      {% if vigente and vigente.id == g.id %}<span class="selo ouro">Vigente</span>{% endif %}
+      {% if g.observacao %}<br>{{ g.observacao }}{% endif %}
+    </p>
+    <dl class="dados">
+      {% for chave, rotulo in CARGOS %}
+      <div>
+        <dt>{{ rotulo }}</dt>
+        <dd>{% if chave in cargos %}
+          {% set c = cargos[chave] %}
+          {% if c.obreiro_id %}<a href="{{ url_for('main.perfil', obreiro_id=c.obreiro_id) }}">{{ c.nome }}</a>{% else %}{{ c.nome }}{% endif %}
+        {% else %}<span class="suave">—</span>{% endif %}</dd>
+      </div>
+      {% endfor %}
+    </dl>
+  </div>
+  {% if current_user.admin %}
+  <div class="botoes">
+    <a class="btn sec" href="{{ url_for('diretoria.form', gestao_id=g.id) }}">✏️ Editar esta gestão</a>
+  </div>
+  {% endif %}
+  {% else %}
+  <div class="cartao vazio-msg"><span class="ic">🏛️</span>Nenhuma diretoria cadastrada.</div>
+  {% endif %}
+</div>
+{% endblock %}

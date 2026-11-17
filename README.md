@@ -14,8 +14,12 @@ igualdade/
   views.py         painel, minhas informações, familiares, aniversariantes, obreiros
   admin.py         funções da Secretaria + comando criar-admin
   fotos.py         upload e entrega protegida das fotos
+  sessoes.py       agenda de sessões
+  diretoria.py     gestões e quadro de oficiais (mesa do balaústre)
+  balaustre.py     balaústre da sessão e geração do .docx
   templates/       páginas HTML
   static/          CSS, JS, brasão, manifest e service worker
+secretaria/        modelo_balaustre.docx e gerar_balaustre.py (usados pelo sistema e pelo assistente do Claude)
 instance/          igualdade.db, secret_key e fotos/ (criados automaticamente, fora do git)
 wsgi.py            entrada para o PythonAnywhere
 ```
@@ -29,10 +33,20 @@ wsgi.py            entrada para o PythonAnywhere
 | Gerenciar os próprios familiares | ✔ | ✔ |
 | Ver CPF e endereço de outros obreiros | — | ✔ |
 | Cadastrar, editar, afastar ou excluir obreiros e redefinir senhas | — | ✔ |
+| Consultar a diretoria | ✔ | ✔ |
+| Cadastrar a diretoria e lavrar balaústres | — | ✔ |
 
 - **Login:** CIM + senha. Ao cadastrar um obreiro, a senha inicial é o **CPF (somente números)**, e o sistema exige a troca no primeiro acesso.
 - **Afastado:** some da lista de ativos e dos aniversariantes e perde o acesso. O histórico é mantido.
 - **Exclusão:** remove o obreiro e todos os seus familiares (RN02). Para preservar o histórico, prefira registrar o afastamento.
+
+## Diretoria e balaústre
+
+1. **Diretoria** (*Obreiros → Diretoria → Nova gestão*): informe o período da gestão e o quadro de oficiais. Os nomes são sugeridos a partir dos obreiros ativos; uma nova gestão começa com os nomes da anterior. Venerável, Vigilantes, Orador e Secretário são obrigatórios, pois formam a mesa.
+2. **Balaústre** (*Agenda → toque na sessão → Lavrar balaústre*): a mesa vem da diretoria vigente na data da sessão e pode ser alterada em caso de substituição. Data, grau e tipo vêm da agenda. Salve durante a sessão quantas vezes quiser; os botões *Agora* preenchem os horários.
+3. **Documento:** *Salvar e gerar .docx* baixa o balaústre no modelo oficial. Sem Landmark, Ordem do dia ou Tronco, o sistema pede confirmação antes de gerar.
+
+Sem diretoria cadastrada para a data, o sistema leva primeiro ao cadastro da diretoria. As tabelas novas (`gestao`, `diretoria`, `balaustre`) são criadas automaticamente em bancos existentes.
 
 ## Rodar no computador
 

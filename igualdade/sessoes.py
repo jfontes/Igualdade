@@ -21,7 +21,8 @@ ORDEM_MAX = 500
 
 def sessoes_do_mes(ano: int, mes: int):
     return get_db().execute(
-        "SELECT * FROM sessao WHERE substr(data, 1, 7) = ? ORDER BY data, id",
+        "SELECT s.*, b.id AS balaustre_id FROM sessao s LEFT JOIN balaustre b ON b.sessao_id = s.id "
+        "WHERE substr(s.data, 1, 7) = ? ORDER BY s.data, s.id",
         (f"{ano:04d}-{mes:02d}",)).fetchall()
 
 

@@ -30,3 +30,36 @@ RECESSOS = [
     ((1, 1), (1, 31), "Recesso de janeiro"),
     ((12, 16), (12, 31), "Recesso de fim de ano"),
 ]
+
+# ---------------------------------------------------------------- diretoria (quadro de oficiais)
+# Cargos na ordem da nominata. A chave é gravada no banco; o nome aparece nas telas.
+# Os cinco primeiros compõem a mesa do balaústre.
+CARGOS = [
+    ("veneravel", "Venerável Mestre"),
+    ("vig1", "1º Vigilante"),
+    ("vig2", "2º Vigilante"),
+    ("orador", "Orador"),
+    ("secretario", "Secretário"),
+    ("secretario_adj", "Secretário Adjunto"),
+    ("tesoureiro", "Tesoureiro"),
+    ("chanceler", "Chanceler"),
+    ("mestre_cerimonias", "Mestre de Cerimônias"),
+    ("hospitaleiro", "Hospitaleiro"),
+    ("hospitaleiro_adj", "Hospitaleiro Adjunto"),
+    ("guarda_templo", "Guarda do Templo"),
+    ("cobridor", "Cobridor Externo"),
+    ("diacono1", "1º Diácono"),
+    ("diacono2", "2º Diácono"),
+    ("experto1", "1º Experto"),
+    ("experto2", "2º Experto"),
+    ("porta_bandeira", "Porta Bandeira"),
+    ("porta_estandarte", "Porta Estandarte"),
+    ("arquiteto", "Arquiteto"),
+    ("arquiteto_adj", "Arquiteto Adjunto"),
+    ("mestre_harmonia", "Mestre de Harmonia"),
+    ("mestre_banquete", "Mestre de Banquete"),
+    ("mestre_banquete_adj", "Mestre de Banquete Adjunto"),
+    ("porta_espada", "Porta Espada"),
+    ("bibliotecario", "Bibliotecário"),
+]
+CARGOS_MESA = ["veneravel", "vig1", "vig2", "orador", "secretario"]

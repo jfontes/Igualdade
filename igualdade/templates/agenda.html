@@ -44,7 +44,8 @@
               {% else %}
                 <div class="nome">Sessão {{ s.tipo }} · {{ s.grau }} Maçom
                   {% if s.tipo != 'Ordinária' %}<span class="selo ouro">{{ s.tipo }}</span>{% endif %}
-                  {% if eh_hoje %}<span class="selo ouro">Hoje!</span>{% endif %}</div>
+                  {% if eh_hoje %}<span class="selo ouro">Hoje!</span>{% endif %}
+                  {% if current_user.admin and s.balaustre_id %}<span class="selo">Balaústre</span>{% endif %}</div>
                 {% if s.ordem_do_dia %}<div class="ordem">{{ s.ordem_do_dia }}</div>
                 {% elif current_user.admin %}<div class="sub">Ordem do dia ainda não informada. Toque para editar.</div>{% endif %}
               {% endif %}
@@ -80,11 +81,12 @@
     <h3>Secretaria</h3>
     <div class="botoes">
       <a class="btn" href="{{ url_for('sessoes.form') }}">＋ Nova sessão</a>
+      <a class="btn sec" href="{{ url_for('diretoria.ver') }}">🏛️ Diretoria</a>
       {% for a in anos_gerar %}
       <a class="btn sec" href="{{ url_for('sessoes.gerar', ano=a) }}">🗓️ Gerar sessões de {{ a }}</a>
       {% endfor %}
     </div>
-    <p class="dica">Toque em uma sessão da lista para alterar o grau, a ordem do dia ou registrar o cancelamento.</p>
+    <p class="dica">Toque em uma sessão da lista para alterar o grau, a ordem do dia, registrar o cancelamento ou lavrar o balaústre. A mesa do balaústre vem da diretoria vigente na data da sessão.</p>
   </section>
   {% endif %}
 </div>

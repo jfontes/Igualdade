@@ -186,6 +186,15 @@
     atualizar();
   });
 
+  // Botão "Agora": preenche o horário (HH:MM) com a hora do aparelho
+  document.querySelectorAll("[data-agora]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const alvo = document.getElementById(btn.dataset.agora);
+      const d = new Date();
+      if (alvo) alvo.value = String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0");
+    });
+  });
+
   // Mantém o mês selecionado visível na barra de meses
   document.querySelector("[data-rolar]")?.scrollIntoView({ inline: "center", block: "nearest" });
 

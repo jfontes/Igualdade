@@ -26,8 +26,8 @@
         <a href="{{ url_for('main.painel') }}" class="{{ 'ativo' if ep == 'main.painel' }}"><span class="ic">🏠</span>Início</a>
         <a href="{{ url_for('main.minhas_informacoes') }}" class="{{ 'ativo' if ep == 'main.minhas_informacoes' }}"><span class="ic">👤</span>Meus dados</a>
         <a href="{{ url_for('main.meus_familiares') }}" class="{{ 'ativo' if ep.startswith('main.familiar') }}"><span class="ic">👨‍👩‍👧</span>Família</a>
-        <a href="{{ url_for('main.agenda') }}" class="{{ 'ativo' if ep == 'main.agenda' or ep.startswith('sessoes.') }}"><span class="ic">🗓️</span>Agenda</a>
-        <a href="{{ url_for('main.obreiros') }}" class="{{ 'ativo' if ep in ('main.obreiros', 'main.perfil', 'main.historico', 'main.historico_detalhe') or ep.startswith('admin.') }}"><span class="ic">🏛️</span>Obreiros</a>
+        <a href="{{ url_for('main.agenda') }}" class="{{ 'ativo' if ep == 'main.agenda' or ep.startswith('sessoes.') or ep.startswith('balaustre.') }}"><span class="ic">🗓️</span>Agenda</a>
+        <a href="{{ url_for('main.obreiros') }}" class="{{ 'ativo' if ep in ('main.obreiros', 'main.perfil', 'main.historico', 'main.historico_detalhe') or ep.startswith('admin.') or ep.startswith('diretoria.') }}"><span class="ic">🏛️</span>Obreiros</a>
       </nav>
       <form method="post" action="{{ url_for('auth.logout') }}">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -40,6 +40,6 @@
     {% block conteudo %}{% endblock %}
   </main>
 {% endblock %}
-<script src="{{ url_for('static', filename='app.js') }}?v=6" defer></script>
+<script src="{{ url_for('static', filename='app.js') }}?v=7" defer></script>
 </body>
 </html>

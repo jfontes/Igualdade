@@ -166,3 +166,19 @@ def validar_cronologia(d: dict) -> list[str]:
     if d.get("data_afastamento") and d.get("data_iniciacao") and d["data_afastamento"] < d["data_iniciacao"]:
         erros.append("A data de Afastamento não pode ser anterior à Iniciação.")
     return erros
+
+
+_PARTICULAS = {"de", "da", "do", "das", "dos", "e", "d'"}
+
+
+def nome_proprio(nome: str | None) -> str:
+    """'JAIME FONTES DE VASCONCELOS' -> 'Jaime Fontes de Vasconcelos' (forma usada no balaústre)."""
+    palavras = " ".join((nome or "").split()).lower().split(" ")
+    saida = []
+    for i, p in enumerate(palavras):
+        if i and p in _PARTICULAS:
+            saida.append(p)
+        else:
+            # mantém apóstrofo e hífen: dell'agnolo -> Dell'Agnolo
+            saida.append(re.sub(r"(^|[-'’])(\w)", lambda m: m.group(1) + m.group(2).upper(), p))
+    return " ".join(saida).strip()

@@ -74,3 +74,30 @@ CREATE TABLE IF NOT EXISTS sessao (
 );
 
 CREATE INDEX IF NOT EXISTS idx_sessao_data ON sessao(data);
+
+-- Diretoria: cada gestão (período) tem um quadro de oficiais.
+-- A diretoria vigente na data da sessão compõe a mesa do balaústre.
+CREATE TABLE IF NOT EXISTS gestao (
+    id               INTEGER PRIMARY KEY AUTOINCREMENT,
+    inicio           TEXT    NOT NULL,                 -- AAAA-MM-DD (posse)
+    fim              TEXT    NOT NULL,                 -- AAAA-MM-DD
+    observacao       TEXT
+);
+
+CREATE TABLE IF NOT EXISTS diretoria (
+    id               INTEGER PRIMARY KEY AUTOINCREMENT,
+    gestao_id        INTEGER NOT NULL REFERENCES gestao(id) ON DELETE CASCADE,
+    cargo            TEXT    NOT NULL,                 -- chave de config.CARGOS
+    obreiro_id       INTEGER REFERENCES obreiro(id) ON DELETE SET NULL,  -- nulo = nome fora do quadro
+    nome             TEXT    NOT NULL,                 -- nome gravado (preserva o histórico)
+    UNIQUE (gestao_id, cargo)
+);
+
+-- Balaústre (ata) de cada sessão. "dados" guarda o JSON lido por secretaria/gerar_balaustre.py.
+CREATE TABLE IF NOT EXISTS balaustre (
+    id               INTEGER PRIMARY KEY AUTOINCREMENT,
+    sessao_id        INTEGER NOT NULL UNIQUE REFERENCES sessao(id) ON DELETE CASCADE,
+    dados            TEXT    NOT NULL,
+    atualizado_em    TEXT    NOT NULL,
+    atualizado_por   INTEGER REFERENCES obreiro(id) ON DELETE SET NULL
+);

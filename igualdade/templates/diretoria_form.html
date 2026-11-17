@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block titulo %}{{ 'Editar diretoria' if gestao_id else 'Nova diretoria' }}{% endblock %}
+{% block conteudo %}
+<div class="estreito">
+  <a class="voltar" href="{{ url_for('diretoria.ver', gestao=gestao_id) if gestao_id else url_for('diretoria.ver') }}">← Diretoria</a>
+  <h2>{{ self.titulo() }}</h2>
+  {% if not gestao_id and valores %}
+  <p class="dica">Os nomes vieram da gestão mais recente. Altere apenas os cargos que mudaram.</p>
+  {% endif %}
+
+  <datalist id="obreiros-ativos">
+    {% for _id, nome in ativos %}<option value="{{ nome }}">{% endfor %}
+  </datalist>
+
+  <form method="post" class="cartao grade" data-uma-vez>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="grade duas">
+      {% for campo, rotulo in [('inicio', 'Início da gestão'), ('fim', 'Fim da gestão')] %}
+      <div class="campo {{ 'com-erro' if campo in erros }}">
+        <label for="{{ campo }}">{{ rotulo }}</label>
+        <input id="{{ campo }}" name="{{ campo }}" type="date" value="{{ g[campo] or '' }}" required>
+        {% if campo in erros %}<span class="erro-campo">{{ erros[campo] }}</span>{% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    <div class="campo">
+      <label for="observacao">Observação</label>
+      <input id="observacao" name="observacao" value="{{ g.observacao or '' }}" maxlength="200"
+             placeholder="Ex.: Eleita em 10/11/2026, instalada em 05/01/2027">
+    </div>
+
+    <h3>Quadro de oficiais</h3>
+    <p class="dica">Comece a digitar e escolha o nome na lista de obreiros ativos. Nomes fora do quadro também são aceitos. Os cinco primeiros cargos formam a mesa do balaústre e são obrigatórios.</p>
+    {% for chave, rotulo in CARGOS %}
+    {% set campo = 'cargo_' ~ chave %}
+    <div class="campo {{ 'com-erro' if campo in erros }}">
+      <label for="{{ campo }}">{{ rotulo }}{% if chave in CARGOS_MESA %} *{% endif %}</label>
+      <input id="{{ campo }}" name="{{ campo }}" value="{{ valores.get(chave, '') }}" list="obreiros-ativos"
+             autocomplete="off" maxlength="120" {{ 'required' if chave in CARGOS_MESA }}>
+      {% if campo in erros %}<span class="erro-campo">{{ erros[campo] }}</span>{% endif %}
+    </div>
+    {% endfor %}
+
+    <div class="botoes">
+      <button class="btn" type="submit">Salvar diretoria</button>
+      <a class="btn sec" href="{{ url_for('diretoria.ver') }}">Cancelar</a>
+    </div>
+  </form>
+
+  {% if gestao_id %}
+  <form method="post" action="{{ url_for('diretoria.excluir', gestao_id=gestao_id) }}"
+        data-confirmar="Excluir esta gestão e o seu quadro de oficiais? Os balaústres já salvos não são alterados.">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button class="btn perigo" type="submit">🗑️ Excluir gestão</button>
+  </form>
+  {% endif %}
+</div>
+{% endblock %}
