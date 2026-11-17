@@ -241,3 +241,120 @@ li.hoje .dia { background: var(--ouro); }
 .perfil-topo .btn { margin-left: auto; }
 .contatos { display: flex; flex-wrap: wrap; gap: 8px; }
 .contatos .btn { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ---------- assistente de primeiro acesso: letras e botões maiores, poucas opções por tela ---------- */
+body.assistente { font-size: 18px; }
+.assistente main { padding-top: 14px; }
+.assistente h1 { font-size: 1.5rem; color: var(--bordo); margin: 4px 0 10px; }
+.assistente .intro { font-size: 1.05rem; margin: 0 0 14px; }
+.assistente .cartao { padding: 18px; }
+.assistente .cartao h3 { font-size: 1.15rem; }
+.assistente label, .assistente fieldset.campo legend {
+  font-size: 1rem; text-transform: none; letter-spacing: 0; color: var(--texto);
+}
+.assistente input, .assistente select { font-size: 18px; min-height: 54px; }
+.assistente .dica { font-size: .9rem; }
+.assistente .check { font-size: 1rem; }
+.assistente .check input { width: 26px; height: 26px; }
+.assistente .data-partes { grid-template-columns: 1fr 1.6fr 1.2fr; }
+.assistente .mensagens li { font-size: 1rem; padding: 14px 16px; }
+.assistente .btn { min-height: 52px; font-size: 1rem; }
+.assistente .btn.grande { min-height: 62px; font-size: 1.12rem; border-radius: 12px; }
+.assistente .botoes { flex-direction: column; gap: 10px; margin: 14px 0; }
+.assistente .botoes .btn, .assistente .botoes form { width: 100%; }
+
+.passos { margin-bottom: 18px; }
+.passo-atual { margin: 0 0 10px; font-size: .95rem; color: var(--suave); }
+.passo-atual strong { color: var(--bordo); }
+.passos ol { list-style: none; margin: 0; padding: 0; display: flex; position: relative; }
+.passos ol::before { content: ""; position: absolute; top: 19px; left: 12%; right: 12%; height: 3px; background: var(--borda); }
+.passos li { flex: 1; text-align: center; position: relative; font-size: .78rem; color: var(--suave); line-height: 1.2; }
+.passos li a { color: inherit; text-decoration: none; display: block; }
+.passos .bola {
+  display: flex; align-items: center; justify-content: center; margin: 0 auto 6px;
+  width: 40px; height: 40px; border-radius: 50%; background: #fff; border: 3px solid var(--borda);
+  font-weight: 800; font-size: 1rem;
+}
+.passos li.atual { color: var(--bordo); font-weight: 700; }
+.passos li.atual .bola { background: var(--bordo); border-color: var(--bordo); color: #fff; }
+.passos li.feito .bola { background: var(--ok); border-color: var(--ok); color: #fff; }
+@media (max-width: 380px) { .passos .rotulo { display: none; } }
+
+.ficha dl { margin: 0; display: grid; gap: 2px; }
+.ficha dl > div, .ficha-mini > div { padding: 10px 0; border-bottom: 1px solid var(--borda); }
+.ficha dl > div:last-child { border-bottom: 0; }
+.ficha dt, .ficha-mini dt { font-size: .85rem; color: var(--suave); font-weight: 600; }
+.ficha dd, .ficha-mini dd { margin: 2px 0 0; font-size: 1.1rem; font-weight: 700; overflow-wrap: anywhere; }
+.ficha-mini { margin: 0; }
+.ficha-foto { display: flex; justify-content: center; margin-bottom: 8px; }
+
+.pergunta {
+  background: var(--bordo-claro); border: 2px solid #e8c9ce; border-radius: var(--raio);
+  padding: 18px 16px; margin: 18px 0; display: grid; gap: 12px;
+}
+.pergunta p { margin: 0; font-size: 1.2rem; font-weight: 800; color: var(--bordo); text-align: center; }
+.pergunta form { margin: 0; }
+
+.familia li { padding-bottom: 12px; }
+.acoes-familiar { display: flex; gap: 10px; }
+.acoes-familiar > * { flex: 1; }
+.acoes-familiar .btn { width: 100%; }
+
+.concluido { text-align: center; padding: 26px 18px; }
+.concluido .ic { font-size: 3rem; display: block; margin-bottom: 8px; }
+.regras { margin: 0 0 16px; padding-left: 22px; font-size: 1.02rem; }
+.regras li { margin: 4px 0; }
+.lembrete { background: var(--aviso-fundo); color: var(--aviso); border: 1px solid #f0dc9c; border-radius: 12px; padding: 14px 16px; font-size: 1.02rem; }
+
+/* ---------- agenda: sessões e aniversários ---------- */
+:root {
+  --aprendiz: #1f4fa3;
+  --companheiro: #b3261e;
+  --mestre: #1b1b1b;
+  --sessao-cancelada: #a39a9b;
+}
+.dia.grau-aprendiz, .cor.grau-aprendiz { background: var(--aprendiz); }
+.dia.grau-companheiro, .cor.grau-companheiro { background: var(--companheiro); }
+.dia.grau-mestre, .cor.grau-mestre { background: var(--mestre); }
+.dia.grau-indefinido, .dia.cancelada { background: var(--sessao-cancelada); }
+.cor.aniv { background: var(--bordo); }
+li.hoje .dia.aniv { background: var(--ouro); }
+li.hoje .dia[class*="grau-"] { box-shadow: 0 0 0 3px var(--ouro); }
+
+.anos { display: flex; align-items: center; gap: 8px; }
+.anos strong { min-width: 3.2em; text-align: center; color: var(--bordo); }
+.legenda { list-style: none; display: flex; flex-wrap: wrap; gap: 6px 14px; margin: 0 0 12px; padding: 0; font-size: .8rem; color: var(--suave); }
+.legenda li { display: flex; align-items: center; gap: 6px; }
+.cor { display: inline-block; width: 14px; height: 14px; border-radius: 4px; flex: none; }
+
+.agenda .bolo { flex: none; font-size: 1.5rem; line-height: 1; }
+.agenda .ordem, .proxima-sessao .ordem { margin-top: 3px; font-size: .92rem; color: var(--texto); }
+.agenda .nome { white-space: normal; }
+.agenda li.passada { opacity: .55; }
+.agenda li.cancelada .nome s { color: var(--suave); }
+
+.proxima-sessao .rotulo-secao { font-size: .75rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--suave); margin-bottom: 4px; }
+.proxima-sessao .item { padding-bottom: 2px; }
+.proxima-sessao .dia { width: 58px; height: 58px; }
+.proxima-sessao .dia b { font-size: 1.45rem; }
+.proxima-sessao .nome { font-size: 1.1rem; }
+.aviso-cancelada { margin: 4px 0 8px; padding: 10px 12px; border-radius: 10px; background: var(--aviso-fundo); color: var(--aviso); font-size: .92rem; }
+
+textarea {
+  width: 100%; font: inherit; font-size: 16px; padding: 11px 12px; border: 1px solid #d9caca;
+  border-radius: 10px; background: #fff; color: var(--texto); resize: vertical;
+}
+textarea:focus { outline: 2px solid var(--bordo); outline-offset: 0; border-color: var(--bordo); }
+.opcoes-grau { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.opcao-grau {
+  display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; padding: 8px;
+  border: 1px solid #d9caca; border-radius: 10px; cursor: pointer; text-transform: none; letter-spacing: 0;
+  color: var(--texto); font-size: .92rem;
+}
+.opcao-grau input { width: 18px; height: 18px; min-height: 0; accent-color: var(--bordo); }
+.opcao-grau:has(input:checked) { border-color: var(--bordo); background: var(--bordo-claro); font-weight: 700; }
+.cancelamento { display: grid; gap: 10px; }
+
+/* erro ao lado do campo */
+.campo.com-erro input, .campo.com-erro select, .campo.com-erro textarea { border-color: var(--erro); background: var(--erro-fundo); }
+.erro-campo { color: var(--erro); font-size: .85rem; font-weight: 600; }

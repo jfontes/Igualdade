@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block titulo %}Primeiro acesso{% endblock %}
+{% block body_class %}sem-nav assistente{% endblock %}
+{% block corpo %}
+<header class="topo">
+  <div class="topo-interno">
+    <span class="marca">
+      <img src="{{ url_for('static', filename='brasao-192.png') }}" alt="">
+      <span>{{ LOJA.nome }}</span>
+    </span>
+    <span class="espaco"></span>
+    <form method="post" action="{{ url_for('auth.logout') }}"
+          data-confirmar="Deseja sair agora? O que você já salvou fica guardado. No próximo acesso, você continua de onde parou.">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="btn-sair" type="submit">Sair</button>
+    </form>
+  </div>
+</header>
+<main>
+  <div class="estreito">
+    <nav class="passos" aria-label="Etapas do primeiro acesso">
+      <p class="passo-atual">Passo {{ etapa }} de {{ ETAPAS | length }} · <strong>{{ ETAPAS[etapa - 1][1] }}</strong></p>
+      <ol>
+        {% for ep, nome in ETAPAS %}
+          {% set n = loop.index %}
+          {% set classe = 'feito' if n < etapa else ('atual' if n == etapa else '') %}
+          <li class="{{ classe }}" {% if n == etapa %}aria-current="step"{% endif %}>
+            {% if n != etapa and n <= liberada %}
+              <a href="{{ url_for('assistente.' ~ ep) }}"><span class="bola">{{ '✓' if n < etapa else n }}</span><span class="rotulo">{{ nome }}</span></a>
+            {% else %}
+              <span class="bola">{{ '✓' if n < etapa else n }}</span><span class="rotulo">{{ nome }}</span>
+            {% endif %}
+          </li>
+        {% endfor %}
+      </ol>
+    </nav>
+    {% include "_mensagens.html" %}
+    {% block passo %}{% endblock %}
+  </div>
+</main>
+{% endblock %}

@@ -1,0 +1,35 @@
+{% extends "assistente/_base.html" %}
+{% block passo %}
+<h1>Crie a sua senha</h1>
+<p class="intro">Último passo! Até agora você entrou com o CPF. Crie uma <strong>senha pessoal</strong>,
+  que só você vai saber.</p>
+<ul class="regras">
+  <li>Use pelo menos <strong>6</strong> letras ou números.</li>
+  <li>Não pode ser o seu CPF.</li>
+  <li>Escolha algo fácil de lembrar e guarde em local seguro.</li>
+</ul>
+
+<form method="post" novalidate data-uma-vez>
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <section class="cartao grade">
+    <div class="campo">
+      <label for="nova">Nova senha</label>
+      <input id="nova" name="nova" type="password" autocomplete="new-password" minlength="6" required autofocus>
+    </div>
+    <div class="campo">
+      <label for="confirma">Digite a nova senha outra vez</label>
+      <input id="confirma" name="confirma" type="password" autocomplete="new-password" minlength="6" required>
+    </div>
+    <label class="check"><input type="checkbox" data-mostrar-senha> Mostrar a senha enquanto digito</label>
+  </section>
+
+  <div class="lembrete">
+    🔑 Nos próximos acessos, entre com o <strong>CIM {{ cim }}</strong> e esta nova senha.
+  </div>
+
+  <div class="botoes">
+    <button class="btn grande bloco" type="submit">✓ Salvar senha e concluir</button>
+    <a class="btn sec bloco" href="{{ url_for('assistente.familiares') }}">← Voltar</a>
+  </div>
+</form>
+{% endblock %}

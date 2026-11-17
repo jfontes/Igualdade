@@ -25,6 +25,8 @@ class Usuario(UserMixin):
         self.nome = row["nome"]
         self.admin = bool(row["admin"])
         self.trocar_senha = bool(row["trocar_senha"])
+        # Primeiro acesso: o assistente aparece uma única vez, até ser concluído
+        self.cadastro_pendente = self.trocar_senha and not row["cadastro_confirmado"]
 
     @property
     def primeiro_nome(self):
@@ -34,7 +36,8 @@ class Usuario(UserMixin):
 @login_manager.user_loader
 def carregar_usuario(user_id):
     row = get_db().execute(
-        "SELECT id, nome, admin, trocar_senha, data_afastamento FROM obreiro WHERE id = ?",
+        "SELECT id, nome, admin, trocar_senha, cadastro_confirmado, data_afastamento "
+        "FROM obreiro WHERE id = ?",
         (user_id,)).fetchone()
     if row is None or row["data_afastamento"]:
         return None  # afastados perdem o acesso
@@ -122,10 +125,22 @@ def init_app(app):
     login_manager.init_app(app)
 
     @app.before_request
-    def exigir_troca_de_senha():
-        livres = {"auth.trocar_senha", "auth.logout", "static", "service_worker", "manifest"}
-        if (current_user.is_authenticated and current_user.trocar_senha
-                and request.endpoint not in livres):
-            if request.endpoint != "auth.login":
-                flash("Primeiro acesso: defina uma nova senha pessoal.", "aviso")
+    def exigir_primeiro_acesso():
+        if not (current_user.is_authenticated and current_user.trocar_senha):
+            return None
+        livres = {"auth.logout", "static", "service_worker", "manifest",
+                  "fotos.obreiro", "fotos.familiar"}
+        ep = request.endpoint or ""
+        if ep in livres:
+            return None
+        if current_user.cadastro_pendente:
+            # Primeiro acesso: passo a passo (conferir dados, completar, familiares, senha)
+            if ep.startswith("assistente."):
+                return None
+            return redirect(url_for("assistente.inicio"))
+        # Senha redefinida pela Secretaria: só a troca de senha
+        if ep != "auth.trocar_senha":
+            if ep != "auth.login":
+                flash("Defina uma nova senha pessoal para continuar.", "aviso")
             return redirect(url_for("auth.trocar_senha"))
+        return None

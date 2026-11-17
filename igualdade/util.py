@@ -90,6 +90,13 @@ def fmt_data(iso: str | None) -> str:
     return f"{d}/{m}/{a}"
 
 
+def fmt_data_extenso(iso: str | None) -> str:
+    """'2027-02-08' → '8 de fevereiro'."""
+    if not iso or iso.startswith("--"):
+        return fmt_data(iso)
+    return f"{int(iso[8:10])} de {MESES[int(iso[5:7]) - 1].lower()}"
+
+
 def fmt_cpf(cpf: str | None) -> str:
     c = so_digitos(cpf)
     return f"{c[:3]}.{c[3:6]}.{c[6:9]}-{c[9:]}" if len(c) == 11 else (cpf or "")

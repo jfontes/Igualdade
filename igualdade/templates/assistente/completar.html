@@ -1,0 +1,45 @@
+{% extends "assistente/_base.html" %}
+{% from "assistente/_campos.html" import campo with context %}
+{% from "_macros.html" import campo_foto %}
+{% block passo %}
+<form method="post" enctype="multipart/form-data" novalidate data-uma-vez>
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+  {% if grupos or pedir_foto %}
+    <h1>Complete o seu cadastro</h1>
+    <p class="intro">Estas informações ainda <strong>não constam</strong> no seu cadastro.
+      Preencha o que souber. <strong>O que não souber, pode deixar em branco.</strong></p>
+
+    {% if pedir_foto %}
+    <section class="cartao">
+      <h3>📷 Sua foto</h3>
+      <p class="dica">Opcional. Ajuda os Irmãos a reconhecê-lo no quadro de obreiros.
+        Você pode tirar uma foto agora com o celular.</p>
+      {{ campo_foto(o.nome) }}
+    </section>
+    {% endif %}
+
+    {% for titulo, ic, campos in grupos %}
+    <section class="cartao">
+      <h3>{{ ic }} {{ titulo }}</h3>
+      <div class="grade">{% for c in campos %}{{ campo(c, o) }}{% endfor %}</div>
+    </section>
+    {% endfor %}
+
+    <div class="botoes">
+      <button class="btn grande bloco" type="submit">Salvar e continuar →</button>
+      <a class="btn sec bloco" href="{{ url_for('assistente.conferir') }}">← Voltar</a>
+    </div>
+  {% else %}
+    <div class="cartao concluido">
+      <span class="ic">✅</span>
+      <h1>Seu cadastro está completo!</h1>
+      <p class="intro">Não falta nenhuma informação. Vamos para o próximo passo.</p>
+    </div>
+    <div class="botoes">
+      <button class="btn grande bloco" type="submit">Continuar →</button>
+      <a class="btn sec bloco" href="{{ url_for('assistente.conferir') }}">← Voltar</a>
+    </div>
+  {% endif %}
+</form>
+{% endblock %}

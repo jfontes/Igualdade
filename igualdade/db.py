@@ -27,10 +27,13 @@ MIGRACOES = [
     ("obreiro", "telefone", "TEXT"),
     ("obreiro", "foto", "TEXT"),
     ("familiar", "foto", "TEXT"),
+    ("obreiro", "cadastro_confirmado", "TEXT"),
 ]
 
 
 def migrar(conn: sqlite3.Connection):
+    # Tabelas novas (CREATE TABLE IF NOT EXISTS não mexe nas existentes)
+    conn.executescript((Path(__file__).parent / "schema.sql").read_text(encoding="utf-8"))
     for tabela, coluna, tipo in MIGRACOES:
         existentes = {r[1] for r in conn.execute(f"PRAGMA table_info({tabela})")}
         if existentes and coluna not in existentes:

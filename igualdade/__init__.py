@@ -44,8 +44,10 @@ def create_app() -> Flask:
     db.init_app(app)
     csrf.init_app(app)
 
-    from . import auth, views, admin, fotos
+    from . import auth, views, admin, fotos, assistente, sessoes
     auth.init_app(app)
+    app.register_blueprint(assistente.bp)
+    app.register_blueprint(sessoes.bp)
     app.register_blueprint(fotos.bp)
     app.register_blueprint(auth.bp)
     app.register_blueprint(views.bp)
@@ -57,11 +59,12 @@ def create_app() -> Flask:
     app.jinja_env.filters["cep"] = util.fmt_cep
     app.jinja_env.filters["tel"] = util.fmt_tel
     app.jinja_env.filters["partes"] = util.partes_data
+    app.jinja_env.filters["extenso"] = util.fmt_data_extenso
     app.jinja_env.tests["com_ano"] = util.tem_ano
 
     @app.context_processor
     def globais():
-        return {"LOJA": LOJA}
+        return {"LOJA": LOJA, "MESES_CURTOS": [m[:3] for m in util.MESES]}
 
     # O service worker precisa ser servido na raiz para controlar o site todo (PWA)
     @app.route("/sw.js")

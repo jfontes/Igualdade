@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block titulo %}Gerar sessões de {{ ano }}{% endblock %}
+{% block conteudo %}
+<div class="estreito">
+  <a class="voltar" href="{{ url_for('main.agenda', ano=ano, mes=2) }}">← Agenda</a>
+  <div class="cabecalho">
+    <h2>Gerar sessões de {{ ano }}</h2>
+    <nav class="anos" aria-label="Escolher ano">
+      <a class="btn sec pequeno" href="{{ url_for('sessoes.gerar', ano=ano - 1) }}">◀ {{ ano - 1 }}</a>
+      <a class="btn sec pequeno" href="{{ url_for('sessoes.gerar', ano=ano + 1) }}">{{ ano + 1 }} ▶</a>
+    </nav>
+  </div>
+  <p class="suave">Confira a prévia abaixo. Nada é gravado até você tocar no botão no fim da página.</p>
+  <ul class="regras suave">
+    <li>Todas as segundas-feiras do ano entram como <strong>sessões ordinárias</strong>.</li>
+    <li>Em cada mês, a última sessão é de <strong>Mestre</strong>, a penúltima de <strong>Companheiro</strong> e as demais de <strong>Aprendiz</strong>.</li>
+    <li>Feriados entram como sessões canceladas, com o motivo. Recessos não geram sessão.</li>
+    <li>Depois de gerar, você pode alterar qualquer sessão.</li>
+  </ul>
+
+  {% for m in meses if m.itens %}
+  <section class="cartao">
+    <h3>{{ m.nome }}</h3>
+    <ul class="lista agenda">
+      {% for i in m.itens %}
+      {% set classe_dia = 'cancelada' if (i.cancelada or i.situacao == 'recesso') else 'grau-' ~ ((i.grau or 'indefinido') | lower) %}
+      <li class="{{ 'passada' if i.situacao != 'nova' }}">
+        <div class="item">
+          <span class="dia {{ classe_dia }}"><b>{{ '%02d' | format(i.dia) }}</b><small>{{ m.nome[:3] }}</small></span>
+          <div class="corpo">
+            {% if i.situacao == 'recesso' %}
+              <div class="nome">Sem sessão</div><div class="sub">{{ i.motivo }}</div>
+            {% elif i.cancelada %}
+              <div class="nome"><s>Sessão Ordinária</s> <span class="selo cinza">Cancelada</span></div><div class="sub">Motivo: {{ i.motivo }}</div>
+            {% else %}
+              <div class="nome">Sessão Ordinária · {{ i.grau }} Maçom</div>
+            {% endif %}
+            {% if i.situacao == 'existente' %}<div class="sub"><strong>Já cadastrada.</strong> Não será alterada.</div>{% endif %}
+          </div>
+        </div>
+      </li>
+      {% endfor %}
+    </ul>
+  </section>
+  {% endfor %}
+
+  {% if novos %}
+  <form method="post" data-uma-vez>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="ano" value="{{ ano }}">
+    <div class="botoes">
+      <button class="btn bloco" type="submit">✓ Incluir {{ novos }} sessões na agenda</button>
+    </div>
+  </form>
+  {% else %}
+  <ul class="mensagens"><li class="aviso">Todas as sessões de {{ ano }} já estão cadastradas.</li></ul>
+  {% endif %}
+  <p class="dica">Os feriados estaduais e municipais e os recessos ficam no arquivo igualdade/config.py.</p>
+</div>
+{% endblock %}

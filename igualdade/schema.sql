@@ -27,7 +27,8 @@ CREATE TABLE IF NOT EXISTS obreiro (
     -- Acesso ao sistema
     senha_hash       TEXT    NOT NULL,
     trocar_senha     INTEGER NOT NULL DEFAULT 1,       -- 1 = obrigar troca no próximo login
-    admin            INTEGER NOT NULL DEFAULT 0        -- 1 = Secretaria / administrador
+    admin            INTEGER NOT NULL DEFAULT 0,       -- 1 = Secretaria / administrador
+    cadastro_confirmado TEXT                           -- quando concluiu o assistente de primeiro acesso
 );
 
 CREATE TABLE IF NOT EXISTS familiar (
@@ -60,3 +61,16 @@ CREATE TABLE IF NOT EXISTS obreiro_historico (
 );
 
 CREATE INDEX IF NOT EXISTS idx_historico_cim ON obreiro_historico(cim);
+
+-- Agenda: sessões da Loja (sempre às segundas, 20h)
+CREATE TABLE IF NOT EXISTS sessao (
+    id               INTEGER PRIMARY KEY AUTOINCREMENT,
+    data             TEXT    NOT NULL,                 -- AAAA-MM-DD
+    tipo             TEXT    NOT NULL DEFAULT 'Ordinária',  -- Ordinária, Magna, Extraordinária
+    grau             TEXT,                             -- Aprendiz, Companheiro, Mestre (nulo se cancelada)
+    ordem_do_dia     TEXT,
+    cancelada        INTEGER NOT NULL DEFAULT 0,
+    motivo_cancelamento TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_sessao_data ON sessao(data);

@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block titulo %}{{ 'Editar sessão' if sessao_id else 'Nova sessão' }}{% endblock %}
+{% block conteudo %}
+{% set volta = url_for('main.agenda', ano=s.data[:4] | int, mes=s.data[5:7] | int) if s.data else url_for('main.agenda') %}
+<div class="estreito">
+  <a class="voltar" href="{{ volta }}">← Agenda</a>
+  <h2>{{ self.titulo() }}</h2>
+  {% set erros = erros or {} %}
+  <form method="post" class="cartao grade" data-uma-vez>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="grade duas">
+      <div class="campo {{ 'com-erro' if 'data' in erros }}">
+        <label for="data">Data</label>
+        <input id="data" name="data" type="date" value="{{ s.data or '' }}" required
+               {% if 'data' in erros %}autofocus aria-invalid="true" aria-describedby="erro-data"{% endif %}>
+        {% if 'data' in erros %}<span class="erro-campo" id="erro-data">{{ erros.data }}</span>{% endif %}
+      </div>
+      <div class="campo">
+        <label for="tipo">Tipo</label>
+        <select id="tipo" name="tipo">
+          {% for t in TIPOS %}<option {{ 'selected' if s.tipo == t }}>{{ t }}</option>{% endfor %}
+        </select>
+      </div>
+    </div>
+
+    <fieldset class="campo {{ 'com-erro' if 'grau' in erros }}">
+      <legend>Grau</legend>
+      {% if 'grau' in erros %}<span class="erro-campo">{{ erros.grau }}</span>{% endif %}
+      <div class="opcoes-grau">
+        {% for g in GRAUS %}
+        <label class="opcao-grau">
+          <input type="radio" name="grau" value="{{ g }}" {{ 'checked' if s.grau == g }}>
+          <span class="cor grau-{{ g | lower }}"></span>{{ g }}
+        </label>
+        {% endfor %}
+      </div>
+    </fieldset>
+
+    <div class="campo">
+      <label for="ordem_do_dia">Ordem do dia</label>
+      <textarea id="ordem_do_dia" name="ordem_do_dia" rows="3" maxlength="500"
+                placeholder="Ex.: Palestra sobre o significado da iniciação">{{ s.ordem_do_dia or '' }}</textarea>
+    </div>
+
+    <div class="cancelamento">
+      <label class="check"><input type="checkbox" name="cancelada" value="1" {{ 'checked' if s.cancelada }} data-mostra="motivo-bloco"> Sessão cancelada</label>
+      <div class="campo {{ '' if s.cancelada else 'oculto' }} {{ 'com-erro' if 'motivo_cancelamento' in erros }}" id="motivo-bloco">
+        <label for="motivo_cancelamento">Motivo do cancelamento</label>
+        <input id="motivo_cancelamento" name="motivo_cancelamento" value="{{ s.motivo_cancelamento or '' }}"
+               placeholder="Ex.: Feriado" maxlength="120" data-obrigatorio-se-visivel
+               {% if 'motivo_cancelamento' in erros and 'data' not in erros %}autofocus{% endif %}>
+        {% if 'motivo_cancelamento' in erros %}<span class="erro-campo">{{ erros.motivo_cancelamento }}</span>{% endif %}
+      </div>
+    </div>
+
+    <div class="botoes">
+      <button class="btn" type="submit">Salvar</button>
+      <a class="btn sec" href="{{ volta }}">Cancelar</a>
+    </div>
+  </form>
+
+  {% if sessao_id %}
+  <form method="post" action="{{ url_for('sessoes.excluir', sessao_id=sessao_id) }}"
+        data-confirmar="Excluir esta sessão da agenda? Para manter o registro, prefira marcar como cancelada.">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button class="btn perigo" type="submit">🗑️ Excluir sessão</button>
+  </form>
+  <p class="dica">Se a sessão não vai acontecer, prefira marcar <strong>Sessão cancelada</strong> e informar o motivo. Assim os Irmãos veem o aviso na agenda.</p>
+  {% endif %}
+</div>
+{% endblock %}

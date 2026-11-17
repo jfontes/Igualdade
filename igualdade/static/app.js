@@ -152,6 +152,40 @@
     });
   });
 
+  // Mostrar/ocultar a senha digitada (ajuda quem tem dificuldade para digitar no celular)
+  document.querySelectorAll("[data-mostrar-senha]").forEach((chk) => {
+    chk.addEventListener("change", () => {
+      chk.form.querySelectorAll('input[name="nova"], input[name="confirma"]').forEach((el) => {
+        el.type = chk.checked ? "text" : "password";
+      });
+    });
+  });
+
+  // Evita envio duplicado por toque duplo (ex.: cadastrar o mesmo familiar duas vezes)
+  document.querySelectorAll("form[data-uma-vez]").forEach((form) => {
+    form.addEventListener("submit", (e) => {
+      if (e.defaultPrevented) return;
+      if (form.dataset.enviando) { e.preventDefault(); return; }
+      form.dataset.enviando = "1";
+      setTimeout(() => form.querySelectorAll('button[type="submit"]').forEach((b) => {
+        b.disabled = true;
+        b.textContent = "Aguarde…";
+      }), 0);
+    });
+  });
+
+  // Caixa de seleção que mostra/oculta um bloco (ex.: motivo do cancelamento da sessão)
+  document.querySelectorAll("[data-mostra]").forEach((chk) => {
+    const alvo = document.getElementById(chk.dataset.mostra);
+    const atualizar = () => {
+      alvo?.classList.toggle("oculto", !chk.checked);
+      // campo só é obrigatório enquanto aparece (ex.: motivo, quando a sessão está cancelada)
+      alvo?.querySelectorAll("[data-obrigatorio-se-visivel]").forEach((el) => { el.required = chk.checked; });
+    };
+    chk.addEventListener("change", () => { atualizar(); if (chk.checked) alvo?.querySelector("input")?.focus(); });
+    atualizar();
+  });
+
   // Mantém o mês selecionado visível na barra de meses
   document.querySelector("[data-rolar]")?.scrollIntoView({ inline: "center", block: "nearest" });
 

@@ -28,9 +28,18 @@ def buscar_obreiro(obreiro_id: int):
     return row
 
 
-def ler_form_obreiro(form, completo: bool, obreiro_id: int | None = None):
-    """Lê e valida o formulário de obreiro. `completo` inclui CIM, CPF e afastamento (admin)."""
-    campos = CAMPOS_PESSOAIS + (CAMPOS_ADMIN if completo else [])
+ROTULOS_DATAS = dict(DATAS_MACONICAS) | {"data_afastamento": "Afastamento"}
+
+
+def ler_form_obreiro(form, completo: bool, obreiro_id: int | None = None,
+                     campos: list[str] | None = None, base=None):
+    """Lê e valida o formulário de obreiro. `completo` inclui CIM, CPF e afastamento (admin).
+
+    `campos` limita a leitura a parte dos campos pessoais (assistente de primeiro acesso);
+    `base` traz os dados atuais do obreiro, para validar a ordem das datas com o conjunto todo.
+    """
+    if campos is None:
+        campos = CAMPOS_PESSOAIS + (CAMPOS_ADMIN if completo else [])
     dados, erros = {}, []
     for campo in campos:
         valor = (form.get(campo) or "").strip()
@@ -44,7 +53,8 @@ def ler_form_obreiro(form, completo: bool, obreiro_id: int | None = None):
             try:
                 valor = ler_data(valor)
             except ValueError:
-                erros.append(f"Data inválida em '{campo.removeprefix('data_')}'.")
+                rotulo = ROTULOS_DATAS.get(campo, campo.removeprefix("data_"))
+                erros.append(f"A data de {rotulo} está incompleta ou é inválida.")
                 valor = None
         elif campo == "email":
             try:
@@ -68,7 +78,7 @@ def ler_form_obreiro(form, completo: bool, obreiro_id: int | None = None):
             valor = valor or None
         dados[campo] = valor
 
-    if not dados["nome"]:
+    if "nome" in dados and not dados["nome"]:
         erros.append("Informe o nome completo.")
     if dados.get("cep") and len(dados["cep"]) != 8:
         erros.append("CEP deve ter 8 dígitos.")
@@ -85,7 +95,7 @@ def ler_form_obreiro(form, completo: bool, obreiro_id: int | None = None):
                                    (dados[campo], obreiro_id)).fetchone()
                 if outro:
                     erros.append(f"Este {rotulo} já está cadastrado para {outro['nome']}.")
-    erros += validar_cronologia(dados)
+    erros += validar_cronologia({**(dict(base) if base else {}), **dados})
     return dados, erros
 
 
@@ -103,8 +113,11 @@ def painel():
     total_ativos = db.execute(
         "SELECT COUNT(*) FROM obreiro WHERE data_afastamento IS NULL").fetchone()[0]
     aniversarios = len(consultar_aniversariantes(mes))
-    return render_template("painel.html", total_ativos=total_ativos,
-                           aniversarios=aniversarios, mes_nome=MESES[int(mes) - 1])
+    from .sessoes import proxima_sessao
+    proxima, cancelada = proxima_sessao()
+    return render_template("painel.html", total_ativos=total_ativos, aniversarios=aniversarios,
+                           mes_nome=MESES[int(mes) - 1], proxima=proxima, cancelada=cancelada,
+                           hoje=date.today().isoformat())
 
 
 # ---------------------------------------------------------------- RF03
@@ -157,7 +170,7 @@ def familiares(obreiro_id):
     return render_template("familiares.html", obreiro=obreiro, familiares=lista)
 
 
-def _ler_form_familiar(form):
+def ler_form_familiar(form):
     dados = {
         "nome": " ".join((form.get("nome") or "").upper().split()),
         "parentesco": (form.get("parentesco") or "").strip(),
@@ -177,6 +190,52 @@ def _ler_form_familiar(form):
     return dados, erros
 
 
+def buscar_familiar(obreiro_id: int, familiar_id: int):
+    row = get_db().execute("SELECT * FROM familiar WHERE id = ? AND obreiro_id = ?",
+                           (familiar_id, obreiro_id)).fetchone()
+    if row is None:
+        abort(404)
+    return row
+
+
+def gravar_familiar(obreiro_id: int, familiar=None):
+    """Valida o formulário e inclui (familiar=None) ou atualiza o familiar.
+
+    Retorna (dados, erros). Com erros nada é gravado e `dados` serve para reapresentar o formulário.
+    """
+    dados, erros = ler_form_familiar(request.form)
+    foto_atual = familiar["foto"] if familiar else None
+    if not erros:
+        dados["foto"], erro_foto = fotos.processar_upload(request.form, request.files, foto_atual)
+        if erro_foto:
+            erros.append(erro_foto)
+    if erros:
+        if dados.get("foto") not in (None, foto_atual):
+            fotos.apagar(dados["foto"])
+        return dados | {"id": familiar["id"] if familiar else None, "foto": foto_atual}, erros
+    db = get_db()
+    if familiar is None:
+        db.execute("INSERT INTO familiar (obreiro_id, nome, parentesco, data_nascimento, foto) "
+                   "VALUES (?, ?, ?, ?, ?)", (obreiro_id, *dados.values()))
+    else:
+        db.execute("UPDATE familiar SET nome = ?, parentesco = ?, data_nascimento = ?, foto = ? "
+                   "WHERE id = ?", (*dados.values(), familiar["id"]))
+    db.commit()
+    if dados["foto"] != foto_atual:
+        fotos.apagar(foto_atual)
+    return dados, []
+
+
+def remover_familiar(obreiro_id: int, familiar_id: int):
+    db = get_db()
+    row = db.execute("SELECT foto FROM familiar WHERE id = ? AND obreiro_id = ?",
+                     (familiar_id, obreiro_id)).fetchone()
+    db.execute("DELETE FROM familiar WHERE id = ? AND obreiro_id = ?", (familiar_id, obreiro_id))
+    db.commit()
+    if row:
+        fotos.apagar(row["foto"])
+
+
 @bp.route("/obreiros/<int:obreiro_id>/familiares/novo", methods=["GET", "POST"])
 @bp.route("/obreiros/<int:obreiro_id>/familiares/<int:familiar_id>", methods=["GET", "POST"])
 @login_required
@@ -184,39 +243,15 @@ def familiar_form(obreiro_id, familiar_id=None):
     if not pode_editar(obreiro_id):
         abort(403)
     obreiro = buscar_obreiro(obreiro_id)
-    db = get_db()
-    familiar = None
-    if familiar_id is not None:
-        familiar = db.execute("SELECT * FROM familiar WHERE id = ? AND obreiro_id = ?",
-                              (familiar_id, obreiro_id)).fetchone()
-        if familiar is None:
-            abort(404)
+    familiar = buscar_familiar(obreiro_id, familiar_id) if familiar_id is not None else None
     if request.method == "POST":
-        dados, erros = _ler_form_familiar(request.form)
-        foto_atual = familiar["foto"] if familiar else None
+        dados, erros = gravar_familiar(obreiro_id, familiar)
         if not erros:
-            dados["foto"], erro_foto = fotos.processar_upload(request.form, request.files, foto_atual)
-            if erro_foto:
-                erros.append(erro_foto)
-        if erros:
-            for e in erros:
-                flash(e, "erro")
-            if dados.get("foto") not in (None, foto_atual):
-                fotos.apagar(dados["foto"])
-            familiar = dados | {"id": familiar_id, "foto": foto_atual}
-        else:
-            if familiar_id is None:
-                db.execute("INSERT INTO familiar (obreiro_id, nome, parentesco, data_nascimento, foto) "
-                           "VALUES (?, ?, ?, ?, ?)", (obreiro_id, *dados.values()))
-                flash(f"{dados['nome']} incluído(a).", "ok")
-            else:
-                db.execute("UPDATE familiar SET nome = ?, parentesco = ?, data_nascimento = ?, foto = ? "
-                           "WHERE id = ?", (*dados.values(), familiar_id))
-                flash("Familiar atualizado.", "ok")
-            db.commit()
-            if dados["foto"] != foto_atual:
-                fotos.apagar(foto_atual)
+            flash(f"{dados['nome']} incluído(a)." if familiar is None else "Familiar atualizado.", "ok")
             return redirect(url_for("main.familiares", obreiro_id=obreiro_id))
+        for e in erros:
+            flash(e, "erro")
+        familiar = dados
     return render_template("familiar_form.html", obreiro=obreiro, f=familiar,
                            familiar_id=familiar_id, PARENTESCOS=PARENTESCOS)
 
@@ -226,13 +261,7 @@ def familiar_form(obreiro_id, familiar_id=None):
 def familiar_excluir(obreiro_id, familiar_id):
     if not pode_editar(obreiro_id):
         abort(403)
-    db = get_db()
-    row = db.execute("SELECT foto FROM familiar WHERE id = ? AND obreiro_id = ?",
-                     (familiar_id, obreiro_id)).fetchone()
-    db.execute("DELETE FROM familiar WHERE id = ? AND obreiro_id = ?", (familiar_id, obreiro_id))
-    db.commit()
-    if row:
-        fotos.apagar(row["foto"])
+    remover_familiar(obreiro_id, familiar_id)
     flash("Familiar removido.", "ok")
     return redirect(url_for("main.familiares", obreiro_id=obreiro_id))
 
@@ -261,16 +290,34 @@ def consultar_aniversariantes(mes: str):
 @bp.route("/aniversariantes")
 @login_required
 def aniversariantes():
+    return redirect(url_for("main.agenda", **request.args))
+
+
+@bp.route("/agenda")
+@login_required
+def agenda():
+    """Compromissos do mês: sessões da Loja e aniversários, na mesma lista, por dia."""
+    from .sessoes import sessoes_do_mes
     hoje = date.today()
     try:
         mes = int(request.args.get("mes", hoje.month))
-        if not 1 <= mes <= 12:
+        ano = int(request.args.get("ano", hoje.year))
+        if not (1 <= mes <= 12 and 2000 <= ano <= 2100):
             raise ValueError
     except ValueError:
-        mes = hoje.month
-    lista = consultar_aniversariantes(f"{mes:02d}")
-    return render_template("aniversariantes.html", lista=lista, mes=mes, MESES=MESES,
-                           hoje=hoje, ano=hoje.year)
+        mes, ano = hoje.month, hoje.year
+    itens = [{"tipo": "sessao", "dia": int(s["data"][8:]), "s": s} for s in sessoes_do_mes(ano, mes)]
+    itens += [{"tipo": "aniversario", "dia": a["dia"], "a": a}
+              for a in consultar_aniversariantes(f"{mes:02d}")]
+    itens.sort(key=lambda i: (i["dia"], i["tipo"] != "sessao"))
+    anos_gerar = []
+    if current_user.admin:
+        # sempre oferece o ano seguinte; o ano atual só enquanto não tiver sessões
+        tem_atual = get_db().execute("SELECT 1 FROM sessao WHERE substr(data, 1, 4) = ? LIMIT 1",
+                                     (str(hoje.year),)).fetchone()
+        anos_gerar = ([] if tem_atual else [hoje.year]) + [hoje.year + 1]
+    return render_template("agenda.html", itens=itens, mes=mes, ano=ano, MESES=MESES, hoje=hoje,
+                           anos_gerar=anos_gerar)
 
 
 # ---------------------------------------------------------------- RF04
@@ -333,9 +380,9 @@ def historico_detalhe(registro_id):
 def perfil(obreiro_id):
     obreiro = buscar_obreiro(obreiro_id)
     completo = pode_editar(obreiro_id)
-    familiares = []
-    if completo:
-        familiares = get_db().execute(
-            "SELECT * FROM familiar WHERE obreiro_id = ? ORDER BY nome", (obreiro_id,)).fetchall()
+    # Nome, parentesco e aniversário dos familiares são visíveis a todos;
+    # ano de nascimento, idade e foto, só ao próprio obreiro e à Secretaria.
+    familiares = get_db().execute(
+        "SELECT * FROM familiar WHERE obreiro_id = ? ORDER BY nome", (obreiro_id,)).fetchall()
     return render_template("perfil.html", o=obreiro, completo=completo, familiares=familiares,
                            DATAS_MACONICAS=DATAS_MACONICAS)

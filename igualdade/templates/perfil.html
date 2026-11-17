@@ -65,23 +65,21 @@
     {% if not completo %}<p class="dica">CPF e endereço são visíveis apenas para o próprio obreiro e a Secretaria.</p>{% endif %}
   </section>
 
-  {% if completo %}
   <section class="cartao">
     <div class="cabecalho" style="margin-bottom:6px">
       <h3 style="margin:0">Familiares</h3>
-      <a class="btn sec pequeno" href="{{ url_for('main.familiares', obreiro_id=o.id) }}">Gerenciar</a>
+      {% if completo %}<a class="btn sec pequeno" href="{{ url_for('main.familiares', obreiro_id=o.id) }}">Gerenciar</a>{% endif %}
     </div>
     {% if familiares %}
     <ul class="lista">
       {% for f in familiares %}
-      <li><div class="item">{{ avatar(f.nome, url_foto_familiar(f)) }}
+      <li><div class="item">{{ avatar(f.nome, url_foto_familiar(f) if completo else None) }}
         <div class="corpo"><div class="nome">{{ f.nome }}</div>
-          <div class="sub">{{ f.parentesco }}{% if f.data_nascimento %} · 🎂 {{ f.data_nascimento | data }}{% endif %}</div></div></div></li>
+          <div class="sub">{{ f.parentesco }}{% if f.data_nascimento %} · 🎂 {{ f.data_nascimento | data if completo else (f.data_nascimento | data)[:5] }}{% endif %}</div></div></div></li>
       {% endfor %}
     </ul>
     {% else %}<p class="suave">Nenhum familiar cadastrado.</p>{% endif %}
   </section>
-  {% endif %}
 
   {% if current_user.admin and o.id != current_user.id %}
   <section class="cartao">
@@ -99,6 +97,7 @@
       </form>
     </div>
     <p class="dica">Para desligamento, licença ou falecimento, use <strong>Editar → Afastamento</strong>: o histórico é preservado.</p>
+    <p class="dica">Primeiro acesso: {% if o.cadastro_confirmado %}cadastro conferido pelo obreiro em <strong>{{ o.cadastro_confirmado[:10] | data }}</strong>.{% else %}<strong>ainda não realizado</strong>.{% endif %}</p>
   </section>
   {% endif %}
 </div>

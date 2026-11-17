@@ -1,0 +1,67 @@
+{% from "_macros.html" import data_nascimento %}
+
+{# Data completa em três partes (mais fácil que o calendário do celular) #}
+{% macro data_completa(campo, valor, rotulo, dica) -%}
+  {% set p = valor | partes %}
+  <fieldset class="campo">
+    <legend>{{ rotulo }}</legend>
+    <div class="data-partes">
+      <select name="{{ campo }}_dia" aria-label="Dia">
+        <option value="">Dia</option>
+        {% for d in range(1, 32) %}<option value="{{ d }}" {{ 'selected' if p.dia == d }}>{{ '%02d' | format(d) }}</option>{% endfor %}
+      </select>
+      <select name="{{ campo }}_mes" aria-label="Mês">
+        <option value="">Mês</option>
+        {% for m in MESES %}<option value="{{ loop.index }}" {{ 'selected' if p.mes == loop.index }}>{{ m }}</option>{% endfor %}
+      </select>
+      <input name="{{ campo }}_ano" value="{{ p.ano }}" inputmode="numeric" maxlength="4" placeholder="Ano" aria-label="Ano">
+    </div>
+    <span class="dica">{{ dica ~ ' ' if dica }}Se não lembrar, deixe em branco.</span>
+  </fieldset>
+{%- endmacro %}
+
+{# Um campo do cadastro, com rótulo e dica em linguagem simples #}
+{% macro campo(c, o) -%}
+  {% set rotulo, dica = INFO[c] %}
+  {% if c == 'data_nascimento' %}
+    {{ data_nascimento(o[c], rotulo) }}
+  {% elif c.startswith('data_') %}
+    {{ data_completa(c, o[c], rotulo, dica) }}
+  {% else %}
+  <div class="campo">
+    <label for="{{ c }}">{{ rotulo }}</label>
+    {% if c == 'estado' %}
+      <select id="estado" name="estado">
+        <option value="">Escolha…</option>
+        {% for uf in UFS %}<option {{ 'selected' if o.estado == uf }}>{{ uf }}</option>{% endfor %}
+      </select>
+    {% elif c == 'telefone' %}
+      <input id="telefone" name="telefone" type="tel" value="{{ o.telefone | tel }}" inputmode="tel"
+             maxlength="15" data-mascara="tel" placeholder="(68) 99999-9999" autocomplete="tel">
+    {% elif c == 'email' %}
+      <input id="email" name="email" type="email" value="{{ o.email or '' }}" inputmode="email"
+             placeholder="nome@exemplo.com" autocomplete="email" autocapitalize="off" spellcheck="false">
+    {% elif c == 'cep' %}
+      <input id="cep" name="cep" value="{{ o.cep | cep }}" inputmode="numeric" maxlength="9" data-mascara="cep"
+             autocomplete="postal-code" aria-describedby="cep-status" placeholder="69900-000">
+      <small id="cep-status" class="cep-status" aria-live="polite"></small>
+    {% else %}
+      <input id="{{ c }}" name="{{ c }}" value="{{ o[c] or '' }}"
+             {% if c in ('nome', 'logradouro', 'bairro', 'cidade') %}data-maiusculas{% endif %}
+             {% if c == 'nome' %}required autocomplete="name"{% endif %}>
+    {% endif %}
+    {% if dica %}<span class="dica">{{ dica }}</span>{% endif %}
+  </div>
+  {% endif %}
+{%- endmacro %}
+
+{# Valor já cadastrado, formatado para leitura #}
+{% macro valor(c, o) -%}
+  {%- set v = o[c] -%}
+  {%- if c == 'data_nascimento' -%}
+    {{ v | data }}{% if v is not com_ano %} <span class="suave">(sem o ano)</span>{% endif %}
+  {%- elif c.startswith('data_') %}{{ v | data }}
+  {%- elif c == 'telefone' %}{{ v | tel }}
+  {%- elif c == 'cep' %}{{ v | cep }}
+  {%- else %}{{ v }}{% endif -%}
+{%- endmacro %}
