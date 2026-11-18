@@ -110,7 +110,12 @@
     {% if admin_modo %}
     <section class="cartao">
       <h3>Acesso ao sistema</h3>
-      <label class="check"><input type="checkbox" name="admin" value="1" {{ 'checked' if o.admin }}> Administrador (Secretaria)</label>
+      <label class="check"><input type="checkbox" name="admin" value="1" {{ 'checked' if o.admin }}
+        {{ 'disabled' if modo == 'editar' and o.id == current_user.id }}> Administrador</label>
+      <p class="dica">O Administrador tem acesso total, igual ao do Venerável Mestre: Secretaria, Tesouraria e relatórios.
+        Os cargos da gestão vigente já dão acesso automaticamente (Secretário: Secretaria; Tesoureiro: Tesouraria;
+        Venerável: tudo). Marque só para dar acesso total permanente a alguém.{% if modo == 'editar' and o.id == current_user.id %}
+        Você não pode alterar o seu próprio acesso.{% endif %}</p>
       {% if modo == 'novo' %}<p class="dica">A senha inicial será o CPF (somente números). O obreiro deverá trocá-la no primeiro acesso.</p>{% endif %}
     </section>
     {% endif %}

@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block titulo %}Lançar percapitas de {{ ano }}{% endblock %}
+{% block conteudo %}
+<div class="estreito">
+  <a class="voltar" href="{{ url_for('tesouraria.gestao', ano=ano) }}">← Tesouraria {{ ano }}</a>
+  <h2>＋ Lançar percapitas de {{ ano }}</h2>
+
+  <form method="get" class="cartao grade" novalidate>
+    <input type="hidden" name="ano" value="{{ ano }}">
+    <div class="campo">
+      <label for="valor">Valor da percapita por semestre (R$) *</label>
+      <input id="valor" name="valor" value="{{ texto_valor or (sugerido | moeda(false) if sugerido else '') }}"
+             inputmode="decimal" required data-moeda placeholder="0,00">
+      <span class="dica">{% if sugerido %}Sugestão: valor do ano anterior ({{ sugerido | moeda }}). Corrija se o valor mudou.{% else %}O mesmo valor vale para os dois semestres.{% endif %}</span>
+    </div>
+    <div class="botoes"><button class="btn sec" type="submit">Ver prévia</button></div>
+  </form>
+
+  {% if previa %}
+  <section class="cartao">
+    <h3>Prévia</h3>
+    <p style="margin-top:0">Serão lançadas <strong>{{ previa.total }} percapitas</strong> para
+      <strong>{{ previa.incluidos | length }} obreiros</strong>, de <strong>{{ valor | moeda }}</strong> cada:</p>
+    <ul class="regras" style="font-size:.95rem">
+      <li>1º semestre: vence em <strong>{{ previa.vencimentos[1] | data }}</strong> (5º dia útil de fevereiro)</li>
+      <li>2º semestre: vence em <strong>{{ previa.vencimentos[2] | data }}</strong> (5º dia útil de julho)</li>
+    </ul>
+    <form method="post">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="ano" value="{{ ano }}">
+      <input type="hidden" name="valor" value="{{ valor | moeda(false) }}">
+      <button class="btn bloco" type="submit">✓ Confirmar lançamento de {{ ano }}</button>
+    </form>
+  </section>
+
+  <details class="cartao" open>
+    <summary><strong>Recebem percapita ({{ previa.incluidos | length }})</strong></summary>
+    <ul class="lista compacta">
+      {% for i in previa.incluidos %}
+      <li><div class="item"><div class="corpo">
+        <div class="nome">{{ i.o.nome }}</div>
+        <div class="sub">{% for s in i.semestres %}{{ s }}º{{ ' e ' if not loop.last }}{% endfor %} semestre{{ 's' if i.semestres | length > 1 }}{% if i.obs %} · {{ i.obs }}{% endif %}</div>
+      </div></div></li>
+      {% endfor %}
+    </ul>
+  </details>
+
+  {% if previa.excluidos %}
+  <details class="cartao">
+    <summary><strong>Ficam de fora ({{ previa.excluidos | length }})</strong></summary>
+    <ul class="lista compacta">
+      {% for e in previa.excluidos %}
+      <li><div class="item"><div class="corpo">
+        <div class="nome">{{ e.o.nome }}</div><div class="sub">{{ e.motivo }}</div>
+      </div></div></li>
+      {% endfor %}
+    </ul>
+  </details>
+  {% endif %}
+  <p class="dica">Obreiros afastados não recebem percapita. Quem ingressar depois deste lançamento é lançado
+    individualmente, pelo registro do obreiro.</p>
+  {% endif %}
+</div>
+{% endblock %}

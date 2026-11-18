@@ -63,3 +63,7 @@ CARGOS = [
     ("bibliotecario", "Bibliotecário"),
 ]
 CARGOS_MESA = ["veneravel", "vig1", "vig2", "orador", "secretario"]
+# Obrigatórios ao cadastrar a gestão: a mesa e o Tesoureiro (responsável pelas percapitas)
+CARGOS_OBRIGATORIOS = CARGOS_MESA + ["tesoureiro"]
+# Cargos da gestão vigente que têm acesso de Secretaria (cadastros, diretoria, balaústres)
+CARGOS_SECRETARIA = ["secretario", "veneravel"]

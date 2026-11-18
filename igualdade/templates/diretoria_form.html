@@ -25,13 +25,13 @@
     </div>
 
     <h3>Quadro de oficiais</h3>
-    <p class="dica">Comece a digitar e escolha o nome na lista de obreiros ativos. Nomes fora do quadro também são aceitos. Os cinco primeiros cargos formam a mesa do balaústre e são obrigatórios.</p>
+    <p class="dica">Comece a digitar e escolha o nome na lista de obreiros ativos. Nomes fora do quadro também são aceitos. Os cinco primeiros cargos formam a mesa do balaústre. Cargos com * são obrigatórios, inclusive o Tesoureiro, que lança as percapitas.</p>
     {% for chave, rotulo in CARGOS %}
     {% set campo = 'cargo_' ~ chave %}
     <div class="campo {{ 'com-erro' if campo in erros }}">
-      <label for="{{ campo }}">{{ rotulo }}{% if chave in CARGOS_MESA %} *{% endif %}</label>
+      <label for="{{ campo }}">{{ rotulo }}{% if chave in CARGOS_OBRIGATORIOS %} *{% endif %}</label>
       <input id="{{ campo }}" name="{{ campo }}" value="{{ valores.get(chave, '') }}" list="obreiros-ativos"
-             autocomplete="off" maxlength="120" {{ 'required' if chave in CARGOS_MESA }}>
+             autocomplete="off" maxlength="120" {{ 'required' if chave in CARGOS_OBRIGATORIOS }}>
       {% if campo in erros %}<span class="erro-campo">{{ erros[campo] }}</span>{% endif %}
     </div>
     {% endfor %}

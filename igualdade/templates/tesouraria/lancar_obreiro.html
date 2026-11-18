@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% from "tesouraria/_macros.html" import selo %}
+{% block titulo %}Lançar percapita{% endblock %}
+{% block conteudo %}
+<div class="estreito">
+  <a class="voltar" href="{{ url_for('tesouraria.obreiro', obreiro_id=o.id) }}">← Percapitas de {{ o.nome }}</a>
+  <h2>＋ Lançar percapita</h2>
+  <p class="suave">{{ o.nome }} · CIM {{ o.cim }}</p>
+
+  <nav class="abas" aria-label="Ano">
+    {% for a in anos %}
+      <a href="{{ url_for('tesouraria.lancar_obreiro', obreiro_id=o.id, ano=a) }}" class="{{ 'ativo' if a == ano }}">{{ a }}</a>
+    {% endfor %}
+  </nav>
+
+  <form method="post" class="cartao grade" novalidate>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="ano" value="{{ ano }}">
+    <fieldset class="campo">
+      <legend>Semestres de {{ ano }}</legend>
+      <ul class="lista">
+        {% for op in opcoes %}
+        <li>
+          <label class="item check-semestre {{ 'indisponivel' if not op.disponivel }}">
+            <input type="checkbox" name="semestre_{{ op.semestre }}" value="1"
+                   {{ 'checked' if op.disponivel and not op.motivo }} {{ 'disabled' if not op.disponivel }}>
+            <span class="corpo">
+              <span class="nome">{{ op.rotulo }}</span>
+              <span class="sub">Vencimento {{ op.vencimento | data }}</span>
+              {% if op.atual and not op.atual.cancelada %}<span class="sub">Já lançada · {{ selo(op.atual) }}</span>
+              {% elif op.atual %}<span class="sub">Cancelada antes ({{ op.atual.motivo_cancelamento }}) — será reativada</span>{% endif %}
+              {% if op.motivo and op.disponivel %}<span class="sub aviso-isento">⚠️ Pela regra não deve: {{ op.motivo }}</span>{% endif %}
+            </span>
+          </label>
+        </li>
+        {% endfor %}
+      </ul>
+    </fieldset>
+    <div class="campo">
+      <label for="valor">Valor por semestre (R$) *</label>
+      <input id="valor" name="valor" value="{{ texto_valor }}" inputmode="decimal" required data-moeda placeholder="0,00">
+      <span class="dica">Sugestão: valor do lançamento anual de {{ ano }} (ou do ano mais recente).</span>
+    </div>
+    <p class="dica" style="margin:0">Regra: o obreiro passa a dever no semestre seguinte à iniciação ou filiação,
+      e o Emérito fica isento a partir do semestre seguinte ao título. Os semestres já vêm marcados conforme a regra.</p>
+    <div class="botoes">
+      <button class="btn" type="submit">Lançar</button>
+      <a class="btn sec" href="{{ url_for('tesouraria.obreiro', obreiro_id=o.id) }}">Cancelar</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

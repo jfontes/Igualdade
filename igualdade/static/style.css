@@ -412,3 +412,121 @@ textarea:focus { outline: 2px solid var(--bordo); outline-offset: 0; border-colo
 }
 .barra-gravar .btn:disabled { opacity: .5; cursor: default; }
 @media (min-width: 820px) { .barra-gravar { bottom: 12px; } }
+
+/* ---------- tesouraria ---------- */
+.sit { display: inline-block; font-size: .72rem; font-weight: 700; padding: 2px 8px; border-radius: 999px; white-space: nowrap; vertical-align: middle; }
+.sit-paga, .sit-isenta { background: var(--ok-fundo); color: var(--ok); }
+.sit-parcial { background: var(--aviso-fundo); color: var(--aviso); }
+.sit-aberta { background: #f1eded; color: var(--suave); }
+.sit-vencida { background: var(--erro-fundo); color: var(--erro); }
+.sit-cancelada { background: #eee; color: #777; text-decoration: line-through; }
+
+.saldo-geral { display: flex; align-items: center; gap: 12px; padding: 4px 0; }
+.saldo-geral .ic { font-size: 1.8rem; line-height: 1; }
+.saldo-geral strong { font-size: 1.35rem; }
+.saldo-geral small { display: block; color: var(--suave); font-size: .82rem; }
+.saldo-geral.devendo strong { color: var(--erro); }
+.saldo-geral.em-dia strong { color: var(--ok); }
+.saldo-devedor { color: var(--erro); font-weight: 700; }
+.ok-txt { color: var(--ok); font-weight: 800; }
+
+.percapitas { display: grid; grid-template-columns: 1fr; gap: 10px; }
+@media (min-width: 560px) { .percapitas { grid-template-columns: 1fr 1fr; } }
+.percapita { border: 1px solid var(--borda); border-left: 5px solid #ccc; border-radius: 12px; padding: 12px; }
+.sit-borda-paga, .sit-borda-isenta { border-left-color: var(--ok); }
+.sit-borda-parcial { border-left-color: #e0a800; }
+.sit-borda-vencida { border-left-color: var(--erro); }
+.sit-borda-cancelada { opacity: .6; }
+.percapita-topo { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.valores { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 12px; margin: 10px 0 0; }
+.valores dt { font-size: .7rem; font-weight: 700; color: var(--suave); text-transform: uppercase; letter-spacing: .04em; }
+.valores dd { margin: 0; font-weight: 700; }
+.barra-pago { height: 6px; background: #f1e6e7; border-radius: 99px; overflow: hidden; margin-top: 8px; }
+.barra-pago span { display: block; height: 100%; background: var(--ok); border-radius: 99px; }
+.barra-pago.grande { height: 10px; margin-top: 12px; }
+
+.acao-motivo { margin-top: 8px; font-size: .85rem; }
+.acao-motivo summary { cursor: pointer; color: var(--suave); font-weight: 600; }
+.acao-motivo form { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
+.acao-motivo input { flex: 1 1 180px; min-height: 40px; padding: 8px 10px; }
+.pagamentos li { padding-bottom: 6px; }
+.pagamentos li.estornado { opacity: .6; }
+.pagamentos .item { align-items: flex-start; padding-bottom: 4px; }
+.pagamentos .estorno { color: var(--erro); }
+.pagamentos .registro { font-size: .74rem; }
+.forma-ic { flex: none; width: 38px; height: 38px; border-radius: 10px; background: var(--bordo-claro); display: flex; align-items: center; justify-content: center; font-size: 1.15rem; }
+
+.totais { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 12px; }
+@media (min-width: 640px) { .totais { grid-template-columns: repeat(3, 1fr); } }
+@media (min-width: 900px) { .totais { grid-template-columns: repeat(6, 1fr); } }
+.totais > div { background: #fff; border: 1px solid var(--borda); border-radius: 12px; padding: 10px 12px; min-width: 0; }
+.totais span { display: block; font-size: .7rem; font-weight: 700; color: var(--suave); text-transform: uppercase; letter-spacing: .04em; }
+.totais strong { display: block; font-size: 1.05rem; color: var(--texto); overflow-wrap: anywhere; }
+.totais .alerta strong { color: var(--erro); }
+
+.atalhos-linha { margin-bottom: 14px; }
+.atalhos-linha .atalho { min-height: 92px; }
+@media (min-width: 820px) { .atalhos-linha { grid-template-columns: 1fr 1fr; } }
+.acoes-tesouraria { margin: 0 0 14px; }
+.valor-linha { flex: none; text-align: right; font-size: .92rem; }
+.sub.sem-linha { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 3px; }
+.check-semestre { cursor: pointer; text-transform: none; letter-spacing: 0; color: var(--texto); font-size: .95rem; }
+.check-semestre input { width: 24px; height: 24px; min-height: 0; flex: none; accent-color: var(--bordo); }
+.check-semestre .corpo { display: flex; flex-direction: column; gap: 2px; }
+.check-semestre.indisponivel { opacity: .6; cursor: default; }
+.aviso-isento { color: var(--aviso) !important; font-weight: 600; }
+.lista.compacta .item { padding: 7px 2px; }
+.destaque-lancar { background: var(--aviso-fundo); border-color: #f0dc9c; }
+details.cartao summary { cursor: pointer; }
+.filtro-data { display: flex; align-items: center; gap: 6px; text-transform: none; letter-spacing: 0; font-size: .85rem; }
+.filtro-data input { width: auto; }
+
+/* ---------- relatórios ---------- */
+.tabela-cartao { padding: 12px; }
+.rolagem-tabela { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.tabela { width: 100%; border-collapse: collapse; font-size: .85rem; }
+.tabela th { background: var(--bordo); color: #fff; text-align: left; padding: 8px; font-size: .74rem; text-transform: uppercase; letter-spacing: .03em; white-space: nowrap; }
+.tabela td { padding: 7px 8px; border-bottom: 1px solid var(--borda); vertical-align: top; }
+.tabela tbody tr:nth-child(even) td { background: #fcf8f8; }
+.tabela tfoot td { font-weight: 800; background: var(--bordo-claro); border-top: 2px solid var(--bordo); }
+.tabela .t-moeda { text-align: right; white-space: nowrap; }
+.tabela .t-data, .tabela .t-centro { text-align: center; white-space: nowrap; }
+.cab-impressao, .so-impressao { display: none; }
+
+@media print {
+  @page { size: A4; margin: 14mm 12mm; }
+  body { background: #fff; padding: 0; font-size: 11px; }
+  .topo, .nav, .nao-imprimir, .mensagens, .botoes, form.filtros { display: none !important; }
+  main { max-width: none; padding: 0; }
+  .cartao { box-shadow: none; border: 0; padding: 0; margin-bottom: 10px; }
+  .cab-impressao { display: flex; align-items: center; gap: 10px; border-bottom: 2px solid #560710; padding-bottom: 8px; margin-bottom: 10px; }
+  .cab-impressao img { width: 46px; height: 46px; }
+  .cab-impressao .loja { font-weight: 800; font-size: 13px; color: #560710; }
+  .cab-impressao .cidade { font-size: 10px; color: #555; }
+  .so-impressao { display: block; }
+  .totais { grid-template-columns: repeat(6, 1fr); gap: 4px; }
+  .totais > div { padding: 4px 6px; border-color: #ccc; }
+  .totais strong { font-size: 11px; }
+  .rolagem-tabela { overflow: visible; }
+  .tabela { font-size: 10px; }
+  .tabela th { background: #560710 !important; color: #fff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .tabela tr { break-inside: avoid; }
+  .tabela tbody tr:nth-child(even) td { background: #f7f2f2 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .sit { padding: 0; background: none !important; }
+  a { color: inherit; text-decoration: none; }
+}
+.aviso-tesouraria { display: block; text-decoration: none; background: var(--erro-fundo); border-color: #f1c3cb; color: var(--erro); font-size: .92rem; }
+.perfil-topo > .avatar:not(.grande) {
+  flex: none; width: 48px; height: 48px; border-radius: 50%; background: var(--bordo-claro); color: var(--bordo);
+  display: flex; align-items: center; justify-content: center; font-weight: 800;
+}
+/* percapitas por ano: anos anteriores recolhidos */
+.ano-percapitas > summary { list-style: none; display: flex; align-items: center; gap: 10px; cursor: pointer; margin: -2px 0; }
+.ano-percapitas > summary::-webkit-details-marker { display: none; }
+.ano-percapitas > summary::before { content: "▸"; color: var(--bordo); font-size: 1.1rem; transition: transform .15s; }
+.ano-percapitas[open] > summary::before { transform: rotate(90deg); }
+.ano-percapitas[open] > summary { margin-bottom: 12px; }
+.ano-percapitas > summary h3 { margin: 0; flex: 1; }
+.ano-resumo { font-size: .82rem; font-weight: 700; color: var(--suave); white-space: nowrap; }
+.ano-resumo.devendo { color: var(--erro); }
+.ano-resumo.em-dia { color: var(--ok); }

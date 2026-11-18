@@ -6,7 +6,7 @@ from flask import Blueprint, abort, flash, redirect, render_template, request, u
 from flask_login import login_required
 
 from .auth import admin_required
-from .config import CARGOS, CARGOS_MESA
+from .config import CARGOS, CARGOS_MESA, CARGOS_OBRIGATORIOS
 from .db import get_db
 from .util import ler_data, nome_proprio
 
@@ -106,9 +106,10 @@ def _ler_form(form):
             continue
         obreiro_id, nome = ativos.get(_chave(digitado), (None, nome_proprio(digitado)))
         nomes[cargo] = {"obreiro_id": obreiro_id, "nome": nome}
-    for cargo in CARGOS_MESA:
+    for cargo in CARGOS_OBRIGATORIOS:
         if cargo not in nomes:
-            erros[f"cargo_{cargo}"] = "Cargo obrigatório: compõe a mesa do balaústre."
+            erros[f"cargo_{cargo}"] = ("Cargo obrigatório: compõe a mesa do balaústre." if cargo in CARGOS_MESA
+                                       else "Cargo obrigatório: lança as percapitas e registra os pagamentos.")
     return dados, nomes, erros
 
 
@@ -166,7 +167,7 @@ def form(gestao_id=None):
         ultima = db.execute("SELECT id FROM gestao ORDER BY inicio DESC, id DESC LIMIT 1").fetchone()
         valores = {c: r["nome"] for c, r in cargos_da_gestao(ultima["id"]).items()} if ultima else {}
     return render_template("diretoria_form.html", g=g, gestao_id=gestao_id, valores=valores,
-                           CARGOS=CARGOS, CARGOS_MESA=CARGOS_MESA, erros=erros,
+                           CARGOS=CARGOS, CARGOS_MESA=CARGOS_MESA, CARGOS_OBRIGATORIOS=CARGOS_OBRIGATORIOS, erros=erros,
                            ativos=obreiros_ativos())
 
 

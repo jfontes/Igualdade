@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% from "tesouraria/_macros.html" import selo %}
+{% block titulo %}Tesouraria {{ ano }}{% endblock %}
+{% block conteudo %}
+<a class="voltar" href="{{ url_for('tesouraria.minha') }}">← Minha Tesouraria</a>
+<div class="cabecalho">
+  <h2>🗂️ Tesouraria</h2>
+  <div class="anos">
+    <a class="btn sec pequeno" href="{{ url_for('tesouraria.gestao', ano=ano - 1) }}" aria-label="Ano anterior">‹</a>
+    <strong>{{ ano }}</strong>
+    <a class="btn sec pequeno" href="{{ url_for('tesouraria.gestao', ano=ano + 1) }}" aria-label="Próximo ano">›</a>
+  </div>
+</div>
+
+{% if lancamento %}
+  <p class="suave" style="margin-top:-6px">Lançamento de {{ ano }}: <strong>{{ lancamento.valor | moeda }}</strong> por semestre,
+    feito em {{ lancamento.lancado_em[:10] | data }}.</p>
+{% elif gere %}
+  <section class="cartao destaque-lancar">
+    <p style="margin:0 0 10px"><strong>As percapitas de {{ ano }} ainda não foram lançadas.</strong></p>
+    <a class="btn" href="{{ url_for('tesouraria.lancar', ano=ano) }}">＋ Lançar percapitas de {{ ano }}</a>
+  </section>
+{% else %}
+  <p class="suave">As percapitas de {{ ano }} ainda não foram lançadas.</p>
+{% endif %}
+
+{% if totais.qtd_percapitas %}
+<div class="totais">
+  <div><span>Lançado</span><strong>{{ totais.lancado | moeda }}</strong></div>
+  <div><span>Recebido (caixa)</span><strong>{{ totais.caixa | moeda }}</strong></div>
+  <div><span>Abatido / isentado</span><strong>{{ (totais.abatido + totais.isentado) | moeda }}</strong></div>
+  <div><span>A receber</span><strong>{{ totais.a_receber | moeda }}</strong></div>
+  <div class="{{ 'alerta' if totais.vencido }}"><span>Vencido</span><strong>{{ totais.vencido | moeda }}</strong></div>
+  <div><span>Em dia</span><strong>{{ totais.qtd_em_dia }} de {{ totais.qtd_obreiros }}</strong></div>
+</div>
+<div class="barra-pago grande" title="{{ totais.perc_quitado }}% quitado"><span style="width: {{ totais.perc_quitado }}%"></span></div>
+<p class="dica" style="margin-top:4px">{{ totais.perc_quitado }}% do valor lançado já foi quitado.</p>
+{% endif %}
+
+<form class="filtros" method="get" role="search">
+  <input type="hidden" name="ano" value="{{ ano }}">
+  <input type="search" name="q" value="{{ q }}" placeholder="Buscar por nome ou CIM" aria-label="Buscar">
+  <select name="filtro" aria-label="Filtro" onchange="this.form.submit()">
+    <option value="" {{ 'selected' if not filtro }}>Todos</option>
+    <option value="devendo" {{ 'selected' if filtro == 'devendo' }}>Com saldo em aberto</option>
+    <option value="vencidos" {{ 'selected' if filtro == 'vencidos' }}>Com percapita vencida</option>
+  </select>
+  <button class="btn sec" type="submit">Buscar</button>
+</form>
+
+<div class="cartao">
+  <p class="suave" style="margin-top:0">{{ linhas | length }} obreiro{{ 's' if linhas | length != 1 }}</p>
+  {% if linhas %}
+  <ul class="lista">
+    {% for l in linhas %}
+    <li>
+      <a class="item" href="{{ url_for('tesouraria.obreiro', obreiro_id=l.id) }}">
+        <div class="corpo">
+          <div class="nome">{{ l.nome }}{% if l.afastado %} <span class="selo cinza">Afastado</span>{% endif %}</div>
+          <div class="sub sem-linha">
+            <span>1º {% if l[1] %}{{ selo(l[1]) }}{% else %}—{% endif %}</span>
+            <span>2º {% if l[2] %}{{ selo(l[2]) }}{% else %}—{% endif %}</span>
+          </div>
+        </div>
+        <div class="valor-linha">
+          {% if l.saldo %}<strong class="saldo-devedor">{{ l.saldo | moeda }}</strong>{% else %}<span class="ok-txt">✓</span>{% endif %}
+        </div>
+        <span aria-hidden="true">›</span>
+      </a>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <div class="vazio-msg"><span class="ic">🔎</span>Nenhum obreiro {{ 'encontrado' if q or filtro else 'com percapita em ' ~ ano }}.</div>
+  {% endif %}
+</div>
+
+<p class="dica">Para lançar a percapita de quem ingressou depois do lançamento anual, abra o perfil do obreiro
+  (Obreiros → nome → Tesouraria → Lançar percapita).</p>
+
+{% if gere and desfazer %}
+<details class="cartao">
+  <summary>Desfazer o lançamento de {{ ano }}</summary>
+  <p class="dica">Disponível só enquanto nenhum pagamento de {{ ano }} foi registrado. Use para corrigir um valor
+    lançado errado: as percapitas do lançamento anual são removidas e o lançamento pode ser refeito.</p>
+  <form method="post" action="{{ url_for('tesouraria.desfazer', ano=ano) }}"
+        data-confirmar="Desfazer o lançamento de {{ ano }}? As percapitas do lançamento anual serão removidas.">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button class="btn perigo" type="submit">Desfazer lançamento</button>
+  </form>
+</details>
+{% endif %}
+{% endblock %}

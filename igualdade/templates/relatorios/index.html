@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block titulo %}Relatórios{% endblock %}
+{% block conteudo %}
+<div class="estreito">
+  <div class="cabecalho"><h2>📊 Relatórios</h2></div>
+  {% for grupo, lista in grupos.items() %}
+  <section class="cartao">
+    <h3>{{ grupo }}</h3>
+    <ul class="lista">
+      {% for r in lista %}
+      <li>
+        <a class="item" href="{{ url_for('relatorios.ver', chave=r.chave) }}">
+          <span class="avatar">{{ r.icone }}</span>
+          <div class="corpo">
+            <div class="nome">{{ r.titulo }}</div>
+            <div class="sub">{{ r.descricao }}</div>
+          </div>
+          <span aria-hidden="true">›</span>
+        </a>
+      </li>
+      {% endfor %}
+    </ul>
+  </section>
+  {% endfor %}
+  <p class="dica">Todos os relatórios podem ser impressos ou salvos em PDF (botão 🖨️) e baixados em Excel (📊).</p>
+</div>
+{% endblock %}

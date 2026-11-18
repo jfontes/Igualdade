@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% from "tesouraria/_macros.html" import selo_chave %}
+{% block titulo %}{{ titulo }}{% endblock %}
+{% block body_class %}pagina-relatorio{% endblock %}
+
+{% macro celula(valor, tipo) -%}
+  {%- if tipo == 'moeda' -%}{{ valor | moeda if valor is number else valor }}
+  {%- elif tipo == 'data' -%}{{ valor | data if valor else '' }}
+  {%- elif tipo == 'situacao' -%}{{ selo_chave(valor.situacao, valor.texto) }}
+  {%- else -%}{{ valor }}{%- endif -%}
+{%- endmacro %}
+
+{% block conteudo %}
+<div class="nao-imprimir">
+  <a class="voltar" href="{{ url_for('relatorios.index') }}">← Relatórios</a>
+</div>
+
+<header class="cab-impressao">
+  <img src="{{ url_for('static', filename='brasao-192.png') }}" alt="">
+  <div>
+    <div class="loja">{{ LOJA.titulo }} {{ LOJA.nome }}</div>
+    <div class="cidade">{{ LOJA.cidade }} · CNPJ {{ LOJA.cnpj }}</div>
+  </div>
+</header>
+
+<div class="cabecalho">
+  <div>
+    <h2>{{ titulo }}</h2>
+    <div class="suave">{{ rel.subtitulo }}</div>
+  </div>
+  {% if rel.tabelas %}
+  <div class="botoes nao-imprimir" style="margin:0">
+    <button class="btn sec" type="button" data-imprimir>🖨️ Imprimir / PDF</button>
+    <a class="btn sec" href="{{ url_for('relatorios.ver', chave=chave, **args_xlsx) }}">📊 Excel</a>
+  </div>
+  {% endif %}
+</div>
+
+{% if rel.filtros %}
+<form class="filtros nao-imprimir" method="get">
+  {% for f in rel.filtros %}
+    {% if f.tipo == 'select' %}
+      <select name="{{ f.nome }}" aria-label="{{ f.rotulo }}" onchange="this.form.submit()">
+        {% for v, t in f.opcoes %}<option value="{{ v }}" {{ 'selected' if v == f.valor }}>{{ t }}</option>{% endfor %}
+      </select>
+    {% else %}
+      <label class="filtro-data">{{ f.rotulo }} <input type="{{ f.tipo }}" name="{{ f.nome }}" value="{{ f.valor }}"></label>
+    {% endif %}
+  {% endfor %}
+  <button class="btn sec" type="submit">Atualizar</button>
+</form>
+{% endif %}
+
+{% if rel.resumo %}
+<div class="totais">
+  {% for rotulo, valor in rel.resumo %}<div><span>{{ rotulo }}</span><strong>{{ valor }}</strong></div>{% endfor %}
+</div>
+{% endif %}
+
+{% for t in rel.tabelas %}
+<section class="cartao tabela-cartao">
+  {% if t.titulo %}<h3>{{ t.titulo }}</h3>{% endif %}
+  {% if t.linhas %}
+  <div class="rolagem-tabela">
+    <table class="tabela">
+      <thead><tr>{% for rotulo, tipo in t.colunas %}<th class="t-{{ tipo }}">{{ rotulo }}</th>{% endfor %}</tr></thead>
+      <tbody>
+        {% for linha in t.linhas %}
+        <tr>{% for valor in linha %}{% set tipo = t.colunas[loop.index0][1] %}<td class="t-{{ tipo }}">{{ celula(valor, tipo) }}</td>{% endfor %}</tr>
+        {% endfor %}
+      </tbody>
+      {% if t.rodape %}
+      <tfoot><tr>{% for valor in t.rodape %}{% set tipo = t.colunas[loop.index0][1] %}<td class="t-{{ tipo }}">{{ celula(valor, tipo if valor is number else 'texto') }}</td>{% endfor %}</tr></tfoot>
+      {% endif %}
+    </table>
+  </div>
+  {% else %}
+  <p class="suave" style="margin:0">Nenhum registro.</p>
+  {% endif %}
+</section>
+{% endfor %}
+
+{% if rel.nota %}<p class="dica">{{ rel.nota }}</p>{% endif %}
+<p class="dica so-impressao">Emitido em {{ emitido }} por {{ current_user.nome }}.</p>
+{% endblock %}

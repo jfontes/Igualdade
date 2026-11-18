@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% from "tesouraria/_macros.html" import selo %}
+{% block titulo %}Registrar pagamento{% endblock %}
+{% block conteudo %}
+<div class="estreito">
+  <a class="voltar" href="{{ url_for('tesouraria.obreiro', obreiro_id=o.id) }}">← Percapitas de {{ o.nome }}</a>
+  <h2>💵 Registrar pagamento</h2>
+  <p class="suave">{{ o.nome }} · CIM {{ o.cim }}</p>
+
+  {% if anos | length > 1 %}
+  <nav class="abas" aria-label="Ano de referência">
+    {% for a in anos %}
+      <a href="{{ url_for('tesouraria.pagamento', obreiro_id=o.id, ano=a) }}" class="{{ 'ativo' if a == ano }}">{{ a }}</a>
+    {% endfor %}
+  </nav>
+  {% endif %}
+
+  <section class="cartao">
+    <h3>Em aberto em {{ ano }}</h3>
+    <ul class="lista">
+      {% for p in do_ano %}
+      <li><div class="item">
+        <div class="corpo">
+          <div class="nome">{{ p.semestre }}º semestre {{ selo(p) }}</div>
+          <div class="sub">Valor {{ p.valor | moeda }} · pago {{ p.pago | moeda }} · vence {{ p.vencimento | data }}</div>
+        </div>
+        <strong class="saldo-devedor">{{ p.saldo | moeda }}</strong>
+      </div></li>
+      {% endfor %}
+    </ul>
+    <p class="dica" style="margin-bottom:0">O pagamento quita primeiro o 1º semestre; o excedente vai para o 2º.
+      Limite: <strong>{{ saldo_ano | moeda }}</strong> (saldo de {{ ano }}).</p>
+  </section>
+
+  <form method="post" class="cartao grade" novalidate>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="ano" value="{{ ano }}">
+    <div class="grade duas">
+      <div class="campo">
+        <label for="valor">Valor pago (R$) *</label>
+        <input id="valor" name="valor" value="{{ form.valor }}" inputmode="decimal" required autocomplete="off"
+               data-moeda placeholder="0,00">
+        <span class="dica">Para parcela, troque pelo valor pago (ex.: 135,00).</span>
+      </div>
+      <div class="campo">
+        <label for="data">Data do pagamento *</label>
+        <input id="data" name="data" type="date" value="{{ form.data }}" max="{{ hoje }}" required>
+      </div>
+    </div>
+    <fieldset class="campo">
+      <legend>Forma de pagamento *</legend>
+      <div class="opcoes-grau">
+        {% for f in FORMAS %}
+        <label class="opcao-grau"><input type="radio" name="forma" value="{{ f }}" {{ 'checked' if form.forma == f }}> {{ f }}</label>
+        {% endfor %}
+      </div>
+    </fieldset>
+    <div class="campo">
+      <label for="observacao">Observação</label>
+      <input id="observacao" name="observacao" value="{{ form.observacao }}" maxlength="300"
+             placeholder="Ex.: parcela 2/6; origem do crédito abatido">
+    </div>
+    <div class="botoes">
+      <button class="btn" type="submit">Registrar</button>
+      <a class="btn sec" href="{{ url_for('tesouraria.obreiro', obreiro_id=o.id) }}">Cancelar</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

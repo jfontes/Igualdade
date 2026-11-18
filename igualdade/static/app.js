@@ -306,6 +306,26 @@
   // Mantém o mês selecionado visível na barra de meses
   document.querySelector("[data-rolar]")?.scrollIntoView({ inline: "center", block: "nearest" });
 
+  // Relatórios: imprimir / salvar em PDF
+  document.querySelectorAll("[data-imprimir]").forEach((btn) => {
+    btn.addEventListener("click", () => window.print());
+  });
+
+  // Valores em reais: aceita só dígitos, vírgula e ponto; formata com 2 casas ao sair do campo
+  document.querySelectorAll("[data-moeda]").forEach((el) => {
+    el.addEventListener("input", () => { el.value = el.value.replace(/[^\d.,]/g, ""); });
+    el.addEventListener("blur", () => {
+      let v = el.value.trim();
+      if (!v) return;
+      if (v.includes(",")) v = v.replace(/\./g, "").replace(",", ".");
+      else if (/^\d{1,3}(\.\d{3})+$/.test(v)) v = v.replace(/\./g, "");
+      const n = Number(v);
+      if (Number.isFinite(n) && n > 0) {
+        el.value = n.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      }
+    });
+  });
+
   // PWA: permite "Adicionar à tela inicial"
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => navigator.serviceWorker.register("/sw.js").catch(() => {}));

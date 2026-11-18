@@ -6,7 +6,7 @@ import click
 from flask import Blueprint, flash, redirect, render_template, request, url_for
 from flask_login import current_user
 
-from . import fotos
+from . import fotos, tesouraria
 from .auth import SENHA_MIN, admin_required, hash_senha
 from .db import get_db, init_db
 from .util import cpf_valido, so_digitos
@@ -55,8 +55,9 @@ def editar(obreiro_id):
         dados, erros = ler_form_obreiro(request.form, completo=True, obreiro_id=obreiro_id)
         dados["admin"] = 1 if request.form.get("admin") else 0
         if obreiro_id == current_user.id:
-            # evita que o administrador se tranque fora do sistema
-            dados["admin"] = 1
+            # ninguém altera o próprio perfil de administrador (evita se trancar fora do sistema
+            # e evita que o Secretário da gestão o mantenha depois que a gestão terminar)
+            dados["admin"] = obreiro["admin"]
             if dados["data_afastamento"]:
                 erros.append("Você não pode registrar o seu próprio afastamento.")
         if not erros:
@@ -75,6 +76,12 @@ def editar(obreiro_id):
                 if dados["foto"] != obreiro["foto"]:
                     fotos.apagar(obreiro["foto"])
                 flash("Cadastro atualizado.", "ok")
+                if dados.get("data_emerito") and dados["data_emerito"] != obreiro["data_emerito"]:
+                    # Emérito fica isento a partir do semestre seguinte ao título
+                    n = tesouraria.isentar_emerito(obreiro_id)
+                    if n:
+                        flash(f"Emérito registrado: {n} percapita{'s' if n > 1 else ''} em aberto "
+                              f"isentada{'s' if n > 1 else ''} automaticamente.", "ok")
                 return redirect(url_for("main.perfil", obreiro_id=obreiro_id))
         if dados.get("foto") not in (None, obreiro["foto"]):
             fotos.apagar(dados["foto"])
@@ -91,6 +98,10 @@ def excluir(obreiro_id):
     obreiro = buscar_obreiro(obreiro_id)
     if obreiro_id == current_user.id:
         flash("Você não pode excluir o seu próprio cadastro.", "erro")
+        return redirect(url_for("main.perfil", obreiro_id=obreiro_id))
+    if tesouraria.tem_movimento_financeiro(obreiro_id):
+        flash(f"{obreiro['nome']} tem percapitas ou pagamentos registrados na Tesouraria e não pode ser "
+              "excluído. Registre o Afastamento: o cadastro e o histórico financeiro são preservados.", "erro")
         return redirect(url_for("main.perfil", obreiro_id=obreiro_id))
     db = get_db()
     arquivos = [obreiro["foto"]] + [r["foto"] for r in db.execute(

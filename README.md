@@ -11,6 +11,8 @@ igualdade/
   schema.sql       tabelas obreiro e familiar
   db.py            conexão SQLite
   auth.py          login (CIM + senha), troca de senha, permissões
+  tesouraria.py    percapitas, pagamentos e permissões do Tesoureiro
+  relatorios.py    relatórios (tela, impressão e Excel)
   views.py         painel, minhas informações, familiares, aniversariantes, obreiros
   admin.py         funções da Secretaria + comando criar-admin
   fotos.py         upload e entrega protegida das fotos
@@ -26,19 +28,21 @@ wsgi.py            entrada para o PythonAnywhere
 
 ## Quem pode o quê
 
-| Ação | Obreiro | Secretaria (admin) |
-|---|---|---|
-| Ver painel, quadro de obreiros e aniversariantes | ✔ | ✔ |
-| Editar os próprios dados (exceto CIM, CPF e afastamento) | ✔ | ✔ |
-| Gerenciar os próprios familiares | ✔ | ✔ |
-| Ver CPF e endereço de outros obreiros | — | ✔ |
-| Cadastrar, editar, afastar ou excluir obreiros e redefinir senhas | — | ✔ |
-| Consultar a diretoria | ✔ | ✔ |
-| Cadastrar a diretoria e lavrar balaústres | — | ✔ |
+| Ação | Obreiro | Tesoureiro | Secretário | Venerável / Administrador |
+|---|:-:|:-:|:-:|:-:|
+| Painel, quadro de obreiros, agenda, aniversariantes e diretoria | ✔ | ✔ | ✔ | ✔ |
+| Editar os próprios dados e familiares | ✔ | ✔ | ✔ | ✔ |
+| Ver as próprias percapitas (Minha Tesouraria) | ✔ | ✔ | ✔ | ✔ |
+| Funções de Secretaria: cadastrar, editar, afastar e excluir obreiros, redefinir senhas, ver CPF e endereço, diretoria e balaústres | — | — | ✔ | ✔ |
+| Funções de Tesoureiro: lançar percapitas, registrar e estornar pagamentos | — | ✔ | — | ✔ |
+| Relatórios (obreiros ativos e tesouraria) | — | ✔ | ✔ | ✔ |
+
+- **Cargos:** Tesoureiro, Secretário e Venerável Mestre são reconhecidos pelo cargo na **gestão vigente** da Diretoria. Ao mudar a gestão, o acesso passa aos novos titulares. A lista de cargos com acesso de Secretaria fica em `config.py` (`CARGOS_SECRETARIA`).
+- **Administrador:** marcação no cadastro do obreiro, independente de cargo. Tem o mesmo acesso do Venerável. Ninguém altera o próprio. Use para garantir acesso total permanente (por exemplo, entre uma gestão e outra). `flask --app igualdade criar-admin` liga a marcação pela linha de comando.
 
 - **Login:** CIM + senha. Ao cadastrar um obreiro, a senha inicial é o **CPF (somente números)**, e o sistema exige a troca no primeiro acesso.
 - **Afastado:** some da lista de ativos e dos aniversariantes e perde o acesso. O histórico é mantido.
-- **Exclusão:** remove o obreiro e todos os seus familiares (RN02). Para preservar o histórico, prefira registrar o afastamento.
+- **Exclusão:** remove o obreiro e todos os seus familiares (RN02). Para preservar o histórico, prefira registrar o afastamento. Obreiros com percapitas ou pagamentos não podem ser excluídos.
 
 ## Diretoria e balaústre
 
@@ -47,6 +51,22 @@ wsgi.py            entrada para o PythonAnywhere
 3. **Documento:** *Salvar e gerar .docx* baixa o balaústre no modelo oficial. Sem Landmark, Ordem do dia ou Tronco, o sistema pede confirmação antes de gerar.
 
 Sem diretoria cadastrada para a data, o sistema leva primeiro ao cadastro da diretoria. As tabelas novas (`gestao`, `diretoria`, `balaustre`) são criadas automaticamente em bancos existentes.
+
+## Tesouraria (percapitas)
+
+Percapita é a contribuição semestral. Valores ficam em centavos no banco.
+
+- **Lançamento anual** (*Tesouraria → Gestão → Lançar percapitas*): o Tesoureiro informa o valor do semestre (o mesmo nos dois; o sistema sugere o do ano anterior). Uma prévia mostra quem recebe e quem fica de fora; o lançamento geral é feito **uma vez por ano** e pode ser desfeito enquanto não houver pagamento no ano.
+- **Quem deve:** obreiros ativos. Afastados não geram percapita. Iniciado ou filiado passa a dever **no semestre seguinte** ao ingresso. **Emérito (= Remido)** fica isento a partir do semestre seguinte ao título; ao gravar a data de Emérito, a Secretaria dispara a **isenção automática** do saldo em aberto desses semestres.
+- **Vencimento:** 5º dia útil de fevereiro (1º semestre) e de julho (2º), sem contar fins de semana e feriados (lista em `config.py`).
+- **Ingresso depois do lançamento:** lançamento individual, pelo perfil do obreiro (*Tesouraria → Lançar percapita*); os semestres devidos já vêm marcados.
+- **Pagamento** (perfil do obreiro → *Registrar pagamento*): vem com a data de hoje e PIX; formas: PIX, Dinheiro, Cartão, Abatimento em crédito e Isenção. O valor é distribuído no ano: primeiro o 1º semestre, o excedente vai para o 2º; nunca pode passar do saldo do ano. Parcelas são pagamentos sucessivos.
+- **Correções:** nada é apagado. Percapitas sem pagamento podem ser **canceladas** e pagamentos **estornados**, sempre com motivo, autor e data. Obreiro com movimento financeiro não pode ser excluído (use o afastamento).
+- **Caixa:** Abatimento em crédito e Isenção quitam a percapita, mas não entram no total recebido em caixa.
+
+## Relatórios
+
+*Início → Relatórios*. Cada relatório pode ser impresso ou salvo em PDF (layout A4 com cabeçalho da Loja) e baixado em Excel: Obreiros ativos (grau, Mestre Instalado, Emérito, VM de Honra), Situação do ano, Inadimplentes, Recebimentos por período, Resumo anual e Extrato individual.
 
 ## Rodar no computador
 

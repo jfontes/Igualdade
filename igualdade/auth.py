@@ -19,11 +19,39 @@ login_manager.login_message_category = "aviso"
 SENHA_MIN = 6
 
 
+def cargos_vigentes() -> dict[int, set[str]]:
+    """{obreiro_id: {cargos}} na gestão vigente da Diretoria (guardado durante a requisição)."""
+    from flask import g
+    if "cargos_vigentes" not in g:
+        from datetime import date
+        hoje = date.today().isoformat()
+        db = get_db()
+        gestao = db.execute("SELECT id FROM gestao WHERE inicio <= ? AND fim >= ? "
+                            "ORDER BY inicio DESC, id DESC LIMIT 1", (hoje, hoje)).fetchone()
+        cargos: dict[int, set[str]] = {}
+        if gestao:
+            for r in db.execute("SELECT obreiro_id, cargo FROM diretoria WHERE gestao_id = ? "
+                                "AND obreiro_id IS NOT NULL", (gestao["id"],)):
+                cargos.setdefault(r["obreiro_id"], set()).add(r["cargo"])
+        g.cargos_vigentes = cargos
+    return g.cargos_vigentes
+
+
+def secretaria_vigente_ids() -> set[int]:
+    """Obreiros com acesso de Secretaria pelo cargo (Secretário e Venerável) na gestão vigente."""
+    from .config import CARGOS_SECRETARIA
+    return {i for i, cargos in cargos_vigentes().items() if cargos & set(CARGOS_SECRETARIA)}
+
+
 class Usuario(UserMixin):
     def __init__(self, row):
         self.id = row["id"]
         self.nome = row["nome"]
-        self.admin = bool(row["admin"])
+        # Acesso de Secretaria: Administrador OU Secretário/Venerável da gestão vigente.
+        # Administrador tem o mesmo acesso do Venerável (inclusive a Tesouraria).
+        self.admin_cadastro = bool(row["admin"])
+        self.secretaria_por_cargo = self.id in secretaria_vigente_ids()
+        self.admin = self.admin_cadastro or self.secretaria_por_cargo
         self.trocar_senha = bool(row["trocar_senha"])
         # Primeiro acesso: o assistente aparece uma única vez, até ser concluído
         self.cadastro_pendente = self.trocar_senha and not row["cadastro_confirmado"]
@@ -123,6 +151,13 @@ def trocar_senha():
 
 def init_app(app):
     login_manager.init_app(app)
+
+    @app.context_processor
+    def secretaria_vigente():
+        # Selos exibidos no quadro e no perfil: cargos de gestão da gestão vigente
+        nomes = {"veneravel": "Venerável Mestre", "secretario": "Secretário", "tesoureiro": "Tesoureiro"}
+        selos = {i: [nomes[c] for c in nomes if c in cargos] for i, cargos in cargos_vigentes().items()}
+        return {"selos_cargo": {i: s for i, s in selos.items() if s}}
 
     @app.before_request
     def exigir_primeiro_acesso():

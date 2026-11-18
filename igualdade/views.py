@@ -115,10 +115,11 @@ def painel():
         "SELECT COUNT(*) FROM obreiro WHERE data_afastamento IS NULL").fetchone()[0]
     aniversarios = len(consultar_aniversariantes(mes))
     from .sessoes import proxima_sessao
+    from .tesouraria import resumo_obreiro
     proxima, cancelada = proxima_sessao()
     return render_template("painel.html", total_ativos=total_ativos, aniversarios=aniversarios,
                            mes_nome=MESES[int(mes) - 1], proxima=proxima, cancelada=cancelada,
-                           hoje=date.today().isoformat())
+                           hoje=date.today().isoformat(), tesouraria=resumo_obreiro(current_user.id))
 
 
 # ---------------------------------------------------------------- RF03
@@ -381,5 +382,7 @@ def perfil(obreiro_id):
     # ano de nascimento, idade e foto, só ao próprio obreiro e à Secretaria.
     familiares = get_db().execute(
         "SELECT * FROM familiar WHERE obreiro_id = ? ORDER BY nome", (obreiro_id,)).fetchall()
-    return render_template("perfil.html", o=obreiro, completo=completo, familiares=familiares,
+    from .tesouraria import resumo_obreiro, ve_relatorios
+    tesouraria = resumo_obreiro(obreiro_id) if ve_relatorios() else None
+    return render_template("perfil.html", o=obreiro, completo=completo, familiares=familiares, tesouraria=tesouraria,
                            DATAS_MACONICAS=DATAS_MACONICAS + DATAS_HONORIFICAS, DATAS_OPCIONAIS=DATAS_OPCIONAIS)

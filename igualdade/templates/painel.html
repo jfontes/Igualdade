@@ -33,9 +33,19 @@
 </section>
 {% endif %}
 
+{% if tesouraria.vencido %}
+<a class="cartao aviso-tesouraria" href="{{ url_for('tesouraria.minha') }}">
+  🔴 Você tem <strong>{{ tesouraria.vencido | moeda }}</strong> em percapita vencida. Toque para ver os detalhes.
+</a>
+{% endif %}
+
 <div class="atalhos">
   <a class="atalho" href="{{ url_for('main.minhas_informacoes') }}">
     <span class="ic">👤</span>Minhas Informações
+  </a>
+  <a class="atalho" href="{{ url_for('tesouraria.minha') }}">
+    <span class="ic">💰</span>Minha Tesouraria
+    <small>{% if tesouraria.vencido %}{{ tesouraria.vencido | moeda }} vencido{% elif tesouraria.em_aberto %}{{ tesouraria.em_aberto | moeda }} em aberto{% elif tesouraria.tem_registros %}✓ Em dia{% else %}Percapitas{% endif %}</small>
   </a>
   <a class="atalho" href="{{ url_for('main.meus_familiares') }}">
     <span class="ic">👨‍👩‍👧‍👦</span>Meus Familiares
@@ -48,5 +58,16 @@
     <span class="ic">🏛️</span>Obreiros
     <small>{{ total_ativos }} ativos</small>
   </a>
+  {% if pode_tesouraria %}
+  <a class="atalho" href="{{ url_for('tesouraria.gestao') }}">
+    <span class="ic">🗂️</span>Gestão da Tesouraria
+    <small>Lançamentos e pagamentos</small>
+  </a>
+  {% endif %}
+  {% if pode_relatorios %}
+  <a class="atalho" href="{{ url_for('relatorios.index') }}">
+    <span class="ic">📊</span>Relatórios
+  </a>
+  {% endif %}
 </div>
 {% endblock %}

@@ -103,3 +103,65 @@ CREATE TABLE IF NOT EXISTS balaustre (
     atualizado_em    TEXT    NOT NULL,
     atualizado_por   INTEGER REFERENCES obreiro(id) ON DELETE SET NULL
 );
+
+-- ================================================================ tesouraria
+-- Percapita: contribuição semestral. Valores em centavos (inteiro) para que a soma
+-- de parcelas nunca tenha diferença de arredondamento.
+
+-- Lançamento anual feito pelo Tesoureiro: guarda o valor do semestre no ano
+-- e impede um segundo lançamento geral no mesmo ano.
+CREATE TABLE IF NOT EXISTS lancamento_anual (
+    ano              INTEGER PRIMARY KEY,
+    valor            INTEGER NOT NULL CHECK (valor > 0),   -- centavos, por semestre
+    lancado_em       TEXT    NOT NULL,
+    lancado_por      INTEGER REFERENCES obreiro(id) ON DELETE SET NULL
+);
+
+CREATE TABLE IF NOT EXISTS percapita (
+    id               INTEGER PRIMARY KEY AUTOINCREMENT,
+    obreiro_id       INTEGER NOT NULL REFERENCES obreiro(id) ON DELETE RESTRICT,  -- preserva o histórico financeiro
+    ano              INTEGER NOT NULL,
+    semestre         INTEGER NOT NULL CHECK (semestre IN (1, 2)),
+    valor            INTEGER NOT NULL CHECK (valor > 0),   -- centavos
+    vencimento       TEXT    NOT NULL,                     -- 5º dia útil de fevereiro / de julho
+    cancelada        INTEGER NOT NULL DEFAULT 0,
+    motivo_cancelamento TEXT,
+    cancelada_em     TEXT,
+    cancelada_por    INTEGER REFERENCES obreiro(id) ON DELETE SET NULL,
+    lancada_em       TEXT    NOT NULL,
+    lancada_por      INTEGER REFERENCES obreiro(id) ON DELETE SET NULL,
+    UNIQUE (obreiro_id, ano, semestre)
+);
+
+CREATE INDEX IF NOT EXISTS idx_percapita_ano ON percapita(ano, semestre);
+
+-- Pagamento registrado para um obreiro em um ano. O sistema distribui o valor entre os
+-- semestres em aberto (1º, depois 2º) e grava a distribuição em pagamento_parte.
+CREATE TABLE IF NOT EXISTS pagamento (
+    id               INTEGER PRIMARY KEY AUTOINCREMENT,
+    obreiro_id       INTEGER NOT NULL REFERENCES obreiro(id) ON DELETE RESTRICT,
+    ano              INTEGER NOT NULL,
+    data             TEXT    NOT NULL,                     -- quando o pagamento ocorreu
+    valor            INTEGER NOT NULL CHECK (valor > 0),   -- centavos
+    forma            TEXT    NOT NULL,                     -- PIX, Dinheiro, Cartão, Abatimento em crédito, Isenção
+    observacao       TEXT,
+    automatico       INTEGER NOT NULL DEFAULT 0,           -- 1 = isenção gerada ao registrar o Emérito
+    registrado_em    TEXT    NOT NULL,
+    registrado_por   INTEGER REFERENCES obreiro(id) ON DELETE SET NULL,
+    estornado        INTEGER NOT NULL DEFAULT 0,
+    motivo_estorno   TEXT,
+    estornado_em     TEXT,
+    estornado_por    INTEGER REFERENCES obreiro(id) ON DELETE SET NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_pagamento_obreiro ON pagamento(obreiro_id, ano);
+CREATE INDEX IF NOT EXISTS idx_pagamento_data ON pagamento(data);
+
+CREATE TABLE IF NOT EXISTS pagamento_parte (
+    pagamento_id     INTEGER NOT NULL REFERENCES pagamento(id) ON DELETE CASCADE,
+    percapita_id     INTEGER NOT NULL REFERENCES percapita(id) ON DELETE RESTRICT,
+    valor            INTEGER NOT NULL CHECK (valor > 0),   -- centavos
+    PRIMARY KEY (pagamento_id, percapita_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_parte_percapita ON pagamento_parte(percapita_id);

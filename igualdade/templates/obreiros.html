@@ -35,7 +35,7 @@
           <div class="nome">{{ o.nome }}</div>
           <div class="sub">CIM {{ o.cim }}{% if grau(o) %} · {{ grau(o) }}{% endif %}{% if o.data_emerito %} · Emérito{% endif %}{% if o.data_vm_honra %} · Venerável Mestre de Honra{% endif %}
             {% if o.data_afastamento %}<span class="selo cinza">Afastado</span>{% endif %}
-            {% if o.admin %}<span class="selo">Secretaria</span>{% endif %}
+            {% for s in selos_cargo.get(o.id, []) %}<span class="selo">{{ s }}</span> {% endfor %}{% if o.admin %}<span class="selo">Administrador</span>{% endif %}
             {% if current_user.admin and not o.data_afastamento and not o.cadastro_confirmado %}<span class="selo pendente">⏳ Primeiro acesso pendente</span>{% endif %}
           </div>
         </div>

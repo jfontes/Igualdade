@@ -45,8 +45,11 @@ def create_app() -> Flask:
     csrf.init_app(app)
 
     from . import (auth, views, admin, fotos, assistente, sessoes, diretoria, balaustre, planilha,
-                   gerenciar)
+                   gerenciar, tesouraria, relatorios)
     auth.init_app(app)
+    tesouraria.init_app(app)
+    app.register_blueprint(tesouraria.bp)
+    app.register_blueprint(relatorios.bp)
     app.register_blueprint(assistente.bp)
     app.register_blueprint(sessoes.bp)
     app.register_blueprint(planilha.bp)

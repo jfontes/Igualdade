@@ -10,7 +10,7 @@
   <link rel="apple-touch-icon" href="{{ url_for('static', filename='icon-192.png') }}">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="Igualdade">
-  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=17">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=19">
 </head>
 <body class="{% block body_class %}{% endblock %}">
 {% block corpo %}
@@ -24,8 +24,8 @@
       <span class="espaco"></span>
       <nav class="nav" aria-label="Navegação principal">
         <a href="{{ url_for('main.painel') }}" class="{{ 'ativo' if ep == 'main.painel' }}"><span class="ic">🏠</span>Início</a>
-        <a href="{{ url_for('main.minhas_informacoes') }}" class="{{ 'ativo' if ep == 'main.minhas_informacoes' }}"><span class="ic">👤</span>Meus dados</a>
-        <a href="{{ url_for('main.meus_familiares') }}" class="{{ 'ativo' if ep.startswith('main.familiar') }}"><span class="ic">👨‍👩‍👧</span>Família</a>
+        <a href="{{ url_for('main.minhas_informacoes') }}" class="{{ 'ativo' if ep == 'main.minhas_informacoes' or ep.startswith('main.familiar') }}"><span class="ic">👤</span>Meus dados</a>
+        <a href="{{ url_for('tesouraria.minha') }}" class="{{ 'ativo' if ep.startswith('tesouraria.') or ep.startswith('relatorios.') }}"><span class="ic">💰</span>Tesouraria</a>
         <a href="{{ url_for('main.agenda') }}" class="{{ 'ativo' if ep == 'main.agenda' or ep.startswith('sessoes.') or ep.startswith('balaustre.') }}"><span class="ic">🗓️</span>Agenda</a>
         <a href="{{ url_for('main.obreiros') }}" class="{{ 'ativo' if ep in ('main.obreiros', 'main.perfil', 'main.historico', 'main.historico_detalhe') or ep.startswith('admin.') or ep.startswith('diretoria.') }}"><span class="ic">🏛️</span>Obreiros</a>
       </nav>
@@ -40,6 +40,6 @@
     {% block conteudo %}{% endblock %}
   </main>
 {% endblock %}
-<script src="{{ url_for('static', filename='app.js') }}?v=11" defer></script>
+<script src="{{ url_for('static', filename='app.js') }}?v=12" defer></script>
 </body>
 </html>

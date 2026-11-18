@@ -192,3 +192,47 @@ def nome_proprio(nome: str | None) -> str:
             # mantém apóstrofo e hífen: dell'agnolo -> Dell'Agnolo
             saida.append(re.sub(r"(^|[-'’])(\w)", lambda m: m.group(1) + m.group(2).upper(), p))
     return " ".join(saida).strip()
+
+
+# ---------------------------------------------------------------- dinheiro (centavos)
+
+def fmt_moeda(centavos: int | None, simbolo: bool = True) -> str:
+    """81000 → 'R$ 810,00'; -1550 → '-R$ 15,50'."""
+    if centavos is None:
+        return ""
+    sinal = "-" if centavos < 0 else ""
+    reais, cent = divmod(abs(int(centavos)), 100)
+    texto = f"{reais:,}".replace(",", ".") + f",{cent:02d}"
+    return f"{sinal}R$ {texto}" if simbolo else f"{sinal}{texto}"
+
+
+def ler_moeda(valor: str | None) -> int | None:
+    """'810', '810,00', '1.620,50', 'R$ 135' ou '135.5' → centavos. Vazio → None.
+
+    Lança ValueError se não for um valor positivo com até 2 casas decimais.
+    """
+    t = (valor or "").replace("R$", "").replace(" ", "").strip()
+    if not t:
+        return None
+    if "," in t:
+        t = t.replace(".", "").replace(",", ".")
+    elif re.fullmatch(r"\d{1,3}(\.\d{3})+", t):
+        t = t.replace(".", "")  # 1.620 = mil seiscentos e vinte
+    if not re.fullmatch(r"\d+(\.\d{1,2})?", t):
+        raise ValueError("valor inválido")
+    inteiro, _, frac = t.partition(".")
+    centavos = int(inteiro) * 100 + int((frac + "00")[:2])
+    if centavos <= 0:
+        raise ValueError("o valor deve ser maior que zero")
+    return centavos
+
+
+def grau_do_obreiro(o) -> str:
+    """Grau simbólico pela última data alcançada."""
+    if o["data_exaltacao"]:
+        return "Mestre"
+    if o["data_elevacao"]:
+        return "Companheiro"
+    if o["data_iniciacao"]:
+        return "Aprendiz"
+    return ""

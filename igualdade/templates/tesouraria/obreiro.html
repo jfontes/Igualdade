@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% from "_macros.html" import avatar, url_foto_obreiro %}
+{% from "tesouraria/_macros.html" import situacao_geral, bloco_ano, lista_pagamentos %}
+{% block titulo %}Tesouraria · {{ o.nome }}{% endblock %}
+{% block conteudo %}
+<div class="estreito">
+  <a class="voltar" href="{{ url_for('main.perfil', obreiro_id=o.id) }}">← Perfil de {{ o.nome }}</a>
+  <div class="cabecalho perfil-topo">
+    {{ avatar(o.nome, url_foto_obreiro(o)) }}
+    <div class="perfil-id">
+      <h2>💰 Percapitas</h2>
+      <div class="suave">{{ o.nome }} · CIM {{ o.cim }}
+        {% if o.data_afastamento %}<span class="selo cinza">Afastado</span>{% endif %}</div>
+    </div>
+  </div>
+
+  {% if gere %}
+  <div class="botoes acoes-tesouraria">
+    {% if resumo.em_aberto %}<a class="btn" href="{{ url_for('tesouraria.pagamento', obreiro_id=o.id) }}">💵 Registrar pagamento</a>{% endif %}
+    <a class="btn sec" href="{{ url_for('tesouraria.lancar_obreiro', obreiro_id=o.id) }}">＋ Lançar percapita</a>
+    <a class="btn sec" href="{{ url_for('relatorios.ver', chave='extrato', obreiro=o.id) }}">🧾 Extrato</a>
+  </div>
+  {% else %}
+  <p class="dica">Consulta. Lançamentos e pagamentos são feitos pelo Tesoureiro, pelo Venerável Mestre ou por um Administrador.</p>
+  {% endif %}
+
+  <section class="cartao">
+    {{ situacao_geral(resumo, o) }}
+    {% if not resumo.tem_registros %}
+      <div class="vazio-msg"><span class="ic">🧾</span>Nenhuma percapita lançada.</div>
+    {% endif %}
+  </section>
+
+  {% for ano, lista in anos %}{{ bloco_ano(ano, lista, ano_atual, gere) }}{% endfor %}
+
+  <section class="cartao">
+    <h3>Pagamentos</h3>
+    {{ lista_pagamentos(pagamentos, gere) }}
+  </section>
+</div>
+{% endblock %}

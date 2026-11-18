@@ -1,0 +1,117 @@
+{# Selo de situação da percapita #}
+{% macro selo(p) -%}
+  <span class="sit sit-{{ p.situacao }}">{{ p.icone }} {{ p.rotulo }}</span>
+{%- endmacro %}
+
+{# Selo a partir só da chave (relatórios) #}
+{% macro selo_chave(chave, texto) -%}
+  {% if chave %}<span class="sit sit-{{ chave }}">{{ texto }}</span>{% else %}<span class="suave">{{ texto }}</span>{% endif %}
+{%- endmacro %}
+
+{# Totais do obreiro: em aberto / em dia #}
+{% macro situacao_geral(resumo, o) -%}
+  {% if resumo.vencido %}
+    <div class="saldo-geral devendo">
+      <span class="ic">🔴</span>
+      <div><strong>{{ resumo.vencido | moeda }}</strong> em atraso
+        {% if resumo.em_aberto > resumo.vencido %}<small>Total em aberto: {{ resumo.em_aberto | moeda }}</small>{% endif %}</div>
+    </div>
+  {% elif resumo.em_aberto %}
+    <div class="saldo-geral aberto">
+      <span class="ic">⚪</span>
+      <div><strong>{{ resumo.em_aberto | moeda }}</strong> em aberto <small>Nada vencido</small></div>
+    </div>
+  {% elif resumo.tem_registros %}
+    <div class="saldo-geral em-dia"><span class="ic">✅</span><div><strong>Em dia</strong> <small>Nenhuma percapita em aberto</small></div></div>
+  {% endif %}
+  {% if o.data_emerito %}
+    <p class="dica">🎖️ Emérito desde {{ o.data_emerito | data }}: isento de percapita a partir do semestre seguinte.</p>
+  {% endif %}
+{%- endmacro %}
+
+{# Cartão de uma percapita (com ações do Tesoureiro, se `gere`) #}
+{% macro cartao_percapita(p, gere=false) -%}
+  <div class="percapita sit-borda-{{ p.situacao }}">
+    <div class="percapita-topo">
+      <strong>{{ p.semestre }}º semestre</strong>
+      {{ selo(p) }}
+    </div>
+    {% if p.cancelada %}
+      <p class="dica" style="margin:4px 0 0">Cancelada: {{ p.motivo_cancelamento }}</p>
+    {% else %}
+    <dl class="valores">
+      <div><dt>Valor</dt><dd>{{ p.valor | moeda }}</dd></div>
+      <div><dt>Pago</dt><dd>{{ p.pago | moeda }}</dd></div>
+      <div><dt>Saldo</dt><dd class="{{ 'saldo-devedor' if p.saldo }}">{{ p.saldo | moeda }}</dd></div>
+      <div><dt>Vencimento</dt><dd>{{ p.vencimento | data }}</dd></div>
+    </dl>
+    {% if p.valor and p.pago and p.saldo %}
+      <div class="barra-pago" aria-hidden="true"><span style="width: {{ (100 * p.pago / p.valor) | round(0) }}%"></span></div>
+    {% endif %}
+    {% endif %}
+    {% if gere and not p.cancelada and not p.pago %}
+      <details class="acao-motivo">
+        <summary>Cancelar percapita</summary>
+        <form method="post" action="{{ url_for('tesouraria.cancelar', percapita_id=p.id) }}"
+              data-confirmar="Cancelar a percapita do {{ p.semestre_txt }}?">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input name="motivo" required maxlength="300" placeholder="Motivo do cancelamento">
+          <button class="btn perigo pequeno" type="submit">Cancelar</button>
+        </form>
+      </details>
+    {% endif %}
+  </div>
+{%- endmacro %}
+
+{# Lista de pagamentos (com estorno para o Tesoureiro) #}
+{% macro lista_pagamentos(pagamentos, gere=false) -%}
+  {% if pagamentos %}
+  <ul class="lista pagamentos">
+    {% for x in pagamentos %}
+    <li class="{{ 'estornado' if x.estornado }}">
+      <div class="item">
+        <span class="forma-ic" aria-hidden="true">{{ {'PIX': '⚡', 'Dinheiro': '💵', 'Cartão': '💳', 'Abatimento em crédito': '↩️', 'Isenção': '🎖️'}[x.forma] }}</span>
+        <div class="corpo">
+          <div class="nome">{% if x.estornado %}<s>{{ x.valor | moeda }}</s>{% else %}{{ x.valor | moeda }}{% endif %} · {{ x.forma }}</div>
+          <div class="sub">{{ x.data | data }} · {{ x.partes | join(', ') or x.ano }}</div>
+          {% if x.observacao %}<div class="sub">{{ x.observacao }}</div>{% endif %}
+          {% if x.estornado %}<div class="sub estorno">Estornado em {{ x.estornado_em[:10] | data }}: {{ x.motivo_estorno }}</div>{% endif %}
+          {% if gere %}<div class="sub registro">Registrado por {{ x.registrado_por_nome or '—' }} em {{ x.registrado_em[:10] | data }}</div>{% endif %}
+        </div>
+      </div>
+      {% if gere and not x.estornado %}
+      <details class="acao-motivo">
+        <summary>Estornar</summary>
+        <form method="post" action="{{ url_for('tesouraria.estornar', pagamento_id=x.id) }}"
+              data-confirmar="Estornar o pagamento de {{ x.valor | moeda }} de {{ x.data | data }}?">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input name="motivo" required maxlength="300" placeholder="Motivo do estorno">
+          <button class="btn perigo pequeno" type="submit">Estornar</button>
+        </form>
+      </details>
+      {% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="suave" style="margin:0">Nenhum pagamento registrado.</p>
+  {% endif %}
+{%- endmacro %}
+
+{# Percapitas de um ano: o ano corrente (e os seguintes) vêm abertos; anos anteriores, fechados #}
+{% macro bloco_ano(ano, lista, ano_atual, gere=false) -%}
+  {% set ativas = lista | rejectattr('cancelada') | list %}
+  {% set saldo = ativas | sum(attribute='saldo') %}
+  {% set vencido = ativas | selectattr('situacao', 'equalto', 'vencida') | sum(attribute='saldo') %}
+  <details class="cartao ano-percapitas" {{ 'open' if ano >= ano_atual }}>
+    <summary>
+      <h3>Percapitas de {{ ano }}</h3>
+      <span class="ano-resumo {{ 'devendo' if vencido else ('aberto' if saldo else 'em-dia') }}">
+        {% if vencido %}{{ vencido | moeda }} vencido{% elif saldo %}{{ saldo | moeda }} em aberto{% elif ativas %}✓ Quitado{% else %}—{% endif %}
+      </span>
+    </summary>
+    <div class="percapitas">
+      {% for p in lista %}{{ cartao_percapita(p, gere) }}{% endfor %}
+    </div>
+  </details>
+{%- endmacro %}
