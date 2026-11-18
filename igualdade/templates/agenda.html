@@ -83,11 +83,8 @@
   <section class="cartao">
     <h3>Secretaria</h3>
     <div class="botoes">
-      <a class="btn" href="{{ url_for('sessoes.form') }}">＋ Nova sessão</a>
+      <a class="btn" href="{{ url_for('gerenciar.gerenciar', ano=ano) }}">🗓️ Gerenciar sessões</a>
       <a class="btn sec" href="{{ url_for('diretoria.ver') }}">🏛️ Diretoria</a>
-      {% for a in anos_gerar %}
-      <a class="btn sec" href="{{ url_for('sessoes.gerar', ano=a) }}">🗓️ Gerar sessões de {{ a }}</a>
-      {% endfor %}
     </div>
     <p class="dica">Toque em uma sessão da lista para alterar o grau, a ordem do dia, registrar o cancelamento ou registrar o balaústre. A mesa do balaústre vem da diretoria vigente na data da sessão.</p>
   </section>

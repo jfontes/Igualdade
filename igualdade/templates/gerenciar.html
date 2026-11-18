@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+{% block titulo %}Gerenciar sessões de {{ ano }}{% endblock %}
+
+{% macro linha(l) -%}
+  {% set p = 'r-' ~ l.n ~ '-' %}
+  {% set classe_dia = 'cancelada' if l.cancelada else 'grau-' ~ ((l.grau or 'indefinido') | lower) %}
+  <li class="lsessao {{ l.origem }} {{ 'desmarcada' if not l.incluir }} {{ 'da-planilha' if l.planilha }} {{ 'com-erro' if l.erros }}"
+      data-linha data-origem="{{ l.origem }}">
+    {# valores da linha (a tela é só de leitura; são enviados com "Incluir na agenda") #}
+    <input type="hidden" name="{{ p }}origem" value="{{ l.origem }}">
+    <input type="hidden" name="{{ p }}data" value="{{ l.data }}">
+    {% if l.origem == 'cadastrada' %}
+      <input type="hidden" name="{{ p }}id" value="{{ l.id }}">
+      <input type="hidden" name="{{ p }}versao" value="{{ l.versao }}">
+    {% endif %}
+    <input type="hidden" name="{{ p }}tipo" value="{{ l.tipo or '' }}">
+    <input type="hidden" name="{{ p }}grau" value="{{ l.grau or '' }}">
+    <input type="hidden" name="{{ p }}ordem_do_dia" value="{{ l.ordem_do_dia or '' }}">
+    {% if l.cancelada %}<input type="hidden" name="{{ p }}cancelada" value="1">{% endif %}
+    <input type="hidden" name="{{ p }}motivo_cancelamento" value="{{ l.motivo_cancelamento or '' }}">
+    {% if l.planilha %}<input type="hidden" name="{{ p }}planilha" value="1">{% endif %}
+
+    <div class="item">
+      {% if l.origem == 'sugestao' %}
+        <label class="incluir" title="Incluir esta sugestão na agenda">
+          <input type="checkbox" name="{{ p }}incluir" value="1" {{ 'checked' if l.incluir }} data-incluir
+                 aria-label="Incluir a sessão de {{ l.data[8:] }}/{{ l.data[5:7] }}">
+        </label>
+      {% endif %}
+      <span class="dia {{ classe_dia }}"><b>{{ l.data[8:] }}</b><small>{{ MESES_CURTOS[l.data[5:7] | int - 1] }}</small></span>
+      <div class="corpo">
+        {% if l.cancelada %}
+          <div class="nome"><s>Sessão {{ l.tipo }}</s> <span class="selo cinza">Cancelada</span></div>
+          <div class="sub">Motivo: {{ l.motivo_cancelamento }}</div>
+        {% else %}
+          <div class="nome">Sessão {{ l.tipo }} · {{ l.grau }} Maçom
+            {% if l.tipo != 'Ordinária' %}<span class="selo ouro">{{ l.tipo }}</span>{% endif %}</div>
+          {% if l.ordem_do_dia %}<div class="ordem">{{ l.ordem_do_dia }}</div>{% endif %}
+        {% endif %}
+        <div class="estado">
+          {% if l.alterada %}✎ alterada pela planilha
+          {% elif l.planilha %}✚ nova, da planilha
+          {% elif l.origem == 'cadastrada' %}● cadastrada
+          {% else %}○ sugestão{% endif %}
+        </div>
+        {% for e in l.erros or [] %}<p class="erro-campo">{{ e }}</p>{% endfor %}
+      </div>
+      {% if not previa %}
+        {% if l.origem == 'cadastrada' %}
+          <a class="lapis" href="{{ url_for('sessoes.form', sessao_id=l.id, voltar=voltar) }}" aria-label="Editar a sessão de {{ l.data[8:] }}/{{ l.data[5:7] }}">✏️</a>
+        {% else %}
+          <a class="lapis" href="{{ url_for('sessoes.form', data=l.data, tipo=l.tipo, grau=l.grau or '', cancelada=l.cancelada or '', motivo=l.motivo_cancelamento or '', voltar=voltar) }}"
+             aria-label="Ajustar e incluir a sessão de {{ l.data[8:] }}/{{ l.data[5:7] }}">✏️</a>
+        {% endif %}
+      {% endif %}
+    </div>
+  </li>
+{%- endmacro %}
+
+{% block conteudo %}
+<div class="estreito">
+  <a class="voltar" href="{{ url_for('main.agenda', ano=ano, mes=2) }}">← Agenda</a>
+  <div class="cabecalho">
+    <h2>Gerenciar sessões de {{ ano }}</h2>
+    <nav class="anos" aria-label="Escolher ano">
+      <a class="btn sec pequeno" href="{{ url_for('gerenciar.gerenciar', ano=ano - 1) }}">◀ {{ ano - 1 }}</a>
+      <a class="btn sec pequeno" href="{{ url_for('gerenciar.gerenciar', ano=ano + 1) }}">{{ ano + 1 }} ▶</a>
+    </nav>
+  </div>
+
+  {% if previa %}
+  <p class="lembrete">📄 <strong>Prévia da planilha.</strong> As sessões destacadas ainda não foram gravadas.
+    Confira e toque em <strong>Incluir na agenda</strong>, ou <a href="{{ voltar }}">descarte a planilha</a>.</p>
+  {% else %}
+  <ul class="regras suave">
+    {% if ano_tem_sessoes %}
+    <li><strong>○ sugestões</strong> são segundas-feiras sem sessão. Vêm desmarcadas porque o ano já foi salvo: marque as que quiser incluir.</li>
+    {% else %}
+    <li>Todas as segundas-feiras do ano, com a regra dos graus (última do mês: Mestre; penúltima: Companheiro; demais: Aprendiz). Feriados vêm cancelados; recessos não geram sessão.</li>
+    {% endif %}
+    <li><strong>✏️</strong> edita a sessão. <strong>＋</strong> inclui uma sessão em qualquer dia do mês (ex.: extraordinária).</li>
+  </ul>
+  {% endif %}
+
+  {% if avisos %}
+  <section class="cartao">
+    <h3>Linhas da planilha não carregadas</h3>
+    <ul class="lista-erros">{% for a in avisos %}<li>{{ a }}</li>{% endfor %}</ul>
+  </section>
+  {% endif %}
+
+  <form method="post" action="{{ url_for('gerenciar.gerenciar', ano=ano) }}" data-gerenciar data-uma-vez>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    {% for m in meses %}
+    <section class="cartao mes-gerenciar">
+      <div class="mes-cab">
+        <h3>{{ m.nome }}</h3>
+        <span class="suave">{% if m.cadastradas %}{{ m.cadastradas }} cadastrada{{ 's' if m.cadastradas != 1 }}{% elif m.recesso %}{{ m.recesso }}{% endif %}</span>
+        {% if not previa %}
+        <a class="btn sec pequeno mais" href="{{ url_for('sessoes.form', mes='%04d-%02d' | format(ano, m.mes), tipo='Extraordinária', voltar=voltar) }}"
+           aria-label="Incluir sessão em {{ m.nome }}">＋</a>
+        {% endif %}
+      </div>
+      {% if m.linhas %}
+      <ul class="lista agenda">{% for l in m.linhas %}{{ linha(l) }}{% endfor %}</ul>
+      {% endif %}
+    </section>
+    {% endfor %}
+
+    <div class="barra-gravar">
+      <span class="suave" data-resumo></span>
+      <button class="btn" type="submit" data-gravar>✓ Incluir na agenda</button>
+    </div>
+  </form>
+
+  {% if not previa %}
+  <div class="botoes planilha-acoes">
+    <a class="btn sec" href="{{ url_for('planilha.exportar', ano=ano) }}">⬇️ Exportar planilha</a>
+    <form class="inline" method="post" enctype="multipart/form-data" action="{{ url_for('gerenciar.carregar_planilha', ano=ano) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <label class="btn sec" tabindex="0">⬆️ Carregar planilha
+        <input type="file" name="planilha" hidden data-enviar-ao-mudar
+               accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">
+      </label>
+    </form>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

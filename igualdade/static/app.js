@@ -265,6 +265,44 @@
     document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") enviarAoSair(); });
   });
 
+  // Campo que envia o próprio formulário ao mudar (ano da tela de gerenciar, arquivo da planilha)
+  document.querySelectorAll("[data-enviar-ao-mudar]").forEach((el) => {
+    el.addEventListener("change", () => { if (el.type !== "file" || el.files.length) el.form.submit(); });
+  });
+
+  // Gerenciar sessões (tela de leitura): caixa das sugestões, contador "cria · atualiza"
+  // e aviso ao sair com a prévia da planilha ainda não gravada
+  const ger = document.querySelector("form[data-gerenciar]");
+  if (ger) {
+    const resumo = ger.querySelector("[data-resumo]");
+    const gravar = ger.querySelector("[data-gravar]");
+    const previa = !!ger.querySelector(".da-planilha");
+    let enviando = false;
+    const contar = () => {
+      let cria = 0;
+      let atualiza = 0;
+      ger.querySelectorAll("[data-linha]").forEach((linha) => {
+        const origem = linha.dataset.origem;
+        const incluir = linha.querySelector("[data-incluir]");
+        if (incluir) linha.classList.toggle("desmarcada", !incluir.checked);
+        if (origem === "nova" || (origem === "sugestao" && incluir.checked)) cria++;
+        else if (origem === "cadastrada" && linha.classList.contains("da-planilha")) atualiza++;
+      });
+      const partes = [];
+      if (cria) partes.push(`cria ${cria}`);
+      if (atualiza) partes.push(`atualiza ${atualiza}`);
+      resumo.textContent = partes.length ? partes.join(" · ") : "Nenhuma sessão marcada.";
+      gravar.disabled = !partes.length;
+      return cria + atualiza;
+    };
+    ger.addEventListener("change", contar);
+    ger.addEventListener("submit", () => { enviando = true; });
+    window.addEventListener("beforeunload", (ev) => {
+      if (previa && !enviando && contar() > 0) { ev.preventDefault(); ev.returnValue = ""; }
+    });
+    contar();
+  }
+
   // Mantém o mês selecionado visível na barra de meses
   document.querySelector("[data-rolar]")?.scrollIntoView({ inline: "center", block: "nearest" });
 

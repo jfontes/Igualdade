@@ -178,6 +178,7 @@ a.item:hover { background: var(--bordo-claro); }
 .selo { display: inline-block; font-size: .7rem; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: var(--bordo-claro); color: var(--bordo); vertical-align: middle; }
 .selo.cinza { background: #eee; color: #666; }
 .selo.ouro { background: #f6ecc9; color: #7a5d00; }
+.selo.pendente { background: none; padding: 0; border-radius: 0; font-weight: 400; color: var(--aviso); }
 
 .filtros { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
 .filtros input { flex: 1 1 220px; }
@@ -345,7 +346,9 @@ textarea {
   border-radius: 10px; background: #fff; color: var(--texto); resize: vertical;
 }
 textarea:focus { outline: 2px solid var(--bordo); outline-offset: 0; border-color: var(--bordo); }
-.opcoes-grau { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+/* graus em linha que quebra no celular estreito (antes "Mestre" saía da tela) */
+.opcoes-grau { display: flex; flex-wrap: wrap; gap: 8px; }
+.opcoes-grau .opcao-grau { flex: 1 1 auto; min-width: 0; }
 .opcao-grau {
   display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; padding: 8px;
   border: 1px solid #d9caca; border-radius: 10px; cursor: pointer; text-transform: none; letter-spacing: 0;
@@ -378,3 +381,34 @@ textarea:focus { outline: 2px solid var(--bordo); outline-offset: 0; border-colo
 .documento .doc-mesa div { border-top: 1px solid var(--texto); padding-top: 4px; text-align: center; font-size: .82rem; }
 .documento .doc-mesa strong { display: block; font-size: .88rem; }
 @media (max-width: 480px) { .documento .doc-mesa { gap: 30px 14px; } .documento .doc-mesa .assina-veneravel { width: 70%; } }
+
+/* importação de planilha: erros por linha */
+.lista-erros { margin: 0; padding-left: 20px; color: var(--erro); font-size: .9rem; display: grid; gap: 4px; }
+
+/* ---------- gerenciar sessões (leitura) ---------- */
+.planilha-acoes { margin: 4px 0 14px; }
+.planilha-acoes label.btn { text-transform: none; letter-spacing: 0; cursor: pointer; }
+.mes-cab { display: flex; align-items: center; gap: 10px; }
+.mes-cab h3 { margin: 0; }
+.mes-cab .suave { flex: 1; font-size: .8rem; }
+.mes-cab .mais { min-width: 46px; font-size: 1.25rem; }
+.mes-gerenciar .lista { margin-top: 6px; }
+.lsessao .item { align-items: flex-start; }
+.lsessao .incluir { display: flex; align-items: center; min-height: 48px; }
+.lsessao .incluir input { width: 24px; height: 24px; min-height: 0; accent-color: var(--bordo); }
+.lsessao .estado { font-size: .75rem; color: var(--suave); margin-top: 2px; }
+.lsessao.desmarcada .dia, .lsessao.desmarcada .corpo { opacity: .45; }
+.lsessao.da-planilha { background: #fff8e1; }
+.lsessao.com-erro { background: var(--erro-fundo); }
+.lapis {
+  flex: none; align-self: center; display: flex; align-items: center; justify-content: center;
+  width: 44px; height: 44px; border-radius: 10px; text-decoration: none; font-size: 1.15rem;
+}
+.lapis:hover { background: var(--bordo-claro); }
+.barra-gravar {
+  position: sticky; bottom: calc(70px + env(safe-area-inset-bottom)); z-index: 10;
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  background: #fff; border: 1px solid var(--borda); border-radius: var(--raio); box-shadow: var(--sombra); padding: 10px 12px;
+}
+.barra-gravar .btn:disabled { opacity: .5; cursor: default; }
+@media (min-width: 820px) { .barra-gravar { bottom: 12px; } }

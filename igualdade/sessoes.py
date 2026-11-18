@@ -119,7 +119,26 @@ def _ler_form(form):
     return dados, erros
 
 
+def _destino_voltar() -> str | None:
+    """Endereço de retorno pedido pela tela de origem (ex.: Gerenciar sessões), se for interno."""
+    destino = request.values.get("voltar")
+    if destino and destino.startswith("/") and not destino.startswith("//"):
+        return destino
+    return None
+
+
+def _limites_mes(valor: str | None):
+    """'2027-03' → ('2027-03-01', '2027-03-31'), para o "+" de um mês na tela de gerenciar."""
+    try:
+        ano, mes = (int(x) for x in (valor or "").split("-"))
+        return date(ano, mes, 1).isoformat(), date(ano, mes, calendar.monthrange(ano, mes)[1]).isoformat()
+    except ValueError:
+        return None
+
+
 def _voltar_agenda(data_iso: str | None):
+    if (destino := _destino_voltar()):
+        return redirect(destino)
     if data_iso:
         return redirect(url_for("main.agenda", ano=int(data_iso[:4]), mes=int(data_iso[5:7])))
     return redirect(url_for("main.agenda"))
@@ -152,10 +171,18 @@ def form(sessao_id=None):
               else "Corrija os campos destacados abaixo.", "erro")
         sessao = dados | {"id": sessao_id}
     elif sessao is None:
-        sessao = {"data": request.args.get("data") or proximo_dia_de_sessao().isoformat(),
-                  "tipo": "Ordinária", "grau": "Aprendiz"}
+        # Nova sessão. Vinda do "+" de um mês: o dia fica em branco (só aceita datas do mês).
+        # Vinda do lápis de uma sugestão: já traz data, grau e cancelamento sugeridos.
+        args = request.args
+        cancelada = bool(args.get("cancelada"))
+        data = args.get("data") or ("" if args.get("mes") else proximo_dia_de_sessao().isoformat())
+        sessao = {"data": data, "tipo": args.get("tipo") if args.get("tipo") in TIPOS else "Ordinária",
+                  "grau": args.get("grau") if args.get("grau") in GRAUS else ("" if cancelada else "Aprendiz"),
+                  "cancelada": cancelada, "motivo_cancelamento": args.get("motivo") if cancelada else None}
     return render_template("sessao_form.html", s=sessao, sessao_id=sessao_id, TIPOS=TIPOS, GRAUS=GRAUS,
-                           erros=erros if request.method == "POST" else {})
+                           erros=erros if request.method == "POST" else {},
+                           voltar=_destino_voltar(), limites=_limites_mes(request.values.get("mes")),
+                           mes=request.values.get("mes"))
 
 
 @bp.route("/<int:sessao_id>/excluir", methods=["POST"])
@@ -169,30 +196,8 @@ def excluir(sessao_id):
     return _voltar_agenda(row["data"] if row else None)
 
 
-@bp.route("/gerar", methods=["GET", "POST"])
+@bp.route("/gerar")
 @admin_required
 def gerar():
-    hoje = date.today()
-    try:
-        ano = int(request.values.get("ano", hoje.year + 1))
-        if not 2000 <= ano <= 2100:
-            raise ValueError
-    except ValueError:
-        abort(400)
-    meses = planejar_ano(ano)
-    novos = [i for m in meses for i in m["itens"] if i["situacao"] == "nova"]
-    if request.method == "POST":
-        if not novos:
-            flash(f"Todas as sessões de {ano} já estavam cadastradas. Nada foi alterado.", "aviso")
-            return _voltar_agenda(f"{ano}-02-01")
-        db = get_db()
-        db.executemany(
-            "INSERT INTO sessao (data, tipo, grau, cancelada, motivo_cancelamento) VALUES (?, 'Ordinária', ?, ?, ?)",
-            [(i["data"], i["grau"], 1 if i["cancelada"] else 0, i["motivo"] if i["cancelada"] else None)
-             for i in novos])
-        db.commit()
-        flash(f"{len(novos)} sessões de {ano} incluídas na agenda. Confira o grau e preencha a ordem do dia.", "ok")
-        primeiro = next((i["data"] for i in novos), f"{ano}-02-01")
-        return _voltar_agenda(primeiro)
-    return render_template("sessoes_gerar.html", ano=ano, meses=meses, novos=len(novos),
-                           hoje=hoje)
+    """Endereço antigo do gerador: agora tudo fica em "Gerenciar sessões"."""
+    return redirect(url_for("gerenciar.gerenciar", ano=request.args.get("ano", date.today().year + 1)))

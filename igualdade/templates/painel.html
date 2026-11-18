@@ -49,10 +49,4 @@
     <small>{{ total_ativos }} ativos</small>
   </a>
 </div>
-
-{% if current_user.admin %}
-<div class="botoes" style="margin-top:16px">
-  <a class="btn" href="{{ url_for('admin.novo') }}">＋ Cadastrar obreiro</a>
-</div>
-{% endif %}
 {% endblock %}

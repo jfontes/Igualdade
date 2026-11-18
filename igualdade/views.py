@@ -314,14 +314,7 @@ def agenda():
     itens += [{"tipo": "aniversario", "dia": a["dia"], "a": a}
               for a in consultar_aniversariantes(f"{mes:02d}")]
     itens.sort(key=lambda i: (i["dia"], i["tipo"] != "sessao"))
-    anos_gerar = []
-    if current_user.admin:
-        # sempre oferece o ano seguinte; o ano atual só enquanto não tiver sessões
-        tem_atual = get_db().execute("SELECT 1 FROM sessao WHERE substr(data, 1, 4) = ? LIMIT 1",
-                                     (str(hoje.year),)).fetchone()
-        anos_gerar = ([] if tem_atual else [hoje.year]) + [hoje.year + 1]
-    return render_template("agenda.html", itens=itens, mes=mes, ano=ano, MESES=MESES, hoje=hoje,
-                           anos_gerar=anos_gerar)
+    return render_template("agenda.html", itens=itens, mes=mes, ano=ano, MESES=MESES, hoje=hoje)
 
 
 # ---------------------------------------------------------------- RF04
@@ -331,7 +324,7 @@ def agenda():
 def obreiros():
     q = (request.args.get("q") or "").strip()
     situacao = request.args.get("situacao", "ativos")
-    sql = "SELECT id, nome, cim, foto, data_exaltacao, data_elevacao, data_iniciacao, data_afastamento, admin FROM obreiro WHERE 1=1"
+    sql = "SELECT id, nome, cim, foto, data_exaltacao, data_elevacao, data_iniciacao, data_afastamento, admin, cadastro_confirmado FROM obreiro WHERE 1=1"
     params = []
     if situacao == "ativos":
         sql += " AND data_afastamento IS NULL"

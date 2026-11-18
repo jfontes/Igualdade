@@ -1,17 +1,20 @@
 {% extends "base.html" %}
 {% block titulo %}{{ 'Editar sessão' if sessao_id else 'Nova sessão' }}{% endblock %}
 {% block conteudo %}
-{% set volta = url_for('main.agenda', ano=s.data[:4] | int, mes=s.data[5:7] | int) if s.data else url_for('main.agenda') %}
+{% set volta = voltar or (url_for('main.agenda', ano=s.data[:4] | int, mes=s.data[5:7] | int) if s.data else url_for('main.agenda')) %}
 <div class="estreito">
-  <a class="voltar" href="{{ volta }}">← Agenda</a>
+  <a class="voltar" href="{{ volta }}">← {{ 'Gerenciar sessões' if voltar else 'Agenda' }}</a>
   <h2>{{ self.titulo() }}</h2>
   {% set erros = erros or {} %}
   <form method="post" class="cartao grade" data-uma-vez>
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    {% if voltar %}<input type="hidden" name="voltar" value="{{ voltar }}">{% endif %}
+    {% if mes %}<input type="hidden" name="mes" value="{{ mes }}">{% endif %}
     <div class="grade duas">
       <div class="campo {{ 'com-erro' if 'data' in erros }}">
         <label for="data">Data</label>
         <input id="data" name="data" type="date" value="{{ s.data or '' }}" required
+               {% if limites %}min="{{ limites[0] }}" max="{{ limites[1] }}"{% endif %}
                {% if 'data' in erros %}autofocus aria-invalid="true" aria-describedby="erro-data"{% endif %}>
         {% if 'data' in erros %}<span class="erro-campo" id="erro-data">{{ erros.data }}</span>{% endif %}
       </div>
@@ -67,6 +70,7 @@
     <form class="inline" method="post" action="{{ url_for('sessoes.excluir', sessao_id=sessao_id) }}"
           data-confirmar="Excluir esta sessão da agenda? Para manter o registro, prefira marcar como cancelada.">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      {% if voltar %}<input type="hidden" name="voltar" value="{{ voltar }}">{% endif %}
       <button class="btn perigo" type="submit">🗑️ Excluir sessão</button>
     </form>
   </div>
