@@ -14,6 +14,8 @@ CREATE TABLE IF NOT EXISTS obreiro (
     data_exaltacao   TEXT,
     data_filiacao    TEXT,
     data_instalacao  TEXT,
+    data_emerito     TEXT,                             -- título concedido (registrado pela Secretaria)
+    data_vm_honra    TEXT,                             -- Venerável Mestre de Honra (idem)
     data_afastamento TEXT,                             -- nulo = ativo (RF05)
     cep              TEXT,
     logradouro       TEXT,

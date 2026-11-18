@@ -41,7 +41,7 @@
   <section class="cartao">
     <h3>Vida maçônica</h3>
     <ul class="linha-tempo">
-      {% for campo, rotulo in DATAS_MACONICAS %}
+      {% for campo, rotulo in DATAS_MACONICAS if o[campo] or campo not in DATAS_OPCIONAIS %}
         <li class="{{ 'vazio' if not o[campo] }}"><strong>{{ rotulo }}</strong> — {{ o[campo] | data or 'não informada' }}</li>
       {% endfor %}
     </ul>

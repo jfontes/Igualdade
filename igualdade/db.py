@@ -28,6 +28,8 @@ MIGRACOES = [
     ("obreiro", "foto", "TEXT"),
     ("familiar", "foto", "TEXT"),
     ("obreiro", "cadastro_confirmado", "TEXT"),
+    ("obreiro", "data_emerito", "TEXT"),
+    ("obreiro", "data_vm_honra", "TEXT"),
 ]
 
 

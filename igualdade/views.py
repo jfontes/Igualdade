@@ -9,7 +9,7 @@ from flask_login import current_user, login_required
 from . import fotos
 from .auth import pode_editar
 from .db import get_db
-from .util import (DATAS_MACONICAS, MESES, PARENTESCOS, UFS, cpf_valido, ler_data,
+from .util import (DATAS_HONORIFICAS, DATAS_MACONICAS, DATAS_OPCIONAIS, MESES, PARENTESCOS, UFS, cpf_valido, ler_data,
                    ler_data_nasc, ler_email, ler_telefone, so_digitos, validar_cronologia)
 
 bp = Blueprint("main", __name__)
@@ -17,7 +17,7 @@ bp = Blueprint("main", __name__)
 CAMPOS_PESSOAIS = ["nome", "data_nascimento", "data_iniciacao", "data_elevacao",
                    "data_exaltacao", "data_filiacao", "data_instalacao",
                    "email", "telefone", "cep", "logradouro", "numero", "bairro", "cidade", "estado"]
-CAMPOS_ADMIN = ["cim", "cpf", "data_afastamento"]
+CAMPOS_ADMIN = ["cim", "cpf", "data_emerito", "data_vm_honra", "data_afastamento"]
 
 
 # ---------------------------------------------------------------- helpers
@@ -29,7 +29,7 @@ def buscar_obreiro(obreiro_id: int):
     return row
 
 
-ROTULOS_DATAS = dict(DATAS_MACONICAS) | {"data_afastamento": "Afastamento"}
+ROTULOS_DATAS = dict(DATAS_MACONICAS) | dict(DATAS_HONORIFICAS) | {"data_afastamento": "Afastamento"}
 
 
 def ler_form_obreiro(form, completo: bool, obreiro_id: int | None = None,
@@ -101,7 +101,7 @@ def ler_form_obreiro(form, completo: bool, obreiro_id: int | None = None,
 
 
 def contexto_form():
-    return {"UFS": UFS, "DATAS_MACONICAS": DATAS_MACONICAS}
+    return {"UFS": UFS, "DATAS_MACONICAS": DATAS_MACONICAS, "DATAS_HONORIFICAS": DATAS_HONORIFICAS}
 
 
 # ---------------------------------------------------------------- painel
@@ -324,7 +324,7 @@ def agenda():
 def obreiros():
     q = (request.args.get("q") or "").strip()
     situacao = request.args.get("situacao", "ativos")
-    sql = "SELECT id, nome, cim, foto, data_exaltacao, data_elevacao, data_iniciacao, data_afastamento, admin, cadastro_confirmado FROM obreiro WHERE 1=1"
+    sql = "SELECT id, nome, cim, foto, data_exaltacao, data_elevacao, data_iniciacao, data_afastamento, admin, cadastro_confirmado, data_emerito, data_vm_honra FROM obreiro WHERE 1=1"
     params = []
     if situacao == "ativos":
         sql += " AND data_afastamento IS NULL"
@@ -382,4 +382,4 @@ def perfil(obreiro_id):
     familiares = get_db().execute(
         "SELECT * FROM familiar WHERE obreiro_id = ? ORDER BY nome", (obreiro_id,)).fetchall()
     return render_template("perfil.html", o=obreiro, completo=completo, familiares=familiares,
-                           DATAS_MACONICAS=DATAS_MACONICAS)
+                           DATAS_MACONICAS=DATAS_MACONICAS + DATAS_HONORIFICAS, DATAS_OPCIONAIS=DATAS_OPCIONAIS)

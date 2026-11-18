@@ -22,6 +22,16 @@ DATAS_MACONICAS = [
 ]
 
 
+# Títulos honoríficos: registrados só pela Secretaria e exibidos só quando informados
+DATAS_HONORIFICAS = [
+    ("data_emerito", "Emérito"),
+    ("data_vm_honra", "Venerável Mestre de Honra"),
+]
+
+# Datas que são exceção: só aparecem nas telas de visualização quando informadas
+DATAS_OPCIONAIS = {"data_filiacao", "data_emerito", "data_vm_honra"}
+
+
 def so_digitos(valor: str | None) -> str:
     return re.sub(r"\D", "", valor or "")
 
@@ -158,7 +168,7 @@ def validar_cronologia(d: dict) -> list[str]:
         if anterior and valor < anterior[1]:
             erros.append(f"A data de {rotulo} não pode ser anterior à de {anterior[0]}.")
         anterior = (rotulo, valor)
-    for campo, rotulo in [("data_nascimento", "Nascimento")] + DATAS_MACONICAS:
+    for campo, rotulo in [("data_nascimento", "Nascimento")] + DATAS_MACONICAS + DATAS_HONORIFICAS:
         if d.get(campo) and d[campo] > hoje:
             erros.append(f"A data de {rotulo} não pode estar no futuro.")
     if d.get("data_filiacao") and d.get("data_nascimento") and d["data_filiacao"] < d["data_nascimento"]:

@@ -65,11 +65,12 @@
       <div class="grade duas">
         {% for campo, rotulo in DATAS_MACONICAS %}{{ data(campo, rotulo) }}{% endfor %}
         {% if admin_modo %}
+          {% for campo, rotulo in DATAS_HONORIFICAS %}{{ data(campo, rotulo) }}{% endfor %}
           {{ data('data_afastamento', 'Afastamento') }}
         {% endif %}
       </div>
       <p class="dica">Preencha as datas que já ocorreram. Elas devem seguir a ordem Iniciação → Elevação → Exaltação → Instalação.
-        {% if admin_modo %}Informe o <strong>Afastamento</strong> para desligamento, licença ou falecimento — o obreiro deixa de aparecer como ativo e perde o acesso.{% endif %}</p>
+        {% if admin_modo %}Emérito e Venerável Mestre de Honra: preencha só para quem recebeu o título. Informe o <strong>Afastamento</strong> para desligamento, licença ou falecimento — o obreiro deixa de aparecer como ativo e perde o acesso.{% endif %}</p>
     </section>
 
     <section class="cartao">
