@@ -152,7 +152,8 @@ SQL_PERCAPITAS = """
            IFNULL((SELECT SUM(pp.valor) FROM pagamento_parte pp JOIN pagamento x ON x.id = pp.pagamento_id
                     WHERE pp.percapita_id = p.id AND x.estornado = 0), 0) AS pago,
            IFNULL((SELECT SUM(pp.valor) FROM pagamento_parte pp JOIN pagamento x ON x.id = pp.pagamento_id
-                    WHERE pp.percapita_id = p.id AND x.estornado = 0 AND x.forma = 'Isenção'), 0) AS isento
+                    WHERE pp.percapita_id = p.id AND x.estornado = 0 AND x.forma = 'Isenção'), 0) AS isento,
+           EXISTS (SELECT 1 FROM pagamento_parte pp WHERE pp.percapita_id = p.id) AS tem_pagamento
       FROM percapita p JOIN obreiro o ON o.id = p.obreiro_id
 """
 
@@ -274,8 +275,16 @@ def previa_lancamento(ano: int) -> dict:
             "vencimentos": {s: vencimento(ano, s) for s in (1, 2)}}
 
 
+def pode_lancar_ano(ano: int) -> bool:
+    """Lançamento geral só para o ano atual ou seguintes; anos anteriores, só individualmente."""
+    return ano >= date.today().year
+
+
 def lancar_ano(ano: int, valor: int) -> int:
     db = get_db()
+    if not pode_lancar_ano(ano):
+        raise ValueError(f"Não é possível fazer o lançamento geral de {ano}, ano anterior ao atual. "
+                         "Lance individualmente, pelo registro de cada obreiro.")
     if lancamento_do_ano(ano):
         raise ValueError(f"As percapitas de {ano} já foram lançadas.")
     previa = previa_lancamento(ano)
@@ -329,6 +338,19 @@ def lancar_individual(obreiro_id: int, ano: int, semestres: list[int], valor: in
         feitos.append(rotulo_semestre(ano, s))
     db.commit()
     return feitos
+
+
+def excluir_percapita(percapita_id: int):
+    """Apaga um lançamento que nunca recebeu pagamento (nem estornado). Devolve a linha apagada."""
+    p = get_db().execute(f"{SQL_PERCAPITAS} WHERE p.id = ?", (percapita_id,)).fetchone()
+    if p is None:
+        abort(404)
+    if p["tem_pagamento"]:
+        raise ValueError("Esta percapita tem pagamentos registrados (mesmo que estornados) e não pode ser "
+                         "excluída. Use Cancelar.")
+    get_db().execute("DELETE FROM percapita WHERE id = ?", (percapita_id,))
+    get_db().commit()
+    return p
 
 
 def cancelar_percapita(percapita_id: int, motivo: str):
@@ -490,7 +512,7 @@ def gestao():
         lista_linhas = [l for l in lista_linhas if l["vencido"] > 0]
     return render_template("tesouraria/gestao.html", ano=ano, anos=anos_com_registro(ano), linhas=lista_linhas,
                            totais=totais, lancamento=lancamento_do_ano(ano), q=q, filtro=filtro,
-                           gere=gere_tesouraria(), desfazer=pode_desfazer(ano))
+                           gere=gere_tesouraria(), desfazer=pode_desfazer(ano), pode_lancar=pode_lancar_ano(ano))
 
 
 def totais_do_ano(ano: int, lista: list[dict] | None = None) -> dict:
@@ -534,6 +556,10 @@ def lancar():
             valor = ler_moeda(texto_valor)
         except ValueError as e:
             erro = f"Valor inválido: {e}."
+    if not pode_lancar_ano(ano):
+        flash(f"O lançamento geral só pode ser feito para o ano atual ou seguintes. Para {ano}, "
+              "lance individualmente, pelo registro de cada obreiro.", "erro")
+        return redirect(url_for("tesouraria.gestao", ano=ano))
     if lancamento_do_ano(ano):
         flash(f"As percapitas de {ano} já foram lançadas. Novos obreiros são lançados individualmente, "
               "pelo registro de cada um.", "aviso")
@@ -681,6 +707,21 @@ def cancelar(percapita_id):
             flash(str(e), "erro")
         else:
             flash(f"Percapita do {rotulo_semestre(c['ano'], c['semestre'])} cancelada.", "ok")
+    return redirect(url_for("tesouraria.obreiro", obreiro_id=p["obreiro_id"]))
+
+
+@bp.route("/percapita/<int:percapita_id>/excluir", methods=["POST"])
+@tesoureiro_required
+def excluir(percapita_id):
+    p = get_db().execute("SELECT obreiro_id FROM percapita WHERE id = ?", (percapita_id,)).fetchone()
+    if p is None:
+        abort(404)
+    try:
+        x = excluir_percapita(percapita_id)
+    except ValueError as e:
+        flash(str(e), "erro")
+    else:
+        flash(f"Lançamento do {rotulo_semestre(x['ano'], x['semestre'])} excluído.", "ok")
     return redirect(url_for("tesouraria.obreiro", obreiro_id=p["obreiro_id"]))
 
 

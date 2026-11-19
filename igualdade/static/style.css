@@ -530,3 +530,7 @@ details.cartao summary { cursor: pointer; }
 .ano-resumo { font-size: .82rem; font-weight: 700; color: var(--suave); white-space: nowrap; }
 .ano-resumo.devendo { color: var(--erro); }
 .ano-resumo.em-dia { color: var(--ok); }
+/* botões de gestão: sempre no topo, logo abaixo do título */
+.acoes-topo { margin: -4px 0 12px; }
+.acoes-dica { margin: -6px 0 12px; }
+.acao-excluir { display: block; margin-top: 8px; }

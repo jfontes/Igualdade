@@ -4,7 +4,12 @@
 <div class="estreito">
   <div class="cabecalho">
     <h2>🏛️ Diretoria{% if g %} {{ periodo(g) }}{% endif %}</h2>
-    {% if current_user.admin %}<a class="btn" href="{{ url_for('diretoria.form') }}">＋ Nova gestão</a>{% endif %}
+    {% if current_user.admin %}
+    <div class="botoes" style="margin:0">
+      {% if g %}<a class="btn sec" href="{{ url_for('diretoria.form', gestao_id=g.id) }}">✏️ Editar esta gestão</a>{% endif %}
+      <a class="btn" href="{{ url_for('diretoria.form') }}">＋ Nova gestão</a>
+    </div>
+    {% endif %}
   </div>
 
   {% if gestoes | length > 1 %}
@@ -33,11 +38,6 @@
       {% endfor %}
     </dl>
   </div>
-  {% if current_user.admin %}
-  <div class="botoes">
-    <a class="btn sec" href="{{ url_for('diretoria.form', gestao_id=g.id) }}">✏️ Editar esta gestão</a>
-  </div>
-  {% endif %}
   {% else %}
   <div class="cartao vazio-msg"><span class="ic">🏛️</span>Nenhuma diretoria cadastrada.</div>
   {% endif %}

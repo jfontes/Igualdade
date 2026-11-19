@@ -133,6 +133,11 @@ Para testar no celular na mesma rede Wi-Fi: `flask --app igualdade run --host 0.
 
 > No plano gratuito, o PythonAnywhere desativa o site se você não clicar em *Run until 3 months from today* (aba *Web*) a cada 3 meses.
 
+## Banco de dados: tempo de espera de gravação
+
+- **5 segundos.** Se duas gravações coincidirem, a segunda espera até 5 s antes de desistir com "database is locked". Ajustável com a variável `SQLITE_TIMEOUT` (em segundos).
+- O banco usa o modo padrão do SQLite (não WAL), adequado ao sistema de arquivos do PythonAnywhere.
+
 ## Backup
 
 Os dados ficam em dois lugares: o banco `instance/igualdade.db` e a pasta de fotos `instance/fotos/`. Para automatizar, crie uma *Scheduled Task* diária:
@@ -141,9 +146,13 @@ Os dados ficam em dois lugares: o banco `instance/igualdade.db` e a pasta de fot
 cd ~/Igualdade/instance && tar czf ~/backups/igualdade-$(date +%F).tar.gz igualdade.db fotos
 ```
 
-Novas colunas (como e-mail, telefone e foto) são acrescentadas automaticamente a bancos antigos quando o sistema inicia — basta atualizar o código e recarregar o site.
-
 (crie antes a pasta com `mkdir ~/backups`)
+
+Novas colunas e tabelas são acrescentadas automaticamente a bancos antigos quando o sistema inicia — basta atualizar o código e recarregar o site.
+
+## Outras hospedagens
+
+Avaliação da DiaCloud (plano Diamond), com os cuidados para manter banco e fotos em área persistente: [docs/hospedagem-diacloud-diamond.md](docs/hospedagem-diacloud-diamond.md).
 
 ## Instalar no celular
 

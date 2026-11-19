@@ -11,6 +11,14 @@
     </nav>
   </div>
 
+  {% if current_user.admin %}
+  <div class="botoes acoes-topo">
+    <a class="btn" href="{{ url_for('gerenciar.gerenciar', ano=ano) }}">🗓️ Gerenciar sessões</a>
+    <a class="btn sec" href="{{ url_for('diretoria.ver') }}">🏛️ Diretoria</a>
+  </div>
+  <p class="dica acoes-dica">Toque em uma sessão para alterar o grau, a ordem do dia, registrar o cancelamento ou o balaústre.</p>
+  {% endif %}
+
   <nav class="abas" aria-label="Escolher mês">
     {% for nome in MESES %}
       <a href="{{ url_for('main.agenda', mes=loop.index, ano=ano) }}" class="{{ 'ativo' if loop.index == mes }}"
@@ -79,15 +87,5 @@
   </div>
   <p class="dica">As sessões começam às 20h. Os aniversários são de obreiros ativos e seus familiares; a idade é a que completam em {{ ano }}.</p>
 
-  {% if current_user.admin %}
-  <section class="cartao">
-    <h3>Secretaria</h3>
-    <div class="botoes">
-      <a class="btn" href="{{ url_for('gerenciar.gerenciar', ano=ano) }}">🗓️ Gerenciar sessões</a>
-      <a class="btn sec" href="{{ url_for('diretoria.ver') }}">🏛️ Diretoria</a>
-    </div>
-    <p class="dica">Toque em uma sessão da lista para alterar o grau, a ordem do dia, registrar o cancelamento ou registrar o balaústre. A mesa do balaústre vem da diretoria vigente na data da sessão.</p>
-  </section>
-  {% endif %}
 </div>
 {% endblock %}

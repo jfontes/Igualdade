@@ -49,7 +49,13 @@
       <div class="barra-pago" aria-hidden="true"><span style="width: {{ (100 * p.pago / p.valor) | round(0) }}%"></span></div>
     {% endif %}
     {% endif %}
-    {% if gere and not p.cancelada and not p.pago %}
+    {% if gere and not p.tem_pagamento %}
+      <form class="inline acao-excluir" method="post" action="{{ url_for('tesouraria.excluir', percapita_id=p.id) }}"
+            data-confirmar="Excluir o lançamento da percapita do {{ p.semestre_txt }}? Ainda não houve pagamento.">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="btn perigo pequeno" type="submit">🗑️ Excluir lançamento</button>
+      </form>
+    {% elif gere and not p.cancelada and not p.pago %}
       <details class="acao-motivo">
         <summary>Cancelar percapita</summary>
         <form method="post" action="{{ url_for('tesouraria.cancelar', percapita_id=p.id) }}"

@@ -1,16 +1,32 @@
-"""Acesso ao banco SQLite (sem ORM)."""
+"""Acesso ao banco SQLite (sem ORM).
+
+O banco usa o modo de journal padrão do SQLite (não WAL): o PythonAnywhere guarda os arquivos
+em sistema de arquivos de rede, onde o WAL não é confiável.
+"""
+import os
 import sqlite3
 from pathlib import Path
 
 import click
 from flask import current_app, g
 
+# Tempo máximo que uma gravação espera o banco ser liberado por outra gravação antes de
+# desistir com "database is locked". As gravações deste sistema levam milissegundos;
+# 5 segundos cobrem picos (vários usuários salvando juntos) sem prender a página do usuário.
+TIMEOUT_ESCRITA = float(os.environ.get("SQLITE_TIMEOUT", "5"))
+
+
+def conectar(caminho: str) -> sqlite3.Connection:
+    conn = sqlite3.connect(caminho, timeout=TIMEOUT_ESCRITA)
+    conn.execute(f"PRAGMA busy_timeout = {int(TIMEOUT_ESCRITA * 1000)}")
+    conn.execute("PRAGMA foreign_keys = ON")  # necessário para o ON DELETE CASCADE
+    return conn
+
 
 def get_db() -> sqlite3.Connection:
     if "db" not in g:
-        g.db = sqlite3.connect(current_app.config["DATABASE"])
+        g.db = conectar(current_app.config["DATABASE"])
         g.db.row_factory = sqlite3.Row
-        g.db.execute("PRAGMA foreign_keys = ON")  # necessário para o ON DELETE CASCADE
     return g.db
 
 
@@ -60,7 +76,7 @@ def init_db_command():
 def init_app(app):
     app.teardown_appcontext(close_db)
     if Path(app.config["DATABASE"]).exists():
-        conn = sqlite3.connect(app.config["DATABASE"])
+        conn = conectar(app.config["DATABASE"])
         try:
             migrar(conn)
         finally:

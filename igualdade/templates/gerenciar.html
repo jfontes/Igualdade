@@ -68,6 +68,19 @@
     </nav>
   </div>
 
+  {% if not previa %}
+  <div class="botoes acoes-topo planilha-acoes">
+    <a class="btn sec" href="{{ url_for('planilha.exportar', ano=ano) }}">⬇️ Exportar planilha</a>
+    <form class="inline" method="post" enctype="multipart/form-data" action="{{ url_for('gerenciar.carregar_planilha', ano=ano) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <label class="btn sec" tabindex="0">⬆️ Carregar planilha
+        <input type="file" name="planilha" hidden data-enviar-ao-mudar
+               accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">
+      </label>
+    </form>
+  </div>
+  {% endif %}
+
   {% if previa %}
   <p class="lembrete">📄 <strong>Prévia da planilha.</strong> As sessões destacadas ainda não foram gravadas.
     Confira e toque em <strong>Incluir na agenda</strong>, ou <a href="{{ voltar }}">descarte a planilha</a>.</p>
@@ -113,17 +126,5 @@
     </div>
   </form>
 
-  {% if not previa %}
-  <div class="botoes planilha-acoes">
-    <a class="btn sec" href="{{ url_for('planilha.exportar', ano=ano) }}">⬇️ Exportar planilha</a>
-    <form class="inline" method="post" enctype="multipart/form-data" action="{{ url_for('gerenciar.carregar_planilha', ano=ano) }}">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-      <label class="btn sec" tabindex="0">⬆️ Carregar planilha
-        <input type="file" name="planilha" hidden data-enviar-ao-mudar
-               accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">
-      </label>
-    </form>
-  </div>
-  {% endif %}
 </div>
 {% endblock %}

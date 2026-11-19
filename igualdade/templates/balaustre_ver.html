@@ -4,6 +4,13 @@
 <div class="estreito">
   <a class="voltar" href="{{ url_for('main.agenda', ano=s.data[:4] | int, mes=s.data[5:7] | int) }}">← Agenda</a>
 
+  {% if current_user.admin %}
+  <div class="botoes acoes-topo" style="margin-top:4px">
+    <a class="btn sec" href="{{ url_for('balaustre.form', sessao_id=s.id) }}">✏️ Editar balaústre</a>
+    <a class="btn sec" href="{{ url_for('balaustre.baixar', sessao_id=s.id) }}">⬇️ Baixar .docx</a>
+  </div>
+  {% endif %}
+
   <article class="cartao documento">
     <p class="doc-titulo">{{ titulo }}</p>
     <p class="doc-subtitulo">{{ subtitulo }}</p>
@@ -16,11 +23,5 @@
     </div>
   </article>
 
-  {% if current_user.admin %}
-  <div class="botoes">
-    <a class="btn sec" href="{{ url_for('balaustre.form', sessao_id=s.id) }}">✏️ Editar balaústre</a>
-    <a class="btn sec" href="{{ url_for('balaustre.baixar', sessao_id=s.id) }}">⬇️ Baixar .docx</a>
-  </div>
-  {% endif %}
 </div>
 {% endblock %}

@@ -15,6 +15,9 @@
 {% if lancamento %}
   <p class="suave" style="margin-top:-6px">Lançamento de {{ ano }}: <strong>{{ lancamento.valor | moeda }}</strong> por semestre,
     feito em {{ lancamento.lancado_em[:10] | data }}.</p>
+{% elif gere and not pode_lancar %}
+  <p class="suave">Não houve lançamento geral em {{ ano }}. Para anos anteriores ao atual, as percapitas são
+    lançadas individualmente, pelo registro de cada obreiro.</p>
 {% elif gere %}
   <section class="cartao destaque-lancar">
     <p style="margin:0 0 10px"><strong>As percapitas de {{ ano }} ainda não foram lançadas.</strong></p>
