@@ -534,3 +534,11 @@ details.cartao summary { cursor: pointer; }
 .acoes-topo { margin: -4px 0 12px; }
 .acoes-dica { margin: -6px 0 12px; }
 .acao-excluir { display: block; margin-top: 8px; }
+/* agenda: ano logo acima da barra de meses */
+.anos-agenda { justify-content: flex-start; margin: 4px 0 8px; }
+/* gerenciar sessões: botões de planilha lado a lado (cabem no celular) e marcar/desmarcar todas */
+.planilha-acoes { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.planilha-acoes form { margin: 0; }
+.planilha-acoes .btn { width: 100%; padding: 10px 8px; font-size: .85rem; white-space: normal; line-height: 1.2; text-align: center; }
+.marcar-todas { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 0 0 12px; }
+.marcar-todas .btn { width: 100%; padding: 6px 6px; white-space: nowrap; }

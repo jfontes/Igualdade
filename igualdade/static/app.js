@@ -296,6 +296,13 @@
       return cria + atualiza;
     };
     ger.addEventListener("change", contar);
+    ger.querySelectorAll("[data-marcar-todas]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const marcar = btn.dataset.marcarTodas === "1";
+        ger.querySelectorAll("[data-incluir]").forEach((chk) => { chk.checked = marcar; });
+        contar();
+      });
+    });
     ger.addEventListener("submit", () => { enviando = true; });
     window.addEventListener("beforeunload", (ev) => {
       if (previa && !enviando && contar() > 0) { ev.preventDefault(); ev.returnValue = ""; }

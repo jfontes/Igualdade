@@ -71,7 +71,7 @@
   {% if not previa %}
   <div class="botoes acoes-topo planilha-acoes">
     <a class="btn sec" href="{{ url_for('planilha.exportar', ano=ano) }}">⬇️ Exportar planilha</a>
-    <form class="inline" method="post" enctype="multipart/form-data" action="{{ url_for('gerenciar.carregar_planilha', ano=ano) }}">
+    <form method="post" enctype="multipart/form-data" action="{{ url_for('gerenciar.carregar_planilha', ano=ano) }}">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <label class="btn sec" tabindex="0">⬆️ Carregar planilha
         <input type="file" name="planilha" hidden data-enviar-ao-mudar
@@ -104,6 +104,12 @@
 
   <form method="post" action="{{ url_for('gerenciar.gerenciar', ano=ano) }}" data-gerenciar data-uma-vez>
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    {% if meses | map(attribute='linhas') | sum(start=[]) | selectattr('origem', 'equalto', 'sugestao') | list %}
+    <div class="marcar-todas">
+      <button class="btn sec pequeno" type="button" data-marcar-todas="1" title="Marcar todas as sugestões">☑ Marcar todas</button>
+      <button class="btn sec pequeno" type="button" data-marcar-todas="0" title="Desmarcar todas as sugestões">☐ Desmarcar todas</button>
+    </div>
+    {% endif %}
     {% for m in meses %}
     <section class="cartao mes-gerenciar">
       <div class="mes-cab">

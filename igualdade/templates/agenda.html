@@ -4,11 +4,6 @@
 <div class="estreito">
   <div class="cabecalho">
     <h2>🗓️ Agenda de {{ MESES[mes - 1] }}</h2>
-    <nav class="anos" aria-label="Escolher ano">
-      <a class="btn sec pequeno" href="{{ url_for('main.agenda', ano=ano - 1, mes=mes) }}" aria-label="Ano anterior">◀</a>
-      <strong>{{ ano }}</strong>
-      <a class="btn sec pequeno" href="{{ url_for('main.agenda', ano=ano + 1, mes=mes) }}" aria-label="Próximo ano">▶</a>
-    </nav>
   </div>
 
   {% if current_user.admin %}
@@ -19,6 +14,11 @@
   <p class="dica acoes-dica">Toque em uma sessão para alterar o grau, a ordem do dia, registrar o cancelamento ou o balaústre.</p>
   {% endif %}
 
+  <nav class="anos anos-agenda" aria-label="Escolher ano">
+    <a class="btn sec pequeno" href="{{ url_for('main.agenda', ano=ano - 1, mes=mes) }}" aria-label="Ano anterior">◀</a>
+    <strong>{{ ano }}</strong>
+    <a class="btn sec pequeno" href="{{ url_for('main.agenda', ano=ano + 1, mes=mes) }}" aria-label="Próximo ano">▶</a>
+  </nav>
   <nav class="abas" aria-label="Escolher mês">
     {% for nome in MESES %}
       <a href="{{ url_for('main.agenda', mes=loop.index, ano=ano) }}" class="{{ 'ativo' if loop.index == mes }}"
