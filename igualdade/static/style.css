@@ -542,3 +542,12 @@ details.cartao summary { cursor: pointer; }
 .planilha-acoes .btn { width: 100%; padding: 10px 8px; font-size: .85rem; white-space: normal; line-height: 1.2; text-align: center; }
 .marcar-todas { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 0 0 12px; }
 .marcar-todas .btn { width: 100%; padding: 6px 6px; white-space: nowrap; }
+/* eventos na agenda: amarelo */
+:root { --evento: #f2c200; --evento-texto: #3d2e00; }
+.dia.evento, .cor.evento { background: var(--evento); color: var(--evento-texto); }
+.selo.evento { background: #fff3bf; color: #6b5200; }
+li.hoje .dia.evento { box-shadow: 0 0 0 3px var(--bordo); }
+.agenda li.evento.cancelada .nome s { color: var(--suave); }
+.mes-cab .mais-txt { flex: none; min-height: 36px; padding: 6px 10px; font-size: .8rem; }
+.mes-cab .mais-evento { background: #fff8d6; border-color: #f0dc9c; color: #6b5200; }
+.eventos-mes { margin-top: 4px; }

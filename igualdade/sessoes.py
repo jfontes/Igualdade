@@ -120,7 +120,7 @@ def _ler_form(form):
 
 
 def _destino_voltar() -> str | None:
-    """Endereço de retorno pedido pela tela de origem (ex.: Gerenciar sessões), se for interno."""
+    """Endereço de retorno pedido pela tela de origem (ex.: Gerenciar), se for interno."""
     destino = request.values.get("voltar")
     if destino and destino.startswith("/") and not destino.startswith("//"):
         return destino
@@ -199,5 +199,5 @@ def excluir(sessao_id):
 @bp.route("/gerar")
 @admin_required
 def gerar():
-    """Endereço antigo do gerador: agora tudo fica em "Gerenciar sessões"."""
+    """Endereço antigo do gerador: agora tudo fica em "Gerenciar"."""
     return redirect(url_for("gerenciar.gerenciar", ano=request.args.get("ano", date.today().year + 1)))

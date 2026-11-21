@@ -17,7 +17,7 @@ from werkzeug.datastructures import MultiDict
 from . import fotos
 from .auth import SENHA_MIN, hash_senha
 from .db import get_db
-from .util import DATAS_MACONICAS, MESES, PARENTESCOS, UFS, so_digitos
+from .util import DATAS_MACONICAS, MESES, PARENTESCOS, UFS, grau_do_obreiro, so_digitos
 from .views import (CAMPOS_PESSOAIS, buscar_familiar, buscar_obreiro, gravar_familiar,
                     ler_form_obreiro, remover_familiar)
 
@@ -88,6 +88,21 @@ def _render(modelo: str, etapa: int, **ctx):
                            PARENTESCOS=PARENTESCOS, **ctx)
 
 
+def _campos_ocultos(obreiro) -> set[str]:
+    """Datas que o assistente não mostra a este obreiro.
+
+    - Instalação e Filiação: só aparecem se a Secretaria já as cadastrou (não são de todos).
+    - Companheiro: ainda não tem Exaltação. Aprendiz: ainda não tem Elevação nem Exaltação.
+    """
+    ocultos = {c for c in ("data_instalacao", "data_filiacao") if not obreiro[c]}
+    grau = grau_do_obreiro(obreiro)
+    if grau == "Companheiro":
+        ocultos.add("data_exaltacao")
+    elif grau == "Aprendiz":
+        ocultos |= {"data_elevacao", "data_exaltacao"}
+    return ocultos
+
+
 def _grupos(campos):
     return [(titulo, ic, [c for c in cs if c in campos])
             for titulo, ic, cs in GRUPOS if any(c in campos for c in cs)]
@@ -154,7 +169,8 @@ def conferir():
     if (r := _verificar(1)):
         return r
     obreiro = buscar_obreiro(current_user.id)
-    preenchidos = [c for c in CAMPOS_PESSOAIS if obreiro[c]]
+    ocultos = _campos_ocultos(obreiro)
+    preenchidos = [c for c in CAMPOS_PESSOAIS if obreiro[c] and c not in ocultos]
     corrigir = bool(request.args.get("corrigir"))
     o = obreiro
     if request.method == "POST":
@@ -178,7 +194,8 @@ def completar():
     if (r := _verificar(2)):
         return r
     obreiro = buscar_obreiro(current_user.id)
-    ausentes = [c for c in CAMPOS_PESSOAIS if not obreiro[c]]
+    ocultos = _campos_ocultos(obreiro)
+    ausentes = [c for c in CAMPOS_PESSOAIS if not obreiro[c] and c not in ocultos]
     o = obreiro
     if request.method == "POST":
         dados, erros = _salvar(obreiro, ausentes, com_foto=not obreiro["foto"])

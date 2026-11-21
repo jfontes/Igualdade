@@ -75,6 +75,8 @@ def _mudou(linha) -> bool:
 
 
 def _render(ano: int, linhas: list[dict], avisos=(), previa=False):
+    from .eventos import eventos_do_ano
+    eventos = eventos_do_ano(ano)
     meses = []
     for m in range(1, 13):
         ultimo = calendar.monthrange(ano, m)[1]
@@ -82,7 +84,8 @@ def _render(ano: int, linhas: list[dict], avisos=(), previa=False):
         do_mes.sort(key=lambda l: (l["data"], ORDEM_ESTADO[l["origem"]]))
         inteiro = recesso(date(ano, m, 1)) if recesso(date(ano, m, 1)) == recesso(date(ano, m, ultimo)) else None
         meses.append({"mes": m, "nome": MESES[m - 1], "linhas": do_mes, "recesso": inteiro,
-                      "cadastradas": sum(l["origem"] == "cadastrada" for l in do_mes)})
+                      "cadastradas": sum(l["origem"] == "cadastrada" for l in do_mes),
+                      "eventos": [e for e in eventos if int(e["data"][5:7]) == m]})
     for n, linha in enumerate(l for m in meses for l in m["linhas"]):
         linha["n"] = n
         linha["alterada"] = _mudou(linha)

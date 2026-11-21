@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block titulo %}{{ 'Editar evento' if evento_id else 'Novo evento' }}{% endblock %}
+{% block conteudo %}
+{% set volta = voltar or (url_for('main.agenda', ano=e.data[:4] | int, mes=e.data[5:7] | int) if e.data else url_for('main.agenda')) %}
+<div class="estreito">
+  <a class="voltar" href="{{ volta }}">← {{ 'Gerenciar' if voltar else 'Agenda' }}</a>
+  <h2>🎉 {{ self.titulo() }}</h2>
+  <form method="post" class="cartao grade" data-uma-vez>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    {% if voltar %}<input type="hidden" name="voltar" value="{{ voltar }}">{% endif %}
+    {% if mes %}<input type="hidden" name="mes" value="{{ mes }}">{% endif %}
+
+    <div class="campo {{ 'com-erro' if 'titulo' in erros }}">
+      <label for="titulo">Nome do evento *</label>
+      <input id="titulo" name="titulo" value="{{ e.titulo or '' }}" maxlength="120" required
+             placeholder="Ex.: Dia das Mães" {{ 'autofocus' if not evento_id or 'titulo' in erros }}>
+      {% if 'titulo' in erros %}<span class="erro-campo">{{ erros.titulo }}</span>{% endif %}
+    </div>
+
+    <div class="grade duas">
+      <div class="campo {{ 'com-erro' if 'data' in erros }}">
+        <label for="data">Data *</label>
+        <input id="data" name="data" type="date" value="{{ e.data or '' }}" required
+               {% if limites %}min="{{ limites[0] }}" max="{{ limites[1] }}"{% endif %}>
+        {% if 'data' in erros %}<span class="erro-campo">{{ erros.data }}</span>{% endif %}
+      </div>
+      <div class="campo {{ 'com-erro' if 'hora' in erros }}">
+        <label for="hora">Hora</label>
+        <input id="hora" name="hora" type="time" value="{{ e.hora or '' }}">
+        {% if 'hora' in erros %}<span class="erro-campo">{{ erros.hora }}</span>{% endif %}
+      </div>
+    </div>
+
+    <div class="campo">
+      <label for="local">Local</label>
+      <input id="local" name="local" value="{{ e.local or '' }}" maxlength="120" placeholder="Ex.: Templo da Loja">
+    </div>
+
+    <div class="campo">
+      <label for="descricao">Descrição</label>
+      <textarea id="descricao" name="descricao" rows="3" maxlength="500"
+                placeholder="Ex.: Almoço com as famílias; traje esporte">{{ e.descricao or '' }}</textarea>
+    </div>
+
+    <div class="cancelamento">
+      <label class="check"><input type="checkbox" name="cancelado" value="1" {{ 'checked' if e.cancelado }} data-mostra="motivo-bloco"> Evento cancelado</label>
+      <div class="campo {{ '' if e.cancelado else 'oculto' }} {{ 'com-erro' if 'motivo_cancelamento' in erros }}" id="motivo-bloco">
+        <label for="motivo_cancelamento">Motivo do cancelamento</label>
+        <input id="motivo_cancelamento" name="motivo_cancelamento" value="{{ e.motivo_cancelamento or '' }}"
+               maxlength="120" data-obrigatorio-se-visivel>
+        {% if 'motivo_cancelamento' in erros %}<span class="erro-campo">{{ erros.motivo_cancelamento }}</span>{% endif %}
+      </div>
+    </div>
+
+    <div class="botoes">
+      <button class="btn" type="submit">Salvar</button>
+      <a class="btn sec" href="{{ volta }}">Cancelar</a>
+    </div>
+  </form>
+
+  {% if evento_id %}
+  <div class="botoes">
+    <form class="inline" method="post" action="{{ url_for('eventos.excluir', evento_id=evento_id) }}"
+          data-confirmar="Excluir este evento da agenda? Para manter o aviso aos Irmãos, prefira marcar como cancelado.">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      {% if voltar %}<input type="hidden" name="voltar" value="{{ voltar }}">{% endif %}
+      <button class="btn perigo" type="submit">🗑️ Excluir evento</button>
+    </form>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

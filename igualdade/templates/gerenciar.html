@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block titulo %}Gerenciar sessões de {{ ano }}{% endblock %}
+{% block titulo %}Gerenciar agenda de {{ ano }}{% endblock %}
 
 {% macro linha(l) -%}
   {% set p = 'r-' ~ l.n ~ '-' %}
@@ -61,7 +61,7 @@
 <div class="estreito">
   <a class="voltar" href="{{ url_for('main.agenda', ano=ano, mes=2) }}">← Agenda</a>
   <div class="cabecalho">
-    <h2>Gerenciar sessões de {{ ano }}</h2>
+    <h2>Gerenciar agenda de {{ ano }}</h2>
     <nav class="anos" aria-label="Escolher ano">
       <a class="btn sec pequeno" href="{{ url_for('gerenciar.gerenciar', ano=ano - 1) }}">◀ {{ ano - 1 }}</a>
       <a class="btn sec pequeno" href="{{ url_for('gerenciar.gerenciar', ano=ano + 1) }}">{{ ano + 1 }} ▶</a>
@@ -91,7 +91,7 @@
     {% else %}
     <li>Todas as segundas-feiras do ano, com a regra dos graus (última do mês: Mestre; penúltima: Companheiro; demais: Aprendiz). Feriados vêm cancelados; recessos não geram sessão.</li>
     {% endif %}
-    <li><strong>✏️</strong> edita a sessão. <strong>＋</strong> inclui uma sessão em qualquer dia do mês (ex.: extraordinária).</li>
+    <li><strong>✏️</strong> edita. <strong>＋ Sessão</strong> inclui uma sessão em qualquer dia do mês (ex.: extraordinária); <strong>＋ Evento</strong> inclui um evento (ex.: Dia das Mães), que aparece em amarelo na agenda.</li>
   </ul>
   {% endif %}
 
@@ -114,14 +114,30 @@
     <section class="cartao mes-gerenciar">
       <div class="mes-cab">
         <h3>{{ m.nome }}</h3>
-        <span class="suave">{% if m.cadastradas %}{{ m.cadastradas }} cadastrada{{ 's' if m.cadastradas != 1 }}{% elif m.recesso %}{{ m.recesso }}{% endif %}</span>
+        <span class="suave">{% if m.cadastradas %}{{ m.cadastradas }} {{ 'sessões' if m.cadastradas != 1 else 'sessão' }}{% elif m.recesso %}{{ m.recesso }}{% endif %}</span>
         {% if not previa %}
-        <a class="btn sec pequeno mais" href="{{ url_for('sessoes.form', mes='%04d-%02d' | format(ano, m.mes), tipo='Extraordinária', voltar=voltar) }}"
-           aria-label="Incluir sessão em {{ m.nome }}">＋</a>
+        <a class="btn sec pequeno mais-txt" href="{{ url_for('sessoes.form', mes='%04d-%02d' | format(ano, m.mes), tipo='Extraordinária', voltar=voltar) }}"
+           aria-label="Incluir sessão em {{ m.nome }}">＋ Sessão</a>
+        <a class="btn sec pequeno mais-txt mais-evento" href="{{ url_for('eventos.form', mes='%04d-%02d' | format(ano, m.mes), voltar=voltar) }}"
+           aria-label="Incluir evento em {{ m.nome }}">＋ Evento</a>
         {% endif %}
       </div>
       {% if m.linhas %}
       <ul class="lista agenda">{% for l in m.linhas %}{{ linha(l) }}{% endfor %}</ul>
+      {% endif %}
+      {% if m.eventos %}
+      <ul class="lista agenda eventos-mes">
+        {% for e in m.eventos %}
+        <li class="evento {{ 'cancelada' if e.cancelado }}"><div class="item">
+          <span class="dia {{ 'cancelada' if e.cancelado else 'evento' }}"><b>{{ e.data[8:] }}</b><small>{{ MESES_CURTOS[e.data[5:7] | int - 1] }}</small></span>
+          <div class="corpo">
+            <div class="nome">{% if e.cancelado %}<s>{{ e.titulo }}</s> <span class="selo cinza">Cancelado</span>{% else %}{{ e.titulo }}{% endif %}</div>
+            <div class="estado">🎉 evento{% if e.hora %} · {{ e.hora }}{% endif %}{% if e.local %} · {{ e.local }}{% endif %}</div>
+          </div>
+          {% if not previa %}<a class="lapis" href="{{ url_for('eventos.form', evento_id=e.id, voltar=voltar) }}" aria-label="Editar o evento {{ e.titulo }}">✏️</a>{% endif %}
+        </div></li>
+        {% endfor %}
+      </ul>
       {% endif %}
     </section>
     {% endfor %}

@@ -3,7 +3,7 @@
 {% block conteudo %}
 {% set volta = voltar or (url_for('main.agenda', ano=s.data[:4] | int, mes=s.data[5:7] | int) if s.data else url_for('main.agenda')) %}
 <div class="estreito">
-  <a class="voltar" href="{{ volta }}">← {{ 'Gerenciar sessões' if voltar else 'Agenda' }}</a>
+  <a class="voltar" href="{{ volta }}">← {{ 'Gerenciar' if voltar else 'Agenda' }}</a>
   <h2>{{ self.titulo() }}</h2>
   {% set erros = erros or {} %}
   <form method="post" class="cartao grade" data-uma-vez>

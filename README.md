@@ -52,6 +52,12 @@ wsgi.py            entrada para o PythonAnywhere
 
 Sem diretoria cadastrada para a data, o sistema leva primeiro ao cadastro da diretoria. As tabelas novas (`gestao`, `diretoria`, `balaustre`) são criadas automaticamente em bancos existentes.
 
+## Eventos na agenda
+
+Além das sessões e dos aniversários, a agenda mostra a **previsão de eventos** (ex.: Dia das Mães, Arraial), em **amarelo**. Eventos não são sessões: não têm grau nem balaústre e podem cair no mesmo dia de uma sessão. A Secretaria inclui pelo botão **＋ Evento** de cada mês em *Agenda → Gerenciar* (ou edita tocando no evento na agenda); há data, hora, local, descrição e cancelamento com motivo. O próximo evento aparece na página inicial.
+
+Eventos que tinham sido cadastrados como "sessão extraordinária" com a ordem do dia `Evento: <nome>` são movidos automaticamente para a tabela de eventos quando o sistema inicia (só os que não têm balaústre).
+
 ## Tesouraria (percapitas)
 
 Percapita é a contribuição semestral. Valores ficam em centavos no banco.

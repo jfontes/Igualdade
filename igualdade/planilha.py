@@ -1,4 +1,4 @@
-"""Planilha Excel (.xlsx) das sessões: exportação e leitura para a tela "Gerenciar sessões".
+"""Planilha Excel (.xlsx) das sessões: exportação e leitura para a tela "Gerenciar" da agenda.
 
 A leitura não grava nada: as linhas são carregadas na tela de gerenciar, onde a Secretaria
 confere e grava com "Incluir na agenda". Balaústres não entram na planilha.
@@ -91,7 +91,7 @@ def exportar():
         "• Cancelada: Sim ou Não. Quando Sim, informe o motivo (ex.: Feriado).",
         f"• Ordem do dia: até {ORDEM_MAX} caracteres.",
         "• Não mude os títulos da primeira linha da aba de sessões.",
-        "• No sistema: Agenda → Gerenciar sessões → Carregar planilha. As linhas aparecem na tela",
+        "• No sistema: Agenda → Gerenciar → Carregar planilha. As linhas aparecem na tela",
         "  para conferência e só são gravadas ao tocar em \"Incluir na agenda\".",
         "• O balaústre das sessões não faz parte da planilha e não é alterado.",
     ]:

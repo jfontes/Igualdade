@@ -39,6 +39,19 @@
 </a>
 {% endif %}
 
+{% if evento %}
+<section class="cartao proxima-sessao">
+  <div class="rotulo-secao">Próximo evento</div>
+  <a class="item" href="{{ url_for('main.agenda', ano=evento.data[:4] | int, mes=evento.data[5:7] | int) }}">
+    <span class="dia evento"><b>{{ evento.data[8:] }}</b><small>{{ MESES_CURTOS[evento.data[5:7] | int - 1] }}</small></span>
+    <div class="corpo">
+      <div class="nome">{% if evento.data == hoje %}<span class="selo ouro">Hoje!</span> {% endif %}{{ evento.titulo }}</div>
+      <div class="sub">{{ evento.data | extenso }}{% if evento.hora %} · {{ evento.hora }}{% endif %}{% if evento.local %} · {{ evento.local }}{% endif %}</div>
+    </div>
+  </a>
+</section>
+{% endif %}
+
 <div class="atalhos">
   <a class="atalho" href="{{ url_for('main.minhas_informacoes') }}">
     <span class="ic">👤</span>Minhas Informações

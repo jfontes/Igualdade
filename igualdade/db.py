@@ -56,7 +56,24 @@ def migrar(conn: sqlite3.Connection):
         existentes = {r[1] for r in conn.execute(f"PRAGMA table_info({tabela})")}
         if existentes and coluna not in existentes:
             conn.execute(f"ALTER TABLE {tabela} ADD COLUMN {coluna} {tipo}")
+    mover_eventos_cadastrados_como_sessao(conn)
     conn.commit()
+
+
+def mover_eventos_cadastrados_como_sessao(conn: sqlite3.Connection) -> int:
+    """Correção de dados: eventos que foram cadastrados como "sessão extraordinária" com a
+    ordem do dia "Evento: <nome>" passam para a tabela de eventos. Só move as que não têm
+    balaústre. Pode rodar sempre: depois de movidas, não sobra nada para mover."""
+    linhas = conn.execute(
+        "SELECT id, data, ordem_do_dia, cancelada, motivo_cancelamento FROM sessao s "
+        "WHERE tipo = 'Extraordinária' AND ordem_do_dia LIKE 'Evento:%' "
+        "AND NOT EXISTS (SELECT 1 FROM balaustre b WHERE b.sessao_id = s.id)").fetchall()
+    for sid, data, ordem, cancelada, motivo in linhas:
+        titulo = ordem.split(":", 1)[1].strip() or "Evento"
+        conn.execute("INSERT INTO evento (data, titulo, cancelado, motivo_cancelamento) VALUES (?, ?, ?, ?)",
+                     (data, titulo, cancelada, motivo))
+        conn.execute("DELETE FROM sessao WHERE id = ?", (sid,))
+    return len(linhas)
 
 
 def init_db():

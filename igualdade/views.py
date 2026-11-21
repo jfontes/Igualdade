@@ -114,12 +114,14 @@ def painel():
     total_ativos = db.execute(
         "SELECT COUNT(*) FROM obreiro WHERE data_afastamento IS NULL").fetchone()[0]
     aniversarios = len(consultar_aniversariantes(mes))
+    from .eventos import proximo_evento
     from .sessoes import proxima_sessao
     from .tesouraria import resumo_obreiro
     proxima, cancelada = proxima_sessao()
     return render_template("painel.html", total_ativos=total_ativos, aniversarios=aniversarios,
                            mes_nome=MESES[int(mes) - 1], proxima=proxima, cancelada=cancelada,
-                           hoje=date.today().isoformat(), tesouraria=resumo_obreiro(current_user.id))
+                           hoje=date.today().isoformat(), tesouraria=resumo_obreiro(current_user.id),
+                           evento=proximo_evento())
 
 
 # ---------------------------------------------------------------- RF03
@@ -298,7 +300,8 @@ def aniversariantes():
 @bp.route("/agenda")
 @login_required
 def agenda():
-    """Compromissos do mês: sessões da Loja e aniversários, na mesma lista, por dia."""
+    """Compromissos do mês: sessões, eventos e aniversários, na mesma lista, por dia."""
+    from .eventos import eventos_do_mes
     from .sessoes import sessoes_do_mes
     hoje = date.today()
     try:
@@ -312,9 +315,11 @@ def agenda():
     itens = [{"tipo": "sessao", "dia": int(s["data"][8:]), "s": s,
               "balaustre": bool(s["balaustre_dados"]) and concluido(json.loads(s["balaustre_dados"]))}
              for s in sessoes_do_mes(ano, mes)]
+    itens += [{"tipo": "evento", "dia": int(e["data"][8:]), "e": e} for e in eventos_do_mes(ano, mes)]
     itens += [{"tipo": "aniversario", "dia": a["dia"], "a": a}
               for a in consultar_aniversariantes(f"{mes:02d}")]
-    itens.sort(key=lambda i: (i["dia"], i["tipo"] != "sessao"))
+    ordem = {"sessao": 0, "evento": 1, "aniversario": 2}
+    itens.sort(key=lambda i: (i["dia"], ordem[i["tipo"]]))
     return render_template("agenda.html", itens=itens, mes=mes, ano=ano, MESES=MESES, hoje=hoje)
 
 

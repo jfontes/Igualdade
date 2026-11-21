@@ -165,3 +165,19 @@ CREATE TABLE IF NOT EXISTS pagamento_parte (
 );
 
 CREATE INDEX IF NOT EXISTS idx_parte_percapita ON pagamento_parte(percapita_id);
+
+-- ================================================================ eventos da Loja
+-- Previsão de eventos na agenda (ex.: Dia das Mães, Arraial). Não são sessões:
+-- não têm grau, balaústre nem mesa, e podem cair no mesmo dia de uma sessão.
+CREATE TABLE IF NOT EXISTS evento (
+    id               INTEGER PRIMARY KEY AUTOINCREMENT,
+    data             TEXT    NOT NULL,                 -- AAAA-MM-DD
+    hora             TEXT,                             -- HH:MM (opcional)
+    titulo           TEXT    NOT NULL,
+    local            TEXT,
+    descricao        TEXT,
+    cancelado        INTEGER NOT NULL DEFAULT 0,
+    motivo_cancelamento TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_evento_data ON evento(data);
