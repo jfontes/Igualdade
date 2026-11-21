@@ -288,6 +288,10 @@
         if (origem === "nova" || (origem === "sugestao" && incluir.checked)) cria++;
         else if (origem === "cadastrada" && linha.classList.contains("da-planilha")) atualiza++;
       });
+      ger.querySelectorAll("[data-evento-planilha]").forEach((ev) => {
+        if (ev.dataset.eventoPlanilha === "novo") cria++;
+        else atualiza++;
+      });
       const partes = [];
       if (cria) partes.push(`cria ${cria}`);
       if (atualiza) partes.push(`atualiza ${atualiza}`);

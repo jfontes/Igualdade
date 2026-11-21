@@ -82,7 +82,7 @@
   {% endif %}
 
   {% if previa %}
-  <p class="lembrete">📄 <strong>Prévia da planilha.</strong> As sessões destacadas ainda não foram gravadas.
+  <p class="lembrete">📄 <strong>Prévia da planilha.</strong> As sessões e eventos destacados ainda não foram gravados.
     Confira e toque em <strong>Incluir na agenda</strong>, ou <a href="{{ voltar }}">descarte a planilha</a>.</p>
   {% else %}
   <ul class="regras suave">
@@ -128,14 +128,30 @@
       {% if m.eventos %}
       <ul class="lista agenda eventos-mes">
         {% for e in m.eventos %}
-        <li class="evento {{ 'cancelada' if e.cancelado }}"><div class="item">
+        <li class="evento lsessao {{ 'cancelada' if e.cancelado }} {{ 'da-planilha' if e.planilha }} {{ 'com-erro' if e.erros }}"
+            {% if e.planilha %}data-evento-planilha="{{ 'alterado' if e.alterado else 'novo' }}"{% endif %}>
+          {% if e.planilha %}
+            {% set q = 'e-' ~ e.k ~ '-' %}
+            {% if e.id %}<input type="hidden" name="{{ q }}id" value="{{ e.id }}">{% endif %}
+            <input type="hidden" name="{{ q }}data" value="{{ e.data }}">
+            <input type="hidden" name="{{ q }}titulo" value="{{ e.titulo }}">
+            <input type="hidden" name="{{ q }}hora" value="{{ e.hora or '' }}">
+            <input type="hidden" name="{{ q }}local" value="{{ e.local or '' }}">
+            {% if e.cancelado %}<input type="hidden" name="{{ q }}cancelado" value="1">{% endif %}
+            <input type="hidden" name="{{ q }}motivo_cancelamento" value="{{ e.motivo_cancelamento or '' }}">
+          {% endif %}
+          <div class="item">
           <span class="dia {{ 'cancelada' if e.cancelado else 'evento' }}"><b>{{ e.data[8:] }}</b><small>{{ MESES_CURTOS[e.data[5:7] | int - 1] }}</small></span>
           <div class="corpo">
             <div class="nome">{% if e.cancelado %}<s>{{ e.titulo }}</s> <span class="selo cinza">Cancelado</span>{% else %}{{ e.titulo }}{% endif %}</div>
-            <div class="estado">🎉 evento{% if e.hora %} · {{ e.hora }}{% endif %}{% if e.local %} · {{ e.local }}{% endif %}</div>
+            {% if e.cancelado and e.motivo_cancelamento %}<div class="sub">Motivo: {{ e.motivo_cancelamento }}</div>{% endif %}
+            <div class="estado">🎉 evento{% if e.hora %} · {{ e.hora }}{% endif %}{% if e.local %} · {{ e.local }}{% endif %}
+              {% if e.planilha %} · {{ '✎ alterado pela planilha' if e.alterado else '✚ novo, da planilha' }}{% endif %}</div>
+            {% for er in e.erros or [] %}<p class="erro-campo">{{ er }}</p>{% endfor %}
           </div>
-          {% if not previa %}<a class="lapis" href="{{ url_for('eventos.form', evento_id=e.id, voltar=voltar) }}" aria-label="Editar o evento {{ e.titulo }}">✏️</a>{% endif %}
-        </div></li>
+          {% if not previa and e.id %}<a class="lapis" href="{{ url_for('eventos.form', evento_id=e.id, voltar=voltar) }}" aria-label="Editar o evento {{ e.titulo }}">✏️</a>{% endif %}
+          </div>
+        </li>
         {% endfor %}
       </ul>
       {% endif %}

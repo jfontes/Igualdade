@@ -56,6 +56,8 @@ Sem diretoria cadastrada para a data, o sistema leva primeiro ao cadastro da dir
 
 Além das sessões e dos aniversários, a agenda mostra a **previsão de eventos** (ex.: Dia das Mães, Arraial), em **amarelo**. Eventos não são sessões: não têm grau nem balaústre e podem cair no mesmo dia de uma sessão. A Secretaria inclui pelo botão **＋ Evento** de cada mês em *Agenda → Gerenciar* (ou edita tocando no evento na agenda); há data, hora, local, descrição e cancelamento com motivo. O próximo evento aparece na página inicial.
 
+**Planilha da agenda** (*Gerenciar → Exportar / Carregar planilha*): uma única aba com sessões e eventos (sem aniversários), em ordem de data. Na coluna *Tipo*, "Evento" indica um evento, com o nome em "Ordem do dia / Evento" e hora e local opcionais. Ao carregar, sessões são identificadas pela data e eventos pela data + nome; tudo aparece como prévia e só é gravado em "Incluir na agenda".
+
 Eventos que tinham sido cadastrados como "sessão extraordinária" com a ordem do dia `Evento: <nome>` são movidos automaticamente para a tabela de eventos quando o sistema inicia (só os que não têm balaústre).
 
 ## Tesouraria (percapitas)

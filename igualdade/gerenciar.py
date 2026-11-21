@@ -5,8 +5,8 @@ regra dos graus, feriados e recessos) para as datas livres. Cada sessão tem um 
 a tela da sessão; o "+" de cada mês abre a inclusão de uma sessão naquele mês. As sugestões
 marcadas são criadas com "Incluir na agenda".
 
-A planilha carregada aparece como prévia (linhas destacadas) e também só é gravada com
-"Incluir na agenda". Esta tela não exclui sessões.
+A planilha carregada (sessões e eventos) aparece como prévia (linhas destacadas) e também só é
+gravada com "Incluir na agenda". Esta tela não exclui sessões nem eventos.
 
 Proteções:
 - ano que já tem sessões: as sugestões vêm desmarcadas (não recria o que foi tirado de propósito);
@@ -15,6 +15,7 @@ Proteções:
 """
 import calendar
 import hashlib
+import re
 from datetime import date
 
 from flask import Blueprint, flash, redirect, render_template, request, url_for
@@ -22,13 +23,14 @@ from flask import Blueprint, flash, redirect, render_template, request, url_for
 from .auth import admin_required
 from .db import get_db
 from .feriados import recesso
-from .planilha import ler_planilha
+from .planilha import chave_evento, ler_planilha
 from .sessoes import GRAUS, ORDEM_MAX, TIPOS, planejar_ano
 from .util import MESES
 
 bp = Blueprint("gerenciar", __name__, url_prefix="/admin/sessoes")
 
 CAMPOS = ["tipo", "grau", "ordem_do_dia", "cancelada", "motivo_cancelamento"]
+CAMPOS_EVENTO = ["titulo", "hora", "local", "cancelado", "motivo_cancelamento"]
 ORDEM_ESTADO = {"cadastrada": 0, "sugestao": 1, "nova": 2}
 
 
@@ -74,9 +76,14 @@ def _mudou(linha) -> bool:
     return linha["origem"] == "cadastrada" and any(linha[c] != linha["original"][c] for c in CAMPOS)
 
 
-def _render(ano: int, linhas: list[dict], avisos=(), previa=False):
+def eventos_cadastrados(ano: int) -> list[dict]:
     from .eventos import eventos_do_ano
-    eventos = eventos_do_ano(ano)
+    return [dict(e) | {"origem": "cadastrado", "planilha": False, "alterado": False, "erros": []}
+            for e in eventos_do_ano(ano)]
+
+
+def _render(ano: int, linhas: list[dict], avisos=(), previa=False, eventos: list[dict] | None = None):
+    eventos = eventos_cadastrados(ano) if eventos is None else eventos
     meses = []
     for m in range(1, 13):
         ultimo = calendar.monthrange(ano, m)[1]
@@ -85,10 +92,13 @@ def _render(ano: int, linhas: list[dict], avisos=(), previa=False):
         inteiro = recesso(date(ano, m, 1)) if recesso(date(ano, m, 1)) == recesso(date(ano, m, ultimo)) else None
         meses.append({"mes": m, "nome": MESES[m - 1], "linhas": do_mes, "recesso": inteiro,
                       "cadastradas": sum(l["origem"] == "cadastrada" for l in do_mes),
-                      "eventos": [e for e in eventos if int(e["data"][5:7]) == m]})
+                      "eventos": sorted((e for e in eventos if int(e["data"][5:7]) == m),
+                                        key=lambda e: (e["data"], e["hora"] or ""))})
     for n, linha in enumerate(l for m in meses for l in m["linhas"]):
         linha["n"] = n
         linha["alterada"] = _mudou(linha)
+    for k, e in enumerate(e for m in meses for e in m["eventos"]):
+        e["k"] = k
     return render_template("gerenciar.html", ano=ano, meses=meses, avisos=avisos, previa=previa,
                            voltar=url_for("gerenciar.gerenciar", ano=ano),
                            ano_tem_sessoes=any(l["origem"] == "cadastrada" for l in linhas))
@@ -183,6 +193,95 @@ def _gravar(linhas: list[dict]) -> tuple[int, int]:
     return criadas, atualizadas
 
 
+# ---------------------------------------------------------------- eventos vindos da planilha
+
+def _problemas_evento(e: dict, ano: int) -> list[str]:
+    p = []
+    if not e["titulo"]:
+        p.append("informe o nome do evento")
+    if e["hora"] and not re.fullmatch(r"([01]\d|2[0-3]):[0-5]\d", e["hora"]):
+        p.append("hora inválida (use HH:MM)")
+    if e["cancelado"] and not e["motivo_cancelamento"]:
+        p.append("informe o motivo do cancelamento")
+    if e["data"][:4] != str(ano):
+        p.append(f"a data deve ser de {ano}")
+    return p
+
+
+def _ler_eventos_form(form) -> list[dict]:
+    """Eventos da prévia da planilha (campos ocultos e-<k>-...)."""
+    indices = sorted({int(k.split("-")[1]) for k in form
+                      if k.startswith("e-") and k.endswith("-data") and k.split("-")[1].isdigit()})
+    eventos = []
+    for k in indices:
+        def g(campo, k=k):
+            return (form.get(f"e-{k}-{campo}") or "").strip()
+        try:
+            date.fromisoformat(g("data"))
+        except ValueError:
+            continue
+        cancelado = 1 if g("cancelado") else 0
+        eventos.append({"id": int(g("id")) if g("id").isdigit() else None, "data": g("data"),
+                        "titulo": " ".join(g("titulo").split()), "hora": g("hora") or None,
+                        "local": " ".join(g("local").split()) or None, "cancelado": cancelado,
+                        "motivo_cancelamento": (" ".join(g("motivo_cancelamento").split()) or None) if cancelado else None,
+                        "planilha": True, "erros": []})
+    return eventos
+
+
+def _validar_eventos(eventos: list[dict], ano: int) -> bool:
+    db = get_db()
+    for e in eventos:
+        e["erros"] += [p[0].upper() + p[1:] + "." for p in _problemas_evento(e, ano)]
+        if e["id"] is None:
+            existentes = {chave_evento(r["data"], r["titulo"]) for r in db.execute(
+                "SELECT data, titulo FROM evento WHERE data = ?", (e["data"],))}
+            if chave_evento(e["data"], e["titulo"]) in existentes:
+                e["erros"].append("Já existe um evento com este nome nesta data.")
+        elif not db.execute("SELECT 1 FROM evento WHERE id = ?", (e["id"],)).fetchone():
+            e["erros"].append("Este evento foi excluído por outra pessoa. Carregue a planilha de novo.")
+    return not any(e["erros"] for e in eventos)
+
+
+def _gravar_eventos(eventos: list[dict]) -> tuple[int, int]:
+    db = get_db()
+    criados = atualizados = 0
+    for e in eventos:
+        valores = tuple(e[c] for c in CAMPOS_EVENTO)
+        if e["id"] is None:
+            db.execute("INSERT INTO evento (titulo, hora, local, cancelado, motivo_cancelamento, data) "
+                       "VALUES (?, ?, ?, ?, ?, ?)", (*valores, e["data"]))
+            criados += 1
+        else:
+            db.execute("UPDATE evento SET titulo = ?, hora = ?, local = ?, cancelado = ?, motivo_cancelamento = ? "
+                       "WHERE id = ?", (*valores, e["id"]))
+            atualizados += 1
+    db.commit()
+    return criados, atualizados
+
+
+def _mesclar_eventos(ano: int, da_planilha: list[dict]) -> list[dict]:
+    """Eventos cadastrados com as novidades da planilha por cima (para a prévia)."""
+    eventos = eventos_cadastrados(ano)
+    por_id = {e["id"]: e for e in eventos}
+    for p in da_planilha:
+        alvo = por_id.get(p["id"]) if p.get("id") else None
+        if alvo is None:
+            eventos.append(p | {"origem": "novo", "alterado": False, "descricao": None})
+        else:
+            alvo.update({c: p[c] for c in CAMPOS_EVENTO}, planilha=True, alterado=True, erros=p.get("erros", []))
+    return eventos
+
+
+def _resumo(criadas, atualizadas, ev_criados, ev_atualizados) -> str:
+    partes = []
+    if criadas or atualizadas:
+        partes.append(f"{criadas} sessão(ões) criada(s), {atualizadas} atualizada(s)")
+    if ev_criados or ev_atualizados:
+        partes.append(f"{ev_criados} evento(s) incluído(s), {ev_atualizados} atualizado(s)")
+    return "; ".join(partes)
+
+
 # ---------------------------------------------------------------- rotas
 
 @bp.route("/gerenciar", methods=["GET", "POST"])
@@ -192,13 +291,17 @@ def gerenciar():
     if request.method == "GET":
         return _render(ano, montar_linhas(ano))
     linhas = _ler_form(request.form, ano)
-    if not _validar(linhas, ano):
+    eventos = _ler_eventos_form(request.form)
+    sessoes_ok = _validar(linhas, ano)
+    eventos_ok = _validar_eventos(eventos, ano)
+    if not (sessoes_ok and eventos_ok):
         flash("Nada foi gravado. Veja as linhas destacadas.", "erro")
-        return _render(ano, linhas, previa=any(l["planilha"] for l in linhas))
+        return _render(ano, linhas, previa=any(l["planilha"] for l in linhas) or bool(eventos),
+                       eventos=_mesclar_eventos(ano, eventos))
     criadas, atualizadas = _gravar(linhas)
-    if criadas or atualizadas:
-        flash(f"Agenda de {ano} atualizada: {criadas} sessão(ões) criada(s), "
-              f"{atualizadas} atualizada(s).", "ok")
+    ev_criados, ev_atualizados = _gravar_eventos(eventos)
+    if (resumo := _resumo(criadas, atualizadas, ev_criados, ev_atualizados)):
+        flash(f"Agenda de {ano} atualizada: {resumo}.", "ok")
     else:
         flash("Nenhuma sessão marcada para incluir.", "aviso")
     return redirect(url_for("gerenciar.gerenciar", ano=ano))
@@ -224,10 +327,29 @@ def carregar_planilha():
     por_data = {}
     for l in linhas:
         por_data.setdefault(l["data"], l)
-    carregadas = ignoradas = 0
+    eventos = eventos_cadastrados(ano)
+    por_chave = {chave_evento(e["data"], e["titulo"]): e for e in eventos}
+    carregadas = ignoradas = eventos_carregados = 0
     for n, dados, problemas in lidas:
         if dados["data"][:4] != str(ano):
             ignoradas += 1
+            continue
+        if dados["evento"]:
+            problemas = problemas + [p for p in _problemas_evento(dados, ano) if p not in problemas]
+            if problemas:
+                avisos.append(f"Linha {n} ({dados['data'][8:]}/{dados['data'][5:7]}, evento): {'; '.join(problemas)}. "
+                              "Corrija na planilha e carregue de novo.")
+                continue
+            valores = {c: dados[c] for c in CAMPOS_EVENTO}
+            alvo = por_chave.get(chave_evento(dados["data"], dados["titulo"]))
+            if alvo is None:
+                eventos.append({"id": None, "data": dados["data"], "descricao": None, "origem": "novo",
+                                "planilha": True, "alterado": False, "erros": [], **valores})
+            elif all(alvo[c] == valores[c] for c in CAMPOS_EVENTO):
+                continue  # igual ao que já está gravado
+            else:
+                alvo.update(valores, planilha=True, alterado=True)
+            eventos_carregados += 1
             continue
         # junta as regras da sessão sem repetir o que a leitura já apontou (ex.: tipo inexistente)
         ja_citados = {q.split(" ")[0].lower() for q in problemas}
@@ -249,9 +371,11 @@ def carregar_planilha():
         carregadas += 1
     if ignoradas:
         avisos.append(f"{ignoradas} linha(s) de outros anos não foram carregadas. Separe uma planilha por ano.")
-    if carregadas:
-        flash(f"Planilha carregada: {carregadas} sessão(ões) com novidades, destacadas abaixo. "
+    if carregadas or eventos_carregados:
+        partes = ([f"{carregadas} sessão(ões)"] if carregadas else []) + \
+                 ([f"{eventos_carregados} evento(s)"] if eventos_carregados else [])
+        flash(f"Planilha carregada: {' e '.join(partes)} com novidades, destacados abaixo. "
               "Nada foi gravado ainda: confira e toque em \"Incluir na agenda\".", "aviso")
     elif lidas:
         flash("A planilha não traz nenhuma novidade em relação à agenda.", "aviso")
-    return _render(ano, linhas, avisos, previa=carregadas > 0)
+    return _render(ano, linhas, avisos, previa=(carregadas + eventos_carregados) > 0, eventos=eventos)
