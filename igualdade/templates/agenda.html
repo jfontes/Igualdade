@@ -78,7 +78,6 @@
                 <div class="nome">{{ e.titulo }} <span class="selo evento">Evento</span>
                   {% if eh_hoje %}<span class="selo ouro">Hoje!</span>{% endif %}</div>
                 {% if e.hora or e.local %}<div class="sub">{% if e.hora %}🕗 {{ e.hora }}{% endif %}{% if e.hora and e.local %} · {% endif %}{% if e.local %}📍 {{ e.local }}{% endif %}</div>{% endif %}
-                {% if e.descricao %}<div class="ordem">{{ e.descricao }}</div>{% endif %}
               {% endif %}
             </div>
           {% if current_user.admin %}</a>{% else %}</div>{% endif %}
@@ -88,9 +87,8 @@
         <li class="{{ 'hoje' if eh_hoje }}">
           <a class="item" href="{{ url_for('main.perfil', obreiro_id=a.obreiro_id) }}">
             <span class="dia aniv"><b>{{ '%02d' | format(a.dia) }}</b><small>{{ MESES[mes - 1][:3] }}</small></span>
-            <span class="bolo" aria-hidden="true">🎂</span>
             <div class="corpo">
-              <div class="nome">{{ a.nome }} {% if eh_hoje %}<span class="selo ouro">Hoje!</span>{% endif %}</div>
+              <div class="nome">{{ a.nome }} <span class="bolo-nome" aria-hidden="true">🎂</span> {% if eh_hoje %}<span class="selo ouro">Hoje!</span>{% endif %}</div>
               <div class="sub">
                 {% if a.vinculo == 'Obreiro' %}Obreiro{% else %}{{ a.vinculo }} do Ir∴ {{ a.de }}{% endif %}
                 {% if a.data_nascimento is com_ano %}· {{ ano - (a.data_nascimento[:4] | int) }} anos{% endif %}

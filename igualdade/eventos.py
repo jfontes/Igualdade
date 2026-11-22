@@ -16,7 +16,6 @@ from .util import ler_data
 bp = Blueprint("eventos", __name__, url_prefix="/admin/eventos")
 
 TITULO_MAX = 120
-DESCRICAO_MAX = 500
 
 
 def eventos_do_mes(ano: int, mes: int):
@@ -44,7 +43,6 @@ def _ler_form(form):
         "titulo": _texto(form, "titulo", TITULO_MAX),
         "hora": (form.get("hora") or "").strip() or None,
         "local": _texto(form, "local", TITULO_MAX),
-        "descricao": (form.get("descricao") or "").strip()[:DESCRICAO_MAX] or None,
         "cancelado": 1 if form.get("cancelado") else 0,
         "motivo_cancelamento": _texto(form, "motivo_cancelamento", TITULO_MAX),
     }

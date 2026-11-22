@@ -551,3 +551,4 @@ li.hoje .dia.evento { box-shadow: 0 0 0 3px var(--bordo); }
 .mes-cab .mais-txt { flex: none; min-height: 36px; padding: 6px 10px; font-size: .8rem; }
 .mes-cab .mais-evento { background: #fff8d6; border-color: #f0dc9c; color: #6b5200; }
 .eventos-mes { margin-top: 4px; }
+.agenda .bolo-nome { font-size: 1.05rem; line-height: 1; }

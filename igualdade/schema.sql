@@ -175,7 +175,7 @@ CREATE TABLE IF NOT EXISTS evento (
     hora             TEXT,                             -- HH:MM (opcional)
     titulo           TEXT    NOT NULL,
     local            TEXT,
-    descricao        TEXT,
+    descricao        TEXT,                             -- não usado (o nome do evento já é autoexplicativo)
     cancelado        INTEGER NOT NULL DEFAULT 0,
     motivo_cancelamento TEXT
 );

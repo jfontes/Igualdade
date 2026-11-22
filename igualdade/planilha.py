@@ -4,7 +4,7 @@ Uma única aba, uma linha por compromisso, em ordem de data. Na coluna Tipo, "Ev
 um evento (nome na coluna "Ordem do dia / Evento"); os demais tipos são sessões.
 
 A leitura não grava nada: as linhas são carregadas na tela de gerenciar, onde a Secretaria
-confere e grava com "Incluir na agenda". Balaústres e descrição dos eventos não entram na planilha.
+confere e grava com "Incluir na agenda". Balaústres não entram na planilha.
 """
 import io
 import re
@@ -116,7 +116,6 @@ def exportar():
         "• Grau fica em branco. Hora (ex.: 19:30) e Local são opcionais.",
         "• DATA + NOME identificam o evento: se já existe, ele é atualizado; senão, é incluído.",
         "  Um evento pode cair no mesmo dia de uma sessão.",
-        "• A descrição detalhada do evento é editada no sistema e não é alterada pela planilha.",
         "",
         "Para todos",
         "• Cancelada: Sim ou Não. Quando Sim, informe o motivo (ex.: Feriado).",

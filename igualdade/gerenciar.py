@@ -267,7 +267,7 @@ def _mesclar_eventos(ano: int, da_planilha: list[dict]) -> list[dict]:
     for p in da_planilha:
         alvo = por_id.get(p["id"]) if p.get("id") else None
         if alvo is None:
-            eventos.append(p | {"origem": "novo", "alterado": False, "descricao": None})
+            eventos.append(p | {"origem": "novo", "alterado": False})
         else:
             alvo.update({c: p[c] for c in CAMPOS_EVENTO}, planilha=True, alterado=True, erros=p.get("erros", []))
     return eventos
@@ -343,7 +343,7 @@ def carregar_planilha():
             valores = {c: dados[c] for c in CAMPOS_EVENTO}
             alvo = por_chave.get(chave_evento(dados["data"], dados["titulo"]))
             if alvo is None:
-                eventos.append({"id": None, "data": dados["data"], "descricao": None, "origem": "novo",
+                eventos.append({"id": None, "data": dados["data"], "origem": "novo",
                                 "planilha": True, "alterado": False, "erros": [], **valores})
             elif all(alvo[c] == valores[c] for c in CAMPOS_EVENTO):
                 continue  # igual ao que já está gravado

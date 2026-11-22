@@ -36,12 +36,6 @@
       <input id="local" name="local" value="{{ e.local or '' }}" maxlength="120" placeholder="Ex.: Templo da Loja">
     </div>
 
-    <div class="campo">
-      <label for="descricao">Descrição</label>
-      <textarea id="descricao" name="descricao" rows="3" maxlength="500"
-                placeholder="Ex.: Almoço com as famílias; traje esporte">{{ e.descricao or '' }}</textarea>
-    </div>
-
     <div class="cancelamento">
       <label class="check"><input type="checkbox" name="cancelado" value="1" {{ 'checked' if e.cancelado }} data-mostra="motivo-bloco"> Evento cancelado</label>
       <div class="campo {{ '' if e.cancelado else 'oculto' }} {{ 'com-erro' if 'motivo_cancelamento' in erros }}" id="motivo-bloco">
