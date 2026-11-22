@@ -69,13 +69,12 @@
         <li class="evento {{ 'hoje' if eh_hoje }} {{ 'passada' if data_iso < hoje.isoformat() }} {{ 'cancelada' if e.cancelado }}">
           {% if current_user.admin %}<a class="item" href="{{ url_for('eventos.form', evento_id=e.id) }}">{% else %}<div class="item">{% endif %}
             <span class="dia {{ 'cancelada' if e.cancelado else 'evento' }}"><b>{{ '%02d' | format(i.dia) }}</b><small>{{ MESES[mes - 1][:3] }}</small></span>
-            <span class="bolo" aria-hidden="true">🎉</span>
             <div class="corpo">
               {% if e.cancelado %}
-                <div class="nome"><s>{{ e.titulo }}</s> <span class="selo cinza">Cancelado</span></div>
+                <div class="nome"><s>{{ e.titulo }}</s> <span class="bolo-nome" aria-hidden="true">🎉</span> <span class="selo cinza">Cancelado</span></div>
                 <div class="sub">Motivo: {{ e.motivo_cancelamento }}</div>
               {% else %}
-                <div class="nome">{{ e.titulo }} <span class="selo evento">Evento</span>
+                <div class="nome">{{ e.titulo }} <span class="bolo-nome" aria-hidden="true">🎉</span> <span class="selo evento">Evento</span>
                   {% if eh_hoje %}<span class="selo ouro">Hoje!</span>{% endif %}</div>
                 {% if e.hora or e.local %}<div class="sub">{% if e.hora %}🕗 {{ e.hora }}{% endif %}{% if e.hora and e.local %} · {% endif %}{% if e.local %}📍 {{ e.local }}{% endif %}</div>{% endif %}
               {% endif %}
