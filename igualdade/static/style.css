@@ -552,3 +552,12 @@ li.hoje .dia.evento { box-shadow: 0 0 0 3px var(--bordo); }
 .mes-cab .mais-evento { background: #fff8d6; border-color: #f0dc9c; color: #6b5200; }
 .eventos-mes { margin-top: 4px; }
 .agenda .bolo-nome { font-size: 1.05rem; line-height: 1; }
+/* agenda: legenda que filtra (mesma aparência; o filtro ativo fica em negrito, os demais apagados) */
+.filtro-legenda {
+  display: flex; align-items: center; gap: 6px; padding: 0; margin: 0; border: 0; background: none;
+  font: inherit; color: inherit; cursor: pointer; text-align: left;
+}
+.filtro-legenda[aria-pressed="true"] { font-weight: 800; color: var(--texto); }
+.legenda.filtrando .filtro-legenda[aria-pressed="false"] { opacity: .45; }
+.filtro-legenda:focus-visible { outline: 2px solid var(--bordo); outline-offset: 2px; border-radius: 4px; }
+.lista.agenda > li[hidden] { display: none; }

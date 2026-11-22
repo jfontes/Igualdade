@@ -1,7 +1,7 @@
 // Service worker mínimo: guarda só os arquivos visuais (CSS, JS, brasão).
 // As páginas com dados sempre vêm do servidor, para nunca mostrar informação desatualizada.
-const CACHE = "igualdade-v28";
-const ARQUIVOS = ["/static/style.css?v=26", "/static/app.js?v=14", "/static/icon-192.png", "/static/icon-512.png", "/static/brasao.png", "/static/brasao-192.png"];
+const CACHE = "igualdade-v29";
+const ARQUIVOS = ["/static/style.css?v=27", "/static/app.js?v=15", "/static/icon-192.png", "/static/icon-512.png", "/static/brasao.png", "/static/brasao-192.png"];
 
 self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(ARQUIVOS)).then(() => self.skipWaiting()));

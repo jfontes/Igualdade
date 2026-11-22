@@ -317,6 +317,44 @@
   // Mantém o mês selecionado visível na barra de meses
   document.querySelector("[data-rolar]")?.scrollIntoView({ inline: "center", block: "nearest" });
 
+  // Agenda: a legenda também é filtro. Vários itens podem ficar marcados; nenhum = mostra tudo.
+  // O filtro continua ao trocar de mês/ano (guardado só nesta aba do navegador).
+  const legenda = document.querySelector("[data-filtro-agenda]");
+  if (legenda) {
+    const CHAVE = "agenda-filtro";
+    const botoes = [...legenda.querySelectorAll("[data-filtro]")];
+    const itens = [...document.querySelectorAll(".lista.agenda > li[data-cat]")];
+    const vazio = document.querySelector("[data-filtro-vazio]");
+    const nomes = Object.fromEntries(botoes.map((b) => [b.dataset.filtro, b.textContent.trim()]));
+    let marcados = new Set();
+    try { marcados = new Set(JSON.parse(sessionStorage.getItem(CHAVE) || "[]").filter((c) => c in nomes)); } catch (_) {}
+
+    const aplicar = () => {
+      botoes.forEach((b) => b.setAttribute("aria-pressed", marcados.has(b.dataset.filtro) ? "true" : "false"));
+      legenda.classList.toggle("filtrando", marcados.size > 0);
+      let visiveis = 0;
+      itens.forEach((li) => {
+        const mostra = !marcados.size || marcados.has(li.dataset.cat);
+        li.hidden = !mostra;
+        if (mostra) visiveis++;
+      });
+      if (vazio) {
+        const lista = [...marcados].map((c) => nomes[c]);
+        const texto = lista.length > 1 ? lista.slice(0, -1).join(", ") + " ou " + lista.at(-1) : lista[0];
+        vazio.querySelector("[data-filtro-texto]").textContent =
+          `Nenhum compromisso de ${texto} em ${legenda.dataset.mesNome}.`;
+        vazio.classList.toggle("oculto", !(itens.length && marcados.size && !visiveis));
+      }
+      try { sessionStorage.setItem(CHAVE, JSON.stringify([...marcados])); } catch (_) {}
+    };
+    botoes.forEach((b) => b.addEventListener("click", () => {
+      const cat = b.dataset.filtro;
+      if (marcados.has(cat)) marcados.delete(cat); else marcados.add(cat);
+      aplicar();
+    }));
+    aplicar();
+  }
+
   // Relatórios: imprimir / salvar em PDF
   document.querySelectorAll("[data-imprimir]").forEach((btn) => {
     btn.addEventListener("click", () => window.print());

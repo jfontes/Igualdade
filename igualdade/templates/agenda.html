@@ -26,12 +26,13 @@
     {% endfor %}
   </nav>
 
-  <ul class="legenda" aria-label="Legenda das cores">
-    <li><span class="cor grau-aprendiz"></span>Aprendiz</li>
-    <li><span class="cor grau-companheiro"></span>Companheiro</li>
-    <li><span class="cor grau-mestre"></span>Mestre</li>
-    <li><span class="cor evento"></span>Evento</li>
-    <li><span class="cor aniv"></span>Aniversário</li>
+  {# Legenda que também filtra: toque para mostrar só aquela categoria (vários ao mesmo tempo) #}
+  <ul class="legenda" aria-label="Legenda das cores e filtro" data-filtro-agenda data-mes-nome="{{ MESES[mes - 1] | lower }}">
+    {% for cat, cor, rotulo in [('aprendiz', 'grau-aprendiz', 'Aprendiz'), ('companheiro', 'grau-companheiro', 'Companheiro'),
+                                ('mestre', 'grau-mestre', 'Mestre'), ('evento', 'evento', 'Evento'), ('aniversario', 'aniv', 'Aniversário')] %}
+    <li><button type="button" class="filtro-legenda" data-filtro="{{ cat }}" aria-pressed="false"
+                title="Mostrar só: {{ rotulo }}"><span class="cor {{ cor }}"></span>{{ rotulo }}</button></li>
+    {% endfor %}
   </ul>
 
   <div class="cartao">
@@ -43,7 +44,7 @@
       {% if i.tipo == 'sessao' %}
         {% set s = i.s %}
         {% set classe_dia = 'cancelada' if s.cancelada else 'grau-' ~ ((s.grau or 'indefinido') | lower) %}
-        <li class="sessao {{ 'hoje' if eh_hoje }} {{ 'passada' if data_iso < hoje.isoformat() }} {{ 'cancelada' if s.cancelada }}">
+        <li data-cat="{{ (s.grau or '') | lower }}" class="sessao {{ 'hoje' if eh_hoje }} {{ 'passada' if data_iso < hoje.isoformat() }} {{ 'cancelada' if s.cancelada }}">
           {% if current_user.admin %}<a class="item" href="{{ url_for('sessoes.form', sessao_id=s.id) }}">{% else %}<div class="item">{% endif %}
             <span class="dia {{ classe_dia }}"><b>{{ '%02d' | format(i.dia) }}</b><small>{{ MESES[mes - 1][:3] }}</small></span>
             <div class="corpo">
@@ -66,7 +67,7 @@
         </li>
       {% elif i.tipo == 'evento' %}
         {% set e = i.e %}
-        <li class="evento {{ 'hoje' if eh_hoje }} {{ 'passada' if data_iso < hoje.isoformat() }} {{ 'cancelada' if e.cancelado }}">
+        <li data-cat="evento" class="evento {{ 'hoje' if eh_hoje }} {{ 'passada' if data_iso < hoje.isoformat() }} {{ 'cancelada' if e.cancelado }}">
           {% if current_user.admin %}<a class="item" href="{{ url_for('eventos.form', evento_id=e.id) }}">{% else %}<div class="item">{% endif %}
             <span class="dia {{ 'cancelada' if e.cancelado else 'evento' }}"><b>{{ '%02d' | format(i.dia) }}</b><small>{{ MESES[mes - 1][:3] }}</small></span>
             <div class="corpo">
@@ -83,7 +84,7 @@
         </li>
       {% else %}
         {% set a = i.a %}
-        <li class="{{ 'hoje' if eh_hoje }}">
+        <li data-cat="aniversario" class="{{ 'hoje' if eh_hoje }}">
           <a class="item" href="{{ url_for('main.perfil', obreiro_id=a.obreiro_id) }}">
             <span class="dia aniv"><b>{{ '%02d' | format(a.dia) }}</b><small>{{ MESES[mes - 1][:3] }}</small></span>
             <div class="corpo">
@@ -98,6 +99,7 @@
       {% endif %}
       {% endfor %}
     </ul>
+    <div class="vazio-msg oculto" data-filtro-vazio><span class="ic">🔎</span><span data-filtro-texto></span></div>
     {% else %}
     <div class="vazio-msg"><span class="ic">🗓️</span>Nenhum compromisso em {{ MESES[mes - 1] }} de {{ ano }}.</div>
     {% endif %}
