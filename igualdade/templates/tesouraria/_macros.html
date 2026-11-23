@@ -121,3 +121,16 @@
     </div>
   </details>
 {%- endmacro %}
+
+{# Chave PIX da Loja para pagar as percapitas em aberto (aparece uma única vez) #}
+{% macro pix_pagamento(chave) -%}
+  {% if chave %}
+  <div class="pix-pagamento">
+    <span class="pix-rotulo">Pague pelo PIX</span>
+    <button class="pix-chave" type="button" data-copiar="{{ chave }}" title="Toque para copiar a chave">
+      <span class="pix-valor">{% if '@' in chave %}{{ chave.split('@', 1)[0] }}@<wbr>{{ chave.split('@', 1)[1] }}{% else %}{{ chave }}{% endif %}</span><span class="pix-ic" aria-hidden="true">📋</span>
+    </button>
+    <small data-copiar-aviso>Toque na chave para copiar. Depois de pagar, avise o Tesoureiro.</small>
+  </div>
+  {% endif %}
+{%- endmacro %}

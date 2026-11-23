@@ -561,3 +561,20 @@ li.hoje .dia.evento { box-shadow: 0 0 0 3px var(--bordo); }
 .legenda.filtrando .filtro-legenda[aria-pressed="false"] { opacity: .45; }
 .filtro-legenda:focus-visible { outline: 2px solid var(--bordo); outline-offset: 2px; border-radius: 4px; }
 .lista.agenda > li[hidden] { display: none; }
+/* chave PIX para pagamento das percapitas: tocar na chave copia */
+.pix-pagamento {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 4px;
+  margin-top: 12px; padding: 12px; border-radius: 12px; background: #eef8f2; border: 1px solid #bfe3cc;
+}
+.pix-rotulo { font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--ok); }
+.pix-chave {
+  font: inherit; font-size: .95rem; font-weight: 700; color: var(--texto); text-align: left;
+  background: #fff; border: 1px dashed #8fcca6; border-radius: 10px; padding: 8px 10px; cursor: pointer;
+  max-width: 100%; display: inline-flex; align-items: center; gap: 8px;
+}
+.pix-valor { min-width: 0; overflow-wrap: break-word; user-select: all; }
+.pix-ic { flex: none; }
+.pix-chave:hover { border-color: var(--ok); }
+.pix-chave.copiado { border-style: solid; border-color: var(--ok); background: var(--ok-fundo); }
+.pix-pagamento small { color: var(--suave); font-size: .78rem; }
+.pix-linha { display: block; margin-top: 4px; color: var(--texto); font-size: .88rem; overflow-wrap: anywhere; }

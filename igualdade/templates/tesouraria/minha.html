@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "tesouraria/_macros.html" import situacao_geral, bloco_ano, lista_pagamentos %}
+{% from "tesouraria/_macros.html" import situacao_geral, bloco_ano, lista_pagamentos, pix_pagamento %}
 {% block titulo %}Minha Tesouraria{% endblock %}
 {% block conteudo %}
 <div class="estreito">
@@ -16,6 +16,7 @@
 
   <section class="cartao">
     {{ situacao_geral(resumo, o) }}
+    {% if resumo.em_aberto %}{{ pix_pagamento(LOJA.pix) }}{% endif %}
     {% if not resumo.tem_registros %}
       <div class="vazio-msg"><span class="ic">🧾</span>Nenhuma percapita lançada para você.</div>
     {% endif %}

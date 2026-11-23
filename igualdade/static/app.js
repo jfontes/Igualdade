@@ -355,6 +355,41 @@
     aplicar();
   }
 
+  // Copiar texto (ex.: chave PIX) com um toque
+  const copiarTexto = async (texto) => {
+    if (navigator.clipboard && window.isSecureContext) {
+      try {
+        await Promise.race([navigator.clipboard.writeText(texto),
+                            new Promise((_, falha) => setTimeout(falha, 1500))]);
+        return true;
+      } catch (_) { /* tenta o método clássico */ }
+    }
+    const campo = document.createElement("textarea");
+    campo.value = texto;
+    campo.setAttribute("readonly", "");
+    campo.style.cssText = "position:fixed;top:0;left:0;opacity:0";
+    document.body.appendChild(campo);
+    campo.select();
+    campo.setSelectionRange(0, texto.length);
+    let ok = false;
+    try { ok = document.execCommand("copy"); } catch (_) {}
+    campo.remove();
+    return ok;
+  };
+  document.querySelectorAll("[data-copiar]").forEach((el) => {
+    const aviso = el.parentElement.querySelector("[data-copiar-aviso]");
+    const textoAviso = aviso ? aviso.textContent : "";
+    el.addEventListener("click", async () => {
+      const ok = await copiarTexto(el.dataset.copiar);
+      el.classList.toggle("copiado", ok);
+      if (aviso) {
+        aviso.textContent = ok ? "✓ Chave copiada! Cole no aplicativo do seu banco."
+                               : "Não foi possível copiar sozinho: toque e segure a chave para copiar.";
+        setTimeout(() => { aviso.textContent = textoAviso; el.classList.remove("copiado"); }, 3000);
+      }
+    });
+  });
+
   // Relatórios: imprimir / salvar em PDF
   document.querySelectorAll("[data-imprimir]").forEach((btn) => {
     btn.addEventListener("click", () => window.print());

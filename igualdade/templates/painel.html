@@ -36,6 +36,7 @@
 {% if tesouraria.vencido %}
 <a class="cartao aviso-tesouraria" href="{{ url_for('tesouraria.minha') }}">
   🔴 Você tem <strong>{{ tesouraria.vencido | moeda }}</strong> em percapita vencida. Toque para ver os detalhes.
+  {% if LOJA.pix %}<span class="pix-linha">PIX para pagamento: <strong>{{ LOJA.pix }}</strong></span>{% endif %}
 </a>
 {% endif %}
 
