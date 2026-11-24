@@ -5,6 +5,9 @@ venv/
 # Banco de dados e chave secreta — nunca versionar
 instance/
 *.db
+# Senhas do servidor local (SMTP etc.), lidas pelo flask via python-dotenv — nunca versionar
+.env
+.env.*
 # Dados pessoais de origem (CPF, endereços) — nunca versionar
 data/
 # Script da importação inicial: contém CPF, datas e nomes de familiares — fica só no computador
