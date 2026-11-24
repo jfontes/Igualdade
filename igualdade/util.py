@@ -236,3 +236,46 @@ def grau_do_obreiro(o) -> str:
     if o["data_iniciacao"]:
         return "Aprendiz"
     return ""
+
+
+# ---------------------------------------------------------------- CNPJ e máscaras (LGPD)
+
+def cnpj_valido(cnpj: str) -> bool:
+    c = so_digitos(cnpj)
+    if len(c) != 14 or c == c[0] * 14:
+        return False
+    def dv(base: str) -> str:
+        pesos = [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2][-len(base):]
+        resto = sum(int(d) * p for d, p in zip(base, pesos)) % 11
+        return "0" if resto < 2 else str(11 - resto)
+    return c[12] == dv(c[:12]) and c[13] == dv(c[:13])
+
+
+def cpf_cnpj_valido(doc: str) -> bool:
+    d = so_digitos(doc)
+    return cpf_valido(d) if len(d) == 11 else cnpj_valido(d) if len(d) == 14 else False
+
+
+def fmt_cpf_cnpj(doc: str | None) -> str:
+    d = so_digitos(doc)
+    if len(d) == 14:
+        return f"{d[:2]}.{d[2:5]}.{d[5:8]}/{d[8:12]}-{d[12:]}"
+    return fmt_cpf(d) if len(d) == 11 else (doc or "")
+
+
+def mascarar_doc(doc: str | None) -> str:
+    """CPF: ***.456.789-** ; CNPJ: **.345.678/0001-** (mostra só o miolo)."""
+    d = so_digitos(doc)
+    if len(d) == 11:
+        return f"***.{d[3:6]}.{d[6:9]}-**"
+    if len(d) == 14:
+        return f"**.{d[2:5]}.{d[5:8]}/{d[8:12]}-**"
+    return "***"
+
+
+def mascarar_nome(nome: str | None) -> str:
+    """'JOÃO DA SILVA SOUZA' → 'João S*** S***' (primeiro nome e iniciais)."""
+    partes = [p for p in (nome or "").split() if p.lower() not in {"da", "de", "do", "das", "dos", "e"}]
+    if not partes:
+        return "***"
+    return " ".join([partes[0].title()] + [p[0].upper() + "***" for p in partes[1:]])

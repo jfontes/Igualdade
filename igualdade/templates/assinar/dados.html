@@ -1,0 +1,69 @@
+{% extends "publico/_base.html" %}
+{% block titulo %}Seus dados – contrato{% endblock %}
+{% macro campo(nome, rotulo, valor='', tipo='text', extra='', dica=None, largo=False) -%}
+  <div class="campo {{ 'largo' if largo }} {{ 'com-erro' if nome in erros }}">
+    <label for="{{ nome }}">{{ rotulo }}</label>
+    <input id="{{ nome }}" name="{{ nome }}" type="{{ tipo }}" value="{{ valor or '' }}" {{ extra | safe }}>
+    {% if nome in erros %}<span class="erro-campo">{{ erros[nome] }}</span>{% elif dica %}<span class="dica">{{ dica }}</span>{% endif %}
+  </div>
+{%- endmacro %}
+{% block conteudo %}
+<div class="estreito">
+  {% include "assinar/_passos.html" %}
+  <h2>Seus dados</h2>
+  <p class="suave">Contrato de locação da área de eventos do Parque das Acácias — {{ c.evento.tipo_evento }} em {{ c.evento.data | data }}.
+    Confira e complete os dados para a qualificação no contrato.</p>
+  <form method="post" novalidate data-uma-vez>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <section class="cartao grade">
+      <h3>Identificação</h3>
+      {{ campo('nome', 'Nome completo ou razão social *', v.nome, extra='data-maiusculas autocomplete="name" required', largo=True) }}
+      <div class="grade duas">
+        {{ campo('cpf_cnpj', 'CPF ou CNPJ *', v.cpf_cnpj, extra='inputmode="numeric" maxlength="18" required') }}
+        {{ campo('rg', 'RG e órgão emissor *', v.rg, extra='required placeholder="Ex.: 123456 SSP/AC"') }}
+        {{ campo('nacionalidade', 'Nacionalidade *', v.nacionalidade, extra='required') }}
+        <div class="campo {{ 'com-erro' if 'estado_civil' in erros }}">
+          <label for="estado_civil">Estado civil *</label>
+          <select id="estado_civil" name="estado_civil" required>
+            <option value="">Escolha…</option>
+            {% for e in ESTADOS_CIVIS %}<option {{ 'selected' if v.estado_civil == e }}>{{ e }}</option>{% endfor %}
+          </select>
+          {% if 'estado_civil' in erros %}<span class="erro-campo">{{ erros.estado_civil }}</span>{% endif %}
+        </div>
+        {{ campo('profissao', 'Profissão *', v.profissao, extra='required') }}
+      </div>
+    </section>
+    <section class="cartao grade">
+      <h3>Contato</h3>
+      <div class="grade duas">
+        {{ campo('telefone', 'Telefone / WhatsApp *', v.telefone | tel, 'tel', 'inputmode="tel" maxlength="15" data-mascara="tel" placeholder="(68) 99999-9999" required') }}
+        {{ campo('email', 'E-mail *', v.email, 'email', 'autocapitalize="off" required', 'A cópia do contrato assinado será enviada para este e-mail.') }}
+      </div>
+    </section>
+    <section class="cartao grade">
+      <h3>Endereço</h3>
+      <div class="grade duas">
+        <div class="campo {{ 'com-erro' if 'cep' in erros }}">
+          <label for="cep">CEP *</label>
+          <input id="cep" name="cep" value="{{ v.cep | cep }}" inputmode="numeric" maxlength="9" data-mascara="cep" autocomplete="postal-code" aria-describedby="cep-status" required>
+          <small id="cep-status" class="cep-status" aria-live="polite"></small>
+          {% if 'cep' in erros %}<span class="erro-campo">{{ erros.cep }}</span>{% endif %}
+        </div>
+        {{ campo('logradouro', 'Logradouro *', v.logradouro, extra='data-maiusculas required', largo=True) }}
+        {{ campo('numero', 'Número *', v.numero, extra='required') }}
+        {{ campo('complemento', 'Complemento', v.complemento) }}
+        {{ campo('bairro', 'Bairro *', v.bairro, extra='data-maiusculas required') }}
+        {{ campo('cidade', 'Cidade *', v.cidade, extra='data-maiusculas required') }}
+        <div class="campo {{ 'com-erro' if 'estado' in erros }}">
+          <label for="estado">UF *</label>
+          <select id="estado" name="estado" required>
+            <option value="">—</option>
+            {% for uf in UFS %}<option {{ 'selected' if v.estado == uf }}>{{ uf }}</option>{% endfor %}
+          </select>
+        </div>
+      </div>
+    </section>
+    <button class="btn bloco grande" type="submit">Continuar → ler o contrato</button>
+  </form>
+</div>
+{% endblock %}

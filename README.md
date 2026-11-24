@@ -12,6 +12,11 @@ igualdade/
   db.py            conexão SQLite
   auth.py          login (CIM + senha), troca de senha, permissões
   tesouraria.py    percapitas, pagamentos e permissões do Tesoureiro
+  parque.py        contratos de locação do Parque das Acácias (painel do administrador)
+  vistoria.py      vistoria fotográfica do caseiro (/vistoria, com código de acesso)
+  assinatura.py    assinatura pelo contratante (/assinar) e validação pública (/validar)
+  contrato_pdf.py  PDF do contrato, Anexo I, rubrica e manifesto (ReportLab + pypdf)
+  email_service.py envio de e-mails pelo Gmail da Loja
   relatorios.py    relatórios (tela, impressão e Excel)
   views.py         painel, minhas informações, familiares, aniversariantes, obreiros
   admin.py         funções da Secretaria + comando criar-admin
@@ -59,6 +64,27 @@ Além das sessões e dos aniversários, a agenda mostra a **previsão de eventos
 **Planilha da agenda** (*Gerenciar → Exportar / Carregar planilha*): uma única aba com sessões e eventos (sem aniversários), em ordem de data. Na coluna *Tipo*, "Evento" indica um evento, com o nome em "Ordem do dia / Evento" e hora e local opcionais. Ao carregar, sessões são identificadas pela data e eventos pela data + nome; tudo aparece como prévia e só é gravado em "Incluir na agenda".
 
 Eventos que tinham sido cadastrados como "sessão extraordinária" com a ordem do dia `Evento: <nome>` são movidos automaticamente para a tabela de eventos quando o sistema inicia (só os que não têm balaústre).
+
+## Parque das Acácias: contratos de locação
+
+Locação da área de eventos do Parque das Acácias (salão, estacionamento, banheiros, cozinha e, opcionalmente, piscina). A locadora é a própria Loja.
+
+- **Quem usa:** o *Administrador do Parque* (marcação no cadastro do obreiro, ligada pelo Administrador), além do Venerável e do Administrador. Atalho **🌳 Parque das Acácias** na página inicial.
+- **Fluxo:** cadastro do contrato (contratante, evento e pagamento) → vistoria fotográfica pelo caseiro, se exigida → link de assinatura para o contratante (**válido por 7 dias**, de uso único) → assinatura → PDF consolidado enviado por e-mail ao contratante e à Loja.
+- **Caseiro:** página separada **/vistoria**, sem login de obreiro, com um **código de 6 números** definido em *Parque → Código do caseiro*. Acesso válido por 12 horas no aparelho; 5 erros bloqueiam por 15 minutos. Fotos reduzidas no celular e comprimidas no servidor (máx. 1280 px, JPEG 78, sem GPS).
+- **Assinatura (contratante, pelo link):** 1) qualificação (RG, estado civil, profissão, endereço com busca de CEP…); 2) leitura do contrato em PDF com o Anexo I das fotos — registra o SHA-256 pré-assinatura; 3) selfie pela câmera frontal (sem galeria), assinatura com o dedo e confirmações. Registra IP, aparelho, data/hora UTC do servidor e, se autorizada, a localização. Se o contrato mudar depois da leitura, a assinatura é recusada até nova leitura.
+- **PDF assinado:** rubrica no campo de assinatura e no rodapé de todas as páginas, Anexo I e o *Manifesto de assinatura eletrônica e trilha de auditoria* (dados, hashes, selfie, rubrica, IP, aparelho, localização e QR Code). O SHA-256 final fica registrado.
+- **Selfie:** não é guardada separadamente — entra só no PDF assinado (fica registrado apenas o hash dela).
+- **Validação pública:** **/validar/<código>** (QR Code do PDF) mostra a situação, nome e CPF/CNPJ mascarados, data e hash, e confere se um PDF enviado é idêntico ao assinado (o arquivo enviado não é guardado).
+- **Arquivos:** ficam em `instance/contratos/<id>/` (fora do git), com caminho e SHA-256 no banco. Inclua essa pasta no backup.
+- **Contrato:** por enquanto é um **modelo de teste** gerado em `igualdade/contrato_pdf.py` (ReportLab); o texto definitivo será construído ali.
+
+**E-mail (Gmail da Loja):** no plano gratuito do PythonAnywhere só o SMTP do Gmail funciona. Na conta igualdadeacreana@gmail.com, ative a verificação em duas etapas e crie uma *senha de app*; no arquivo WSGI, antes de `from wsgi import application`:
+```python
+os.environ["SMTP_USUARIO"] = "igualdadeacreana@gmail.com"
+os.environ["SMTP_SENHA"] = "senha de app de 16 letras"
+```
+Sem isso o sistema funciona normalmente, mas não envia e-mails: o link de assinatura aparece na tela do contrato para ser copiado e enviado (ex.: WhatsApp), e o contratante baixa o PDF assinado na tela final.
 
 ## Tesouraria (percapitas)
 
@@ -148,10 +174,10 @@ Para testar no celular na mesma rede Wi-Fi: `flask --app igualdade run --host 0.
 
 ## Backup
 
-Os dados ficam em dois lugares: o banco `instance/igualdade.db` e a pasta de fotos `instance/fotos/`. Para automatizar, crie uma *Scheduled Task* diária:
+Os dados ficam no banco `instance/igualdade.db` e nas pastas `instance/fotos/` (fotos dos obreiros) e `instance/contratos/` (contratos do Parque). Para automatizar, crie uma *Scheduled Task* diária:
 
 ```bash
-cd ~/Igualdade/instance && tar czf ~/backups/igualdade-$(date +%F).tar.gz igualdade.db fotos
+cd ~/Igualdade/instance && tar czf ~/backups/igualdade-$(date +%F).tar.gz igualdade.db fotos contratos
 ```
 
 (crie antes a pasta com `mkdir ~/backups`)

@@ -578,3 +578,31 @@ li.hoje .dia.evento { box-shadow: 0 0 0 3px var(--bordo); }
 .pix-chave.copiado { border-style: solid; border-color: var(--ok); background: var(--ok-fundo); }
 .pix-pagamento small { color: var(--suave); font-size: .78rem; }
 .pix-linha { display: block; margin-top: 4px; color: var(--texto); font-size: .88rem; overflow-wrap: anywhere; }
+
+/* ---------- Parque das Acácias: contratos, vistoria e assinatura ---------- */
+.btn.grande { min-height: 56px; font-size: 1.02rem; border-radius: 12px; }
+.publico .topo .marca span { font-size: .92rem; }
+.dia.contrato-dia { background: #2f6b3a; }
+.sit-contrato-aguardando_vistoria { background: #e8f0fb; color: #1f4fa3; }
+.sit-contrato-aguardando_assinatura { background: var(--aviso-fundo); color: var(--aviso); }
+.sit-contrato-assinado { background: var(--ok-fundo); color: var(--ok); }
+.sit-contrato-cancelado { background: #eee; color: #666; }
+code.hash { font-size: .72rem; overflow-wrap: anywhere; word-break: break-all; }
+.galeria { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; }
+.galeria img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 10px; border: 1px solid var(--borda); display: block; }
+.galeria figure { margin: 0; position: relative; }
+.galeria figure form { position: absolute; top: 6px; right: 6px; margin: 0; }
+.entrada-caseiro { text-align: center; padding: 26px 18px; }
+.entrada-caseiro .ic-grande { font-size: 2.6rem; }
+.entrada-caseiro form { display: grid; gap: 12px; margin-top: 10px; }
+.codigo-grande { text-align: center; font-size: 1.8rem; letter-spacing: .4em; font-weight: 800; }
+.selfie { position: relative; background: #1b1b1b; border-radius: 12px; overflow: hidden; aspect-ratio: 4 / 3; display: flex; align-items: center; justify-content: center; }
+.selfie video, .selfie img { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
+.selfie img { transform: none; }
+.selfie-aviso { position: absolute; color: #fff; text-align: center; padding: 0 16px; font-size: .92rem; }
+.quadro-assinatura { width: 100%; height: 200px; border: 2px dashed #b9a7a9; border-radius: 12px; background: #fff; touch-action: none; display: block; }
+.validacao { padding: 12px 14px; border-radius: 10px; margin: 0 0 12px; }
+.validacao.ok { background: var(--ok-fundo); color: var(--ok); }
+.validacao.erro { background: var(--erro-fundo); color: var(--erro); }
+.validacao.alerta { background: var(--aviso-fundo); color: var(--aviso); }
+.botoes label.btn { text-transform: none; letter-spacing: 0; cursor: pointer; }

@@ -1,0 +1,15 @@
+{% extends "publico/_base.html" %}
+{% block titulo %}Contrato assinado{% endblock %}
+{% block conteudo %}
+<div class="estreito">
+  <section class="cartao concluido">
+    <span class="ic">✅</span>
+    <h2>Contrato assinado!</h2>
+    <p>Obrigado, {{ c.contratante_nome.split()[0] | title }}. Sua assinatura foi registrada em {{ c.assinado_em }} (UTC).</p>
+    <a class="btn bloco grande" href="{{ url_for('assinatura.pdf_assinado', token=token) }}">⬇️ Baixar o contrato assinado (PDF)</a>
+    <p class="dica">{{ 'Uma cópia também foi enviada para ' ~ c.contratante_email ~ '.' if email_ok else 'Guarde o PDF baixado.' }}
+      Código verificador: <strong>{{ c.codigo_verificador }}</strong> ·
+      <a href="{{ url_validacao }}" target="_blank" rel="noopener">conferir autenticidade</a></p>
+  </section>
+</div>
+{% endblock %}

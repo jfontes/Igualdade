@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% block titulo %}Contrato {{ c.codigo_verificador }}{% endblock %}
+{% block conteudo %}
+<div class="estreito">
+  <a class="voltar" href="{{ url_for('parque.lista') }}">← Parque das Acácias</a>
+  <div class="cabecalho">
+    <div>
+      <h2>{{ c.contratante_nome }}</h2>
+      <div class="suave">{{ c.codigo_verificador }} · <span class="sit sit-contrato-{{ c.status | lower }}">{{ c.status_icone }} {{ c.status_rotulo }}</span>
+        {% if c.link_expirado %}<span class="sit sit-vencida">Link expirado</span>{% endif %}</div>
+    </div>
+  </div>
+
+  <div class="botoes acoes-topo">
+    {% if c.status not in ('ASSINADO', 'CANCELADO') %}<a class="btn sec" href="{{ url_for('parque.form', contrato_id=c.id) }}">✏️ Editar</a>{% endif %}
+    {% if c.status == 'ASSINADO' %}<a class="btn" href="{{ url_for('parque.pdf_final', contrato_id=c.id) }}" target="_blank" rel="noopener">📄 Contrato assinado (PDF)</a>{% endif %}
+  </div>
+
+  {% if c.status == 'AGUARDANDO_VISTORIA' %}
+  <section class="cartao destaque-lancar">
+    <p style="margin-top:0"><strong>Aguardando a vistoria do caseiro.</strong> Quando ele concluir as fotos, o link de assinatura é enviado ao contratante.</p>
+    <form method="post" action="{{ url_for('parque.liberar_sem_vistoria', contrato_id=c.id) }}"
+          data-confirmar="Liberar para assinatura SEM a vistoria fotográfica?">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="btn sec pequeno" type="submit">Dispensar vistoria e liberar para assinatura</button>
+    </form>
+  </section>
+  {% elif c.status == 'AGUARDANDO_ASSINATURA' %}
+  <section class="cartao">
+    <h3>Link de assinatura</h3>
+    {% if c.link_expirado %}
+      <p class="aviso-cancelada" style="margin-top:0">O link expirou em {{ c.token_expira_em[:10] | data }}. Gere um novo abaixo.</p>
+    {% elif link %}
+      <div class="pix-pagamento">
+        <span class="pix-rotulo">Válido até {{ c.token_expira_em[:10] | data }}</span>
+        <button class="pix-chave" type="button" data-copiar="{{ link }}"><span class="pix-valor">{{ link }}</span><span class="pix-ic" aria-hidden="true">📋</span></button>
+        <small data-copiar-aviso>{{ 'Enviado por e-mail para ' ~ c.contratante_email ~ '. ' if email_ok }}Toque no link para copiar e enviar ao contratante.</small>
+      </div>
+    {% endif %}
+    <form method="post" action="{{ url_for('parque.reenviar', contrato_id=c.id) }}" style="margin-top:10px"
+          data-confirmar="Gerar um novo link? O link atual deixa de valer.">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="btn sec pequeno" type="submit">🔄 Gerar novo link{{ ' e reenviar o e-mail' if email_ok }}</button>
+    </form>
+  </section>
+  {% elif c.status == 'ASSINADO' %}
+  <section class="cartao">
+    <h3>Assinatura</h3>
+    <dl class="dados">
+      <div><dt>Assinado em (UTC)</dt><dd>{{ c.assinado_em }}</dd></div>
+      <div><dt>Código verificador</dt><dd>{{ c.codigo_verificador }}</dd></div>
+      <div><dt>IP</dt><dd>{{ evid.ip_address if evid else '—' }}</dd></div>
+      <div><dt>Geolocalização</dt><dd>{{ evid.geolocalizacao if evid and evid.geolocalizacao else 'não autorizada' }}</dd></div>
+    </dl>
+    <p class="dica">SHA-256 do PDF assinado: <code class="hash">{{ c.hash_final_sha256 }}</code><br>
+      Validação pública: <a href="{{ url_validacao }}" target="_blank" rel="noopener">{{ url_validacao }}</a></p>
+  </section>
+  {% elif c.status == 'CANCELADO' %}
+  <p class="aviso-cancelada">Cancelado em {{ c.cancelado_em[:10] | data }}: {{ c.motivo_cancelamento }}</p>
+  {% endif %}
+
+  <section class="cartao">
+    <h3>Evento</h3>
+    <dl class="dados">
+      <div><dt>Data</dt><dd>{{ c.evento.data | data }}</dd></div>
+      <div><dt>Horário</dt><dd>{{ c.evento.hora_inicio }} às {{ c.evento.hora_fim }}</dd></div>
+      <div><dt>Tipo</dt><dd>{{ c.evento.tipo_evento }}</dd></div>
+      <div><dt>Piscina</dt><dd>{{ 'Incluída' if c.evento.inclui_piscina else 'Não incluída' }}</dd></div>
+      <div><dt>Valor total</dt><dd>{{ c.evento.valor_total | moeda }}</dd></div>
+      <div><dt>Pagamento</dt><dd>{{ c.evento.forma_pagamento }}</dd></div>
+      {% if c.evento.observacoes %}<div><dt>Observações</dt><dd>{{ c.evento.observacoes }}</dd></div>{% endif %}
+    </dl>
+  </section>
+
+  <section class="cartao">
+    <h3>Contratante</h3>
+    <dl class="dados">
+      <div><dt>CPF/CNPJ</dt><dd>{{ c.contratante_cpf_cnpj | cpf_cnpj }}</dd></div>
+      <div><dt>E-mail</dt><dd>{{ c.contratante_email }}</dd></div>
+      {% if c.contratante.telefone %}<div><dt>Telefone</dt><dd>{{ c.contratante.telefone | tel }}</dd></div>{% endif %}
+      {% if c.contratante.cidade %}<div><dt>Cidade</dt><dd>{{ c.contratante.cidade }}/{{ c.contratante.estado }}</dd></div>{% endif %}
+    </dl>
+    {% if not c.contratante %}<p class="dica" style="margin-bottom:0">A qualificação completa é preenchida pelo contratante no link de assinatura.</p>{% endif %}
+  </section>
+
+  {% if c.exige_vistoria %}
+  <section class="cartao">
+    <h3>Vistoria fotográfica {% if c.vistoria_concluida_em %}<span class="selo">concluída em {{ c.vistoria_concluida_em[:10] | data }}</span>{% endif %}</h3>
+    {% if fotos %}
+    <div class="galeria">
+      {% for f in fotos %}<a href="{{ url_for('parque.foto', contrato_id=c.id, foto_id=f.id) }}" target="_blank" rel="noopener"><img src="{{ url_for('parque.foto', contrato_id=c.id, foto_id=f.id) }}" alt="Foto {{ loop.index }} da vistoria" loading="lazy"></a>{% endfor %}
+    </div>
+    {% else %}<p class="suave" style="margin:0">Nenhuma foto ainda.</p>{% endif %}
+  </section>
+  {% endif %}
+
+  {% if c.status not in ('ASSINADO', 'CANCELADO') %}
+  <details class="cartao">
+    <summary>Cancelar contrato</summary>
+    <form method="post" action="{{ url_for('parque.cancelar', contrato_id=c.id) }}" class="acao-motivo" data-confirmar="Cancelar este contrato? O link de assinatura deixa de valer.">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input name="motivo" required maxlength="300" placeholder="Motivo do cancelamento">
+      <button class="btn perigo pequeno" type="submit">Cancelar contrato</button>
+    </form>
+  </details>
+  {% endif %}
+</div>
+{% endblock %}

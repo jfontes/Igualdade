@@ -1,0 +1,23 @@
+{% extends "publico/_base.html" %}
+{% block titulo %}Ler o contrato{% endblock %}
+{% block conteudo %}
+<div class="estreito">
+  {% include "assinar/_passos.html" %}
+  <h2>Leia o contrato</h2>
+  <section class="cartao">
+    <dl class="dados">
+      <div><dt>Evento</dt><dd>{{ c.evento.tipo_evento }} · {{ c.evento.data | data }}, {{ c.evento.hora_inicio }} às {{ c.evento.hora_fim }}</dd></div>
+      <div><dt>Valor</dt><dd>{{ c.evento.valor_total | moeda }}</dd></div>
+      <div><dt>Piscina</dt><dd>{{ 'Incluída' if c.evento.inclui_piscina else 'Não incluída' }}</dd></div>
+      <div><dt>Vistoria</dt><dd>{{ qtd_fotos ~ ' foto(s) no Anexo I' if qtd_fotos else 'sem vistoria fotográfica' }}</dd></div>
+    </dl>
+    <a class="btn bloco grande" href="{{ url_for('assinatura.pdf_leitura', token=token) }}" target="_blank" rel="noopener" data-abriu-contrato>📄 Abrir o contrato completo (PDF)</a>
+    <p class="dica">Leia todo o documento antes de assinar{{ ', inclusive o Anexo I com as fotos da vistoria' if qtd_fotos }}.
+      Identificação desta versão (SHA-256): <code class="hash">{{ c.hash_pre_assinatura }}</code></p>
+  </section>
+  <div class="botoes">
+    <a class="btn bloco grande" href="{{ url_for('assinatura.assinar', token=token) }}">Li o contrato → assinar</a>
+    <a class="btn sec" href="{{ url_for('assinatura.dados', token=token) }}">← Corrigir meus dados</a>
+  </div>
+</div>
+{% endblock %}

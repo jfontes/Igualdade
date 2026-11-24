@@ -1,0 +1,34 @@
+{% extends "publico/_base.html" %}
+{% block titulo %}Vistorias pendentes{% endblock %}
+{% block topo_acoes %}
+<form method="post" action="{{ url_for('vistoria.sair') }}">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <button class="btn-sair" type="submit">Sair</button>
+</form>
+{% endblock %}
+{% block conteudo %}
+<div class="estreito">
+  <h2>📷 Vistorias pendentes</h2>
+  <div class="cartao">
+    {% if contratos %}
+    <ul class="lista">
+      {% for c in contratos %}
+      <li>
+        <a class="item" href="{{ url_for('vistoria.contrato', contrato_id=c.id) }}">
+          <span class="dia contrato-dia"><b>{{ c.evento.data[8:] }}</b><small>{{ MESES_CURTOS[c.evento.data[5:7] | int - 1] }}</small></span>
+          <div class="corpo">
+            <div class="nome">{{ c.contratante_nome }}</div>
+            <div class="sub">{{ c.evento.tipo_evento }} · {{ c.evento.data | data }} · {{ c.evento.hora_inicio }}–{{ c.evento.hora_fim }}</div>
+            <div class="sub">{{ '🏊 com piscina' if c.evento.inclui_piscina else 'sem piscina' }} · {{ qtd.get(c.id, 0) }} foto(s)</div>
+          </div>
+          <span aria-hidden="true">›</span>
+        </a>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <div class="vazio-msg"><span class="ic">✅</span>Nenhuma vistoria pendente.</div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

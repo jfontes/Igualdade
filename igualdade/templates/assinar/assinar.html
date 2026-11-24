@@ -1,0 +1,51 @@
+{% extends "publico/_base.html" %}
+{% block titulo %}Assinar o contrato{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='contrato.js') }}?v=1" defer></script>{% endblock %}
+{% block conteudo %}
+<div class="estreito">
+  {% include "assinar/_passos.html" %}
+  <h2>Assinar</h2>
+  <form method="post" id="form-assinatura" novalidate data-assinatura>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="hash_pre" value="{{ c.hash_pre_assinatura }}">
+    <input type="hidden" name="selfie">
+    <input type="hidden" name="assinatura">
+    <input type="hidden" name="traco">
+    <input type="hidden" name="geolocalizacao">
+
+    <section class="cartao">
+      <h3>1. Foto do rosto (selfie)</h3>
+      <p class="dica" style="margin-top:0">A foto é tirada agora, pela câmera frontal do aparelho, para comprovar quem assinou.
+        Ela é incluída apenas no documento assinado e não é guardada separadamente (LGPD).</p>
+      <div class="selfie">
+        <video data-video playsinline muted autoplay></video>
+        <img data-selfie-previa alt="Sua foto" hidden>
+        <p class="selfie-aviso" data-camera-aviso>Toque em “Abrir câmera”.</p>
+      </div>
+      <div class="botoes">
+        <button class="btn sec" type="button" data-abrir-camera>📷 Abrir câmera</button>
+        <button class="btn" type="button" data-tirar-foto hidden>Tirar foto</button>
+        <button class="btn sec" type="button" data-refazer-foto hidden>Tirar de novo</button>
+      </div>
+    </section>
+
+    <section class="cartao">
+      <h3>2. Sua assinatura</h3>
+      <p class="dica" style="margin-top:0">Assine com o dedo dentro do quadro.</p>
+      <canvas class="quadro-assinatura" data-quadro width="600" height="220" aria-label="Quadro para assinatura"></canvas>
+      <div class="botoes"><button class="btn sec pequeno" type="button" data-limpar-assinatura>Limpar</button></div>
+    </section>
+
+    <section class="cartao grade">
+      <h3>3. Confirmação</h3>
+      <label class="check"><input type="checkbox" name="li_contrato" value="1" required> Li o contrato e o Anexo I e concordo com todos os termos.</label>
+      <label class="check"><input type="checkbox" name="consentimento" value="1" required> Autorizo o uso da minha foto e da assinatura apenas para comprovar esta assinatura, conforme a LGPD.</label>
+      <label class="check"><input type="checkbox" data-geo value="1"> Registrar também a minha localização (opcional).</label>
+      <p class="dica" style="margin:0">Serão registrados no documento: data e hora do servidor, endereço IP e o aparelho utilizado.</p>
+    </section>
+    <p class="erro-campo" data-erro-assinatura aria-live="polite"></p>
+    <button class="btn bloco grande" type="submit" data-botao-assinar>✍️ Assinar contrato</button>
+  </form>
+  <p class="dica"><a href="{{ url_for('assinatura.leitura', token=token) }}">← Voltar ao contrato</a></p>
+</div>
+{% endblock %}

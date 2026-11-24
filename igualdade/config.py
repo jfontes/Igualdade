@@ -11,6 +11,15 @@ LOJA = {
     "pix": "igualdadeacreana@gmail.com",
 }
 
+# ---------------------------------------------------------------- Parque das Acácias (locação)
+PARQUE = {
+    "nome": "Parque das Acácias",
+    "descricao": "área de eventos com salão, estacionamento, banheiros e cozinha",
+    # recebe cópia de todo contrato assinado (cópia externa de segurança)
+    "email_locador": "igualdadeacreana@gmail.com",
+    "dias_validade_link": 7,
+}
+
 # ---------------------------------------------------------------- agenda de sessões
 # As sessões ocorrem às segundas-feiras, às 20h (0 = segunda-feira).
 DIA_DA_SESSAO = 0

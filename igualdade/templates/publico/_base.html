@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block body_class %}sem-nav publico{% endblock %}
+{% block corpo %}
+  <header class="topo">
+    <div class="topo-interno">
+      <span class="marca">
+        <img src="{{ url_for('static', filename='brasao-192.png') }}" alt="Brasão">
+        <span>{{ LOJA.nome }} · Parque das Acácias</span>
+      </span>
+      <span class="espaco"></span>
+      {% block topo_acoes %}{% endblock %}
+    </div>
+  </header>
+  <main>
+    {% include "_mensagens.html" %}
+    {% block conteudo %}{% endblock %}
+  </main>
+{% endblock %}

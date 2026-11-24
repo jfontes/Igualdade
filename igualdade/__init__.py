@@ -45,12 +45,15 @@ def create_app() -> Flask:
     csrf.init_app(app)
 
     from . import (auth, views, admin, fotos, assistente, sessoes, diretoria, balaustre, planilha,
-                   gerenciar, tesouraria, relatorios, eventos)
+                   gerenciar, tesouraria, relatorios, eventos, parque, vistoria, assinatura)
     auth.init_app(app)
     tesouraria.init_app(app)
     app.register_blueprint(tesouraria.bp)
     app.register_blueprint(relatorios.bp)
     app.register_blueprint(eventos.bp)
+    app.register_blueprint(parque.bp)
+    app.register_blueprint(vistoria.bp)
+    app.register_blueprint(assinatura.bp)
     app.register_blueprint(assistente.bp)
     app.register_blueprint(sessoes.bp)
     app.register_blueprint(planilha.bp)
@@ -68,9 +71,14 @@ def create_app() -> Flask:
     app.jinja_env.filters["cpf"] = util.fmt_cpf
     app.jinja_env.filters["cep"] = util.fmt_cep
     app.jinja_env.filters["tel"] = util.fmt_tel
+    app.jinja_env.filters["cpf_cnpj"] = util.fmt_cpf_cnpj
     app.jinja_env.filters["partes"] = util.partes_data
     app.jinja_env.filters["extenso"] = util.fmt_data_extenso
     app.jinja_env.tests["com_ano"] = util.tem_ano
+
+    @app.context_processor
+    def acesso_parque():
+        return {"pode_parque": parque.gere_parque()}
 
     @app.context_processor
     def globais():

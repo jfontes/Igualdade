@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block titulo %}Código do caseiro{% endblock %}
+{% block conteudo %}
+<div class="estreito">
+  <a class="voltar" href="{{ url_for('parque.lista') }}">← Parque das Acácias</a>
+  <h2>🔑 Código de acesso do caseiro</h2>
+  <section class="cartao">
+    <p style="margin-top:0">O caseiro faz as vistorias numa página separada, sem login de obreiro:</p>
+    <div class="pix-pagamento" style="margin-top:0">
+      <span class="pix-rotulo">Endereço da vistoria</span>
+      <button class="pix-chave" type="button" data-copiar="{{ url_vistoria }}"><span class="pix-valor">{{ url_vistoria }}</span><span class="pix-ic" aria-hidden="true">📋</span></button>
+      <small data-copiar-aviso>Toque para copiar e enviar ao caseiro.</small>
+    </div>
+    <p class="dica">{{ 'Já existe um código definido. Ao salvar um novo, o anterior deixa de funcionar.' if codigo_definido else 'Ainda não há código definido.' }}
+      O acesso do caseiro vale 12 horas no aparelho; após 5 tentativas erradas, a entrada fica bloqueada por 15 minutos.</p>
+  </section>
+  <form method="post" class="cartao grade" novalidate>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="grade duas">
+      <div class="campo"><label for="codigo">Novo código (6 números)</label>
+        <input id="codigo" name="codigo" inputmode="numeric" maxlength="6" autocomplete="off" required></div>
+      <div class="campo"><label for="confirmacao">Repita o código</label>
+        <input id="confirmacao" name="confirmacao" inputmode="numeric" maxlength="6" autocomplete="off" required></div>
+    </div>
+    <div class="botoes"><button class="btn" type="submit">Salvar código</button></div>
+  </form>
+</div>
+{% endblock %}

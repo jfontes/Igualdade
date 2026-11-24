@@ -52,6 +52,7 @@ class Usuario(UserMixin):
         self.admin_cadastro = bool(row["admin"])
         self.secretaria_por_cargo = self.id in secretaria_vigente_ids()
         self.admin = self.admin_cadastro or self.secretaria_por_cargo
+        self.admin_parque = bool(row["admin_parque"]) if "admin_parque" in row.keys() else False
         self.trocar_senha = bool(row["trocar_senha"])
         # Primeiro acesso: o assistente aparece uma única vez, até ser concluído
         self.cadastro_pendente = self.trocar_senha and not row["cadastro_confirmado"]
@@ -64,7 +65,7 @@ class Usuario(UserMixin):
 @login_manager.user_loader
 def carregar_usuario(user_id):
     row = get_db().execute(
-        "SELECT id, nome, admin, trocar_senha, cadastro_confirmado, data_afastamento "
+        "SELECT id, nome, admin, admin_parque, trocar_senha, cadastro_confirmado, data_afastamento "
         "FROM obreiro WHERE id = ?",
         (user_id,)).fetchone()
     if row is None or row["data_afastamento"]:

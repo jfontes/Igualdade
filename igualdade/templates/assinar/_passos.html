@@ -1,0 +1,8 @@
+<nav class="passos" aria-label="Etapas da assinatura">
+  <p class="passo-atual">Etapa <strong>{{ passo }} de 3</strong></p>
+  <ol>
+    {% for n, rotulo in [(1, 'Seus dados'), (2, 'Ler o contrato'), (3, 'Assinar')] %}
+    <li class="{{ 'atual' if n == passo else ('feito' if n < passo) }}"><span class="bola">{{ '✓' if n < passo else n }}</span><span class="rotulo">{{ rotulo }}</span></li>
+    {% endfor %}
+  </ol>
+</nav>

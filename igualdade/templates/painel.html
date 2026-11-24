@@ -78,6 +78,12 @@
     <small>Lançamentos e pagamentos</small>
   </a>
   {% endif %}
+  {% if pode_parque %}
+  <a class="atalho" href="{{ url_for('parque.lista') }}">
+    <span class="ic">🌳</span>Parque das Acácias
+    <small>Contratos de locação</small>
+  </a>
+  {% endif %}
   {% if pode_relatorios %}
   <a class="atalho" href="{{ url_for('relatorios.index') }}">
     <span class="ic">📊</span>Relatórios

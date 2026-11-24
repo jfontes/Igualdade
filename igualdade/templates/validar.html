@@ -1,0 +1,48 @@
+{% extends "publico/_base.html" %}
+{% block titulo %}Validar contrato{% endblock %}
+{% block conteudo %}
+<div class="estreito">
+  <h2>🔎 Validar contrato</h2>
+  {% if not codigo %}
+  <form method="get" class="cartao grade">
+    <div class="campo"><label for="codigo">Código verificador</label>
+      <input id="codigo" name="codigo" placeholder="IGA-XXXX-XXXX" autocapitalize="characters" required></div>
+    <button class="btn" type="submit">Validar</button>
+  </form>
+  {% elif not c %}
+  <section class="cartao concluido"><span class="ic">❌</span><h3>Código não encontrado</h3>
+    <p>Nenhum contrato com o código <strong>{{ codigo }}</strong>. <a href="{{ url_for('assinatura.validar') }}">Tentar outro código</a></p></section>
+  {% else %}
+  <section class="cartao">
+    {% if c.status == 'ASSINADO' %}
+      <p class="validacao ok">✅ <strong>Documento válido e assinado eletronicamente.</strong></p>
+    {% elif c.status == 'CANCELADO' %}
+      <p class="validacao erro">⚫ <strong>Contrato cancelado.</strong></p>
+    {% else %}
+      <p class="validacao alerta">⏳ <strong>Contrato ainda não assinado.</strong></p>
+    {% endif %}
+    <dl class="dados">
+      <div><dt>Código verificador</dt><dd>{{ c.codigo_verificador }}</dd></div>
+      <div><dt>Documento</dt><dd>Contrato de locação · {{ LOJA.nome }} – Parque das Acácias</dd></div>
+      <div><dt>Contratante</dt><dd>{{ nome }}</dd></div>
+      <div><dt>CPF/CNPJ</dt><dd>{{ doc }}</dd></div>
+      {% if c.assinado_em %}<div><dt>Assinado em (UTC)</dt><dd>{{ c.assinado_em }}</dd></div>{% endif %}
+    </dl>
+    {% if c.hash_final_sha256 %}<p class="dica">SHA-256 registrado: <code class="hash">{{ c.hash_final_sha256 }}</code></p>{% endif %}
+  </section>
+  {% if c.status == 'ASSINADO' %}
+  <form method="post" enctype="multipart/form-data" class="cartao grade">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <h3>Conferir um arquivo</h3>
+    <p class="dica" style="margin:0">Envie o PDF que você recebeu: o sistema compara o SHA-256 dele com o registrado. O arquivo não é guardado.</p>
+    <input type="file" name="pdf" accept="application/pdf,.pdf" required>
+    <button class="btn sec" type="submit">Conferir arquivo</button>
+    {% if conferencia %}
+      {% if conferencia.confere %}<p class="validacao ok">✅ O arquivo é idêntico ao documento assinado.</p>
+      {% else %}<p class="validacao erro">❌ O arquivo é diferente do documento assinado (SHA-256 <code class="hash">{{ conferencia.hash }}</code>).</p>{% endif %}
+    {% endif %}
+  </form>
+  {% endif %}
+  {% endif %}
+</div>
+{% endblock %}

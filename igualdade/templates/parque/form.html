@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block titulo %}{{ 'Editar contrato' if contrato else 'Novo contrato' }}{% endblock %}
+{% macro erro(campo) -%}{% if campo in erros %}<span class="erro-campo">{{ erros[campo] }}</span>{% endif %}{%- endmacro %}
+{% block conteudo %}
+<div class="estreito">
+  <a class="voltar" href="{{ url_for('parque.detalhe', contrato_id=contrato.id) if contrato else url_for('parque.lista') }}">← {{ 'Contrato' if contrato else 'Parque das Acácias' }}</a>
+  <h2>{{ self.titulo() }}</h2>
+  <form method="post" novalidate data-uma-vez>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    <section class="cartao grade">
+      <h3>Contratante</h3>
+      <div class="campo {{ 'com-erro' if 'contratante_nome' in erros }}">
+        <label for="contratante_nome">Nome completo ou razão social *</label>
+        <input id="contratante_nome" name="contratante_nome" value="{{ v.contratante_nome or '' }}" data-maiusculas required>
+        {{ erro('contratante_nome') }}
+      </div>
+      <div class="grade duas">
+        <div class="campo {{ 'com-erro' if 'contratante_cpf_cnpj' in erros }}">
+          <label for="contratante_cpf_cnpj">CPF ou CNPJ *</label>
+          <input id="contratante_cpf_cnpj" name="contratante_cpf_cnpj" value="{{ v.contratante_cpf_cnpj or '' }}" inputmode="numeric" maxlength="18" required>
+          {{ erro('contratante_cpf_cnpj') }}
+        </div>
+        <div class="campo {{ 'com-erro' if 'contratante_email' in erros }}">
+          <label for="contratante_email">E-mail *</label>
+          <input id="contratante_email" name="contratante_email" type="email" value="{{ v.contratante_email or '' }}" autocapitalize="off" required>
+          {{ erro('contratante_email') }}
+        </div>
+      </div>
+      <p class="dica" style="margin:0">Os demais dados (RG, endereço, estado civil…) o próprio contratante preenche ao abrir o link de assinatura.</p>
+    </section>
+
+    <section class="cartao grade">
+      <h3>Evento</h3>
+      <div class="grade duas">
+        <div class="campo {{ 'com-erro' if 'data' in erros }}">
+          <label for="data">Data do evento *</label>
+          <input id="data" name="data" type="date" value="{{ v.data or '' }}" required>
+          {{ erro('data') }}
+        </div>
+        <div class="campo {{ 'com-erro' if 'tipo_evento' in erros }}">
+          <label for="tipo_evento">Tipo de evento *</label>
+          <input id="tipo_evento" name="tipo_evento" value="{{ v.tipo_evento or '' }}" maxlength="120" placeholder="Ex.: Casamento, aniversário de 15 anos" required>
+          {{ erro('tipo_evento') }}
+        </div>
+      </div>
+      <div class="grade duas {{ 'com-erro' if 'horario' in erros }}">
+        <div class="campo"><label for="hora_inicio">Início *</label><input id="hora_inicio" name="hora_inicio" type="time" value="{{ v.hora_inicio or '' }}" required></div>
+        <div class="campo"><label for="hora_fim">Fim *</label><input id="hora_fim" name="hora_fim" type="time" value="{{ v.hora_fim or '' }}" required></div>
+      </div>
+      {{ erro('horario') }}
+      <label class="check"><input type="checkbox" name="inclui_piscina" value="1" {{ 'checked' if v.inclui_piscina }}> Inclui o uso da piscina</label>
+    </section>
+
+    <section class="cartao grade">
+      <h3>Pagamento</h3>
+      <div class="campo {{ 'com-erro' if 'valor_total' in erros }}">
+        <label for="valor_total">Valor total (R$) *</label>
+        <input id="valor_total" name="valor_total" value="{{ v.valor_total or '' }}" inputmode="decimal" data-moeda placeholder="0,00" required>
+        {{ erro('valor_total') }}
+      </div>
+      <div class="campo {{ 'com-erro' if 'forma_pagamento' in erros }}">
+        <label for="forma_pagamento">Forma e condições de pagamento *</label>
+        <input id="forma_pagamento" name="forma_pagamento" value="{{ v.forma_pagamento or '' }}" maxlength="300" placeholder="Ex.: 50% na reserva (PIX) e 50% até 7 dias antes" required>
+        {{ erro('forma_pagamento') }}
+      </div>
+      <div class="campo">
+        <label for="observacoes">Observações</label>
+        <textarea id="observacoes" name="observacoes" rows="3" maxlength="1000">{{ v.observacoes or '' }}</textarea>
+      </div>
+    </section>
+
+    {% if not contrato %}
+    <section class="cartao">
+      <label class="check"><input type="checkbox" name="exige_vistoria" value="1" {{ 'checked' if v.exige_vistoria }}> Exigir vistoria fotográfica prévia pelo caseiro</label>
+      <p class="dica" style="margin-bottom:0">Com vistoria, o link de assinatura só é enviado ao contratante depois que o caseiro concluir as fotos. Sem vistoria, o link é enviado ao salvar.</p>
+    </section>
+    {% endif %}
+
+    <div class="botoes">
+      <button class="btn" type="submit">{{ 'Salvar alterações' if contrato else 'Cadastrar contrato' }}</button>
+      <a class="btn sec" href="{{ url_for('parque.detalhe', contrato_id=contrato.id) if contrato else url_for('parque.lista') }}">Cancelar</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

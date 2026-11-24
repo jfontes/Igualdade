@@ -22,6 +22,7 @@ def novo():
     if request.method == "POST":
         dados, erros = ler_form_obreiro(request.form, completo=True)
         dados["admin"] = 1 if request.form.get("admin") else 0
+        dados["admin_parque"] = 1 if request.form.get("admin_parque") else 0
         if not erros:
             dados["foto"], erro_foto = fotos.processar_upload(request.form, request.files, None)
             if erro_foto:
@@ -54,6 +55,7 @@ def editar(obreiro_id):
     if request.method == "POST":
         dados, erros = ler_form_obreiro(request.form, completo=True, obreiro_id=obreiro_id)
         dados["admin"] = 1 if request.form.get("admin") else 0
+        dados["admin_parque"] = 1 if request.form.get("admin_parque") else 0
         if obreiro_id == current_user.id:
             # ninguém altera o próprio perfil de administrador (evita se trancar fora do sistema
             # e evita que o Secretário da gestão o mantenha depois que a gestão terminar)

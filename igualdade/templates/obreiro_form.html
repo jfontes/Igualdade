@@ -116,6 +116,8 @@
         Os cargos da gestão vigente já dão acesso automaticamente (Secretário: Secretaria; Tesoureiro: Tesouraria;
         Venerável: tudo). Marque só para dar acesso total permanente a alguém.{% if modo == 'editar' and o.id == current_user.id %}
         Você não pode alterar o seu próprio acesso.{% endif %}</p>
+      <label class="check"><input type="checkbox" name="admin_parque" value="1" {{ 'checked' if o.admin_parque }}> Administrador do Parque das Acácias</label>
+      <p class="dica">Cadastra e acompanha os contratos de locação da área de eventos do Parque e define o código de acesso do caseiro.</p>
       {% if modo == 'novo' %}<p class="dica">A senha inicial será o CPF (somente números). O obreiro deverá trocá-la no primeiro acesso.</p>{% endif %}
     </section>
     {% endif %}

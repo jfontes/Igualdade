@@ -1,0 +1,17 @@
+{% extends "publico/_base.html" %}
+{% block titulo %}Vistoria – Parque das Acácias{% endblock %}
+{% block conteudo %}
+<div class="estreito">
+  <section class="cartao entrada-caseiro">
+    <div class="ic-grande" aria-hidden="true">📷</div>
+    <h2>Vistoria do Parque</h2>
+    <p class="suave">Área do caseiro. Digite o código de acesso de 6 números.</p>
+    <form method="post" novalidate>
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input class="codigo-grande" name="codigo" inputmode="numeric" maxlength="6" autocomplete="one-time-code"
+             placeholder="••••••" aria-label="Código de acesso" required {{ 'disabled' if bloqueado else 'autofocus' }}>
+      <button class="btn bloco" type="submit" {{ 'disabled' if bloqueado }}>Entrar</button>
+    </form>
+  </section>
+</div>
+{% endblock %}

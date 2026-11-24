@@ -181,3 +181,77 @@ CREATE TABLE IF NOT EXISTS evento (
 );
 
 CREATE INDEX IF NOT EXISTS idx_evento_data ON evento(data);
+
+-- ================================================================ Parque das Acácias: contratos de locação
+-- Locação da área de eventos do Parque das Acácias (locador: a própria Loja).
+-- Os arquivos (fotos da vistoria, rubrica e PDF assinado) ficam em instance/contratos/<id>/;
+-- o banco guarda só o caminho e o hash SHA-256 de cada arquivo (integridade).
+
+-- Configurações do Parque (ex.: código de acesso do caseiro, guardado como hash).
+CREATE TABLE IF NOT EXISTS parque_config (
+    chave            TEXT PRIMARY KEY,
+    valor            TEXT,
+    atualizado_em    TEXT
+);
+
+-- Tentativas de acesso à área do caseiro (bloqueio temporário após erros).
+CREATE TABLE IF NOT EXISTS acesso_tentativa (
+    chave            TEXT PRIMARY KEY,                 -- ex.: "caseiro:<ip>"
+    falhas           INTEGER NOT NULL DEFAULT 0,
+    bloqueado_ate    TEXT
+);
+
+CREATE TABLE IF NOT EXISTS contrato (
+    id                   INTEGER PRIMARY KEY AUTOINCREMENT,
+    codigo_verificador   TEXT    NOT NULL UNIQUE,      -- impresso no PDF e no QR Code
+    token_assinatura     TEXT    UNIQUE,               -- link público de assinatura
+    token_expira_em      TEXT,                         -- ISO, 7 dias após o envio do link
+    status               TEXT    NOT NULL,             -- AGUARDANDO_VISTORIA, AGUARDANDO_ASSINATURA, ASSINADO, CANCELADO
+    exige_vistoria       INTEGER NOT NULL DEFAULT 0,
+    contratante_nome     TEXT    NOT NULL,
+    contratante_cpf_cnpj TEXT    NOT NULL,             -- somente dígitos
+    contratante_email    TEXT    NOT NULL,
+    contratante_dados_json TEXT,                       -- qualificação completa (preenchida pelo contratante)
+    evento_dados_json    TEXT    NOT NULL,             -- data, horários, tipo, valor, pagamento, piscina, observações
+    pdf_pre_arquivo      TEXT,                         -- PDF mostrado para leitura antes de assinar
+    campo_assinatura_json TEXT,                        -- onde a rubrica é estampada nesse PDF
+    hash_pre_assinatura  TEXT,
+    pdf_final_arquivo    TEXT,
+    hash_final_sha256    TEXT,
+    tamanho_final_bytes  INTEGER,
+    criado_em            TEXT    NOT NULL,
+    criado_por           INTEGER REFERENCES obreiro(id) ON DELETE SET NULL,
+    vistoria_concluida_em TEXT,
+    link_enviado_em      TEXT,
+    assinado_em          TEXT,
+    cancelado_em         TEXT,
+    motivo_cancelamento  TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_contrato_status ON contrato(status);
+
+CREATE TABLE IF NOT EXISTS vistoria_foto (
+    id               INTEGER PRIMARY KEY AUTOINCREMENT,
+    contrato_id      INTEGER NOT NULL REFERENCES contrato(id) ON DELETE CASCADE,
+    arquivo          TEXT    NOT NULL,                 -- relativo a instance/contratos/
+    sha256           TEXT    NOT NULL,
+    enviado_por      TEXT,
+    criado_em        TEXT    NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_vistoria_contrato ON vistoria_foto(contrato_id);
+
+-- Evidências da assinatura. A selfie NÃO é guardada à parte: entra só no PDF assinado
+-- (manifesto) e é descartada; aqui fica apenas o hash dela.
+CREATE TABLE IF NOT EXISTS assinatura_evidencia (
+    id                   INTEGER PRIMARY KEY AUTOINCREMENT,
+    contrato_id          INTEGER NOT NULL UNIQUE REFERENCES contrato(id) ON DELETE CASCADE,
+    selfie_sha256        TEXT,
+    assinatura_arquivo   TEXT,                         -- PNG da rubrica
+    assinatura_sha256    TEXT,
+    traco_vetorial_json  TEXT,
+    ip_address           TEXT,
+    user_agent           TEXT,
+    geolocalizacao       TEXT,
+    timestamp_utc        TEXT    NOT NULL
+);

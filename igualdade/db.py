@@ -46,6 +46,7 @@ MIGRACOES = [
     ("obreiro", "cadastro_confirmado", "TEXT"),
     ("obreiro", "data_emerito", "TEXT"),
     ("obreiro", "data_vm_honra", "TEXT"),
+    ("obreiro", "admin_parque", "INTEGER NOT NULL DEFAULT 0"),
 ]
 
 

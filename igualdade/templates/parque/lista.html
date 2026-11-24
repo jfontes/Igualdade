@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block titulo %}Parque das Acácias{% endblock %}
+{% block conteudo %}
+<div class="estreito">
+  <div class="cabecalho"><h2>🌳 Parque das Acácias</h2></div>
+  <div class="botoes acoes-topo">
+    <a class="btn" href="{{ url_for('parque.form') }}">＋ Novo contrato</a>
+    <a class="btn sec" href="{{ url_for('parque.configuracao') }}">🔑 Código do caseiro</a>
+  </div>
+  {% if not codigo_definido %}
+  <p class="lembrete">⚠️ O <strong>código de acesso do caseiro</strong> ainda não foi definido. Sem ele, o caseiro não consegue fazer as vistorias.</p>
+  {% endif %}
+  {% if not email_ok %}
+  <p class="dica">O envio automático de e-mails ainda não está configurado no servidor: copie o link de assinatura na tela de cada contrato e envie ao contratante (ex.: WhatsApp).</p>
+  {% endif %}
+
+  <nav class="abas" aria-label="Filtrar por situação">
+    <a href="{{ url_for('parque.lista') }}" class="{{ 'ativo' if not filtro }}">Todos</a>
+    {% for chave, (rotulo, ic) in STATUS.items() %}
+      <a href="{{ url_for('parque.lista', status=chave) }}" class="{{ 'ativo' if filtro == chave }}">{{ ic }} {{ rotulo }}</a>
+    {% endfor %}
+  </nav>
+
+  <div class="cartao">
+    {% if contratos %}
+    <ul class="lista">
+      {% for c in contratos %}
+      <li>
+        <a class="item" href="{{ url_for('parque.detalhe', contrato_id=c.id) }}">
+          <span class="dia contrato-dia"><b>{{ c.evento.data[8:] if c.evento.data else '--' }}</b><small>{{ MESES_CURTOS[c.evento.data[5:7] | int - 1] if c.evento.data else '' }}</small></span>
+          <div class="corpo">
+            <div class="nome">{{ c.contratante_nome }}</div>
+            <div class="sub">{{ c.evento.tipo_evento }} · {{ c.evento.data | data }} · {{ c.evento.valor_total | moeda }}</div>
+            <div class="sub"><span class="sit sit-contrato-{{ c.status | lower }}">{{ c.status_icone }} {{ c.status_rotulo }}</span>
+              {% if c.link_expirado %}<span class="sit sit-vencida">Link expirado</span>{% endif %}</div>
+          </div>
+          <span aria-hidden="true">›</span>
+        </a>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <div class="vazio-msg"><span class="ic">📄</span>Nenhum contrato {{ 'nesta situação' if filtro else 'cadastrado' }}.</div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
