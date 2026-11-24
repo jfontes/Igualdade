@@ -1,0 +1,55 @@
+{% extends "publico/_base.html" %}
+{% block titulo %}Confira seus dados – contrato{% endblock %}
+{% block conteudo %}
+{% set pj = q.tipo_pessoa == 'PJ' %}
+{% set rep = q.representante or {} %}
+<div class="estreito">
+  {% include "assinar/_passos.html" %}
+  <h2>Confira os dados do contrato</h2>
+  <p class="suave">Contrato de locação da área de eventos do Parque das Acácias — {{ c.evento.tipo_evento }} em {{ c.evento.data | data }}.
+    Estes são os dados que vão no contrato. Confira com atenção.</p>
+
+  <section class="cartao ficha">
+    <h3>{{ 'Empresa contratante' if pj else 'Contratante' }}</h3>
+    <dl>
+      <div><dt>{{ 'Razão social' if pj else 'Nome completo' }}</dt><dd>{{ c.contratante_nome }}</dd></div>
+      <div><dt>{{ 'CNPJ' if pj else 'CPF' }}</dt><dd>{{ c.contratante_cpf_cnpj | cpf_cnpj }}</dd></div>
+      {% if not pj %}
+      <div><dt>RG</dt><dd>{{ q.rg }}</dd></div>
+      <div><dt>Nacionalidade</dt><dd>{{ q.nacionalidade }}</dd></div>
+      <div><dt>Estado civil</dt><dd>{{ q.estado_civil }}</dd></div>
+      <div><dt>Profissão</dt><dd>{{ q.profissao }}</dd></div>
+      {% endif %}
+      <div><dt>Telefone</dt><dd>{{ q.telefone | tel }}</dd></div>
+      <div><dt>E-mail</dt><dd>{{ c.contratante_email }}</dd></div>
+      <div><dt>{{ 'Sede' if pj else 'Endereço' }}</dt><dd>
+        {{ q.logradouro }}{% if q.numero %}, {{ q.numero }}{% endif %}{% if q.complemento %}, {{ q.complemento }}{% endif %}<br>
+        {{ q.bairro }} · {{ q.cidade }}/{{ q.estado }} · CEP {{ q.cep | cep }}</dd></div>
+    </dl>
+  </section>
+
+  {% if pj %}
+  <section class="cartao ficha">
+    <h3>Representante da empresa</h3>
+    <dl>
+      <div><dt>Nome</dt><dd>{{ rep.nome }}</dd></div>
+      <div><dt>Cargo</dt><dd>{{ rep.cargo }}</dd></div>
+      <div><dt>CPF</dt><dd>{{ rep.cpf | cpf_cnpj }}</dd></div>
+      <div><dt>RG</dt><dd>{{ rep.rg }}</dd></div>
+      <div><dt>Nacionalidade</dt><dd>{{ rep.nacionalidade }}</dd></div>
+      <div><dt>Estado civil</dt><dd>{{ rep.estado_civil }}</dd></div>
+      <div><dt>Profissão</dt><dd>{{ rep.profissao }}</dd></div>
+    </dl>
+    <p class="dica" style="margin-bottom:0">Quem assina é o representante: a selfie e a assinatura na tela devem ser dele.</p>
+  </section>
+  {% endif %}
+
+  <p class="lembrete">Se algum dado estiver errado, <strong>não continue</strong>: responda o e-mail que trouxe este link
+    ou fale com a {{ LOJA.nome }} para que a correção seja feita antes da assinatura.</p>
+
+  <form method="post" data-uma-vez>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button class="btn bloco grande" type="submit">✓ Os dados estão corretos → ler o contrato</button>
+  </form>
+</div>
+{% endblock %}

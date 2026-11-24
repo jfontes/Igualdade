@@ -47,7 +47,35 @@ MIGRACOES = [
     ("obreiro", "data_emerito", "TEXT"),
     ("obreiro", "data_vm_honra", "TEXT"),
     ("obreiro", "admin_parque", "INTEGER NOT NULL DEFAULT 0"),
+    ("vistoria_foto", "tipo_id", "INTEGER REFERENCES vistoria_tipo(id) ON DELETE SET NULL"),
+    ("vistoria_foto", "tipo_nome", "TEXT"),
+    ("contrato", "locadora_json", "TEXT"),
+    ("vistoria_tipo", "so_com_piscina", "INTEGER NOT NULL DEFAULT 0"),
+    ("vistoria_tipo", "foto_padrao", "TEXT"),
+    ("vistoria_tipo", "foto_padrao_em", "TEXT"),
+    ("contrato", "fotos_padrao", "INTEGER NOT NULL DEFAULT 0"),
 ]
+
+# Tipos de foto sugeridos na primeira vez (depois a gestão do Parque ajusta em Configuração)
+TIPOS_VISTORIA_INICIAIS = ["Salão", "Banheiros", "Cozinha", "Palco", "Piscina", "Estacionamento"]
+
+
+def criar_tipos_vistoria_iniciais(conn: sqlite3.Connection):
+    """Só uma vez: se a gestão apagar ou renomear os tipos, eles não voltam."""
+    if conn.execute("SELECT 1 FROM parque_config WHERE chave = 'vistoria_tipos_iniciais'").fetchone():
+        return
+    if not conn.execute("SELECT 1 FROM vistoria_tipo LIMIT 1").fetchone():
+        conn.executemany("INSERT INTO vistoria_tipo (nome, ordem) VALUES (?, ?)",
+                         [(nome, i) for i, nome in enumerate(TIPOS_VISTORIA_INICIAIS, start=1)])
+    conn.execute("INSERT INTO parque_config (chave, valor) VALUES ('vistoria_tipos_iniciais', '1')")
+
+
+def marcar_piscina_condicional(conn: sqlite3.Connection):
+    """Só uma vez: a foto da piscina passa a ser exigida apenas nos contratos que incluem a piscina."""
+    if conn.execute("SELECT 1 FROM parque_config WHERE chave = 'vistoria_piscina_condicional'").fetchone():
+        return
+    conn.execute("UPDATE vistoria_tipo SET so_com_piscina = 1 WHERE lower(nome) LIKE 'piscina%'")
+    conn.execute("INSERT INTO parque_config (chave, valor) VALUES ('vistoria_piscina_condicional', '1')")
 
 
 def migrar(conn: sqlite3.Connection):
@@ -58,6 +86,8 @@ def migrar(conn: sqlite3.Connection):
         if existentes and coluna not in existentes:
             conn.execute(f"ALTER TABLE {tabela} ADD COLUMN {coluna} {tipo}")
     mover_eventos_cadastrados_como_sessao(conn)
+    criar_tipos_vistoria_iniciais(conn)
+    marcar_piscina_condicional(conn)
     conn.commit()
 
 

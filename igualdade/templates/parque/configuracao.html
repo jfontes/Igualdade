@@ -1,10 +1,119 @@
 {% extends "base.html" %}
-{% block titulo %}Código do caseiro{% endblock %}
+{% block titulo %}Configuração do Parque{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='contrato.js') }}?v=2" defer></script>{% endblock %}
 {% block conteudo %}
 <div class="estreito">
   <a class="voltar" href="{{ url_for('parque.lista') }}">← Parque das Acácias</a>
-  <h2>🔑 Código de acesso do caseiro</h2>
-  <section class="cartao">
+  <h2>⚙️ Configuração do Parque</h2>
+
+  {# ------------------------------------------------------------ assinatura da LOCADORA #}
+  <section class="cartao" id="assinatura">
+    <h3>✍️ Representante e assinatura da LOCADORA</h3>
+    {% if not gestao %}
+      <p class="aviso-cancelada" style="margin:0">Não há diretoria cadastrada para a gestão atual. Cadastre em <a href="{{ url_for('diretoria.ver') }}">Diretoria</a>: o Venerável é o representante da Loja nos contratos.</p>
+    {% else %}
+      <p style="margin-top:0">Nos contratos, a Loja é representada pelo <strong>Venerável Mestre da gestão atual</strong>:
+        <strong>{{ ven.nome if ven else '— não informado na Diretoria —' }}</strong>.
+        O nome, o CPF e o endereço vêm do cadastro de obreiros dele, e a assinatura abaixo é estampada no contrato quando ele é liberado para o contratante.</p>
+      {% if pendencias %}
+      <p class="aviso-cancelada">Enquanto faltar {{ pendencias | join('; ') }}, os contratos não podem ser liberados para assinatura.</p>
+      {% elif locadora %}
+      <p class="dica">✓ Pronto: CPF {{ locadora.cpf | cpf_cnpj }} · {{ locadora.endereco }}</p>
+      {% endif %}
+
+      {% if assinatura %}
+      <div class="assinatura-atual">
+        <img src="{{ url_for('parque.assinatura_locadora_png') }}?v={{ assinatura.sha256[:8] }}" alt="Assinatura cadastrada">
+        <span class="dica">Cadastrada em {{ assinatura.criado_em[:10] | data }}. Contratos já liberados mantêm a assinatura com que foram liberados.</span>
+      </div>
+      {% endif %}
+
+      {% if sou_veneravel %}
+      <form method="post" action="{{ url_for('parque.assinatura_locadora') }}" novalidate data-assinatura-locadora>
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="assinatura">
+        <p class="dica" style="margin-bottom:4px">{{ 'Para trocar, faça' if assinatura else 'Faça' }} a sua assinatura no quadro, com o dedo ou o mouse:</p>
+        <canvas class="quadro-assinatura" data-quadro width="600" height="200" aria-label="Quadro para a assinatura do Venerável"></canvas>
+        <p class="erro-campo" data-erro-quadro></p>
+        <div class="botoes">
+          <button class="btn sec pequeno" type="button" data-limpar-quadro>Limpar</button>
+          <button class="btn" type="submit">✓ Salvar assinatura</button>
+        </div>
+      </form>
+      {% elif ven %}
+      <p class="dica" style="margin-bottom:0">Somente o Venerável ({{ ven.nome }}), entrando com o usuário dele, pode {{ 'trocar' if assinatura else 'cadastrar' }} a assinatura.</p>
+      {% endif %}
+    {% endif %}
+  </section>
+
+  {# ------------------------------------------------------------ tipos de foto #}
+  <section class="cartao" id="tipos">
+    <h3>📷 Fotos exigidas na vistoria</h3>
+    <p class="dica" style="margin-top:0">Toque no quadro da foto para cadastrar ou trocar a <strong>foto padrão</strong> de cada tipo.
+      Com todas as fotos padrão cadastradas, o contrato pode sair sem vistoria, usando essas fotos.
+      Na vistoria, o caseiro vê a foto padrão e pode atualizá-la; a foto nova passa a ser a padrão.</p>
+    <p class="dica">O caseiro precisa de <strong>uma foto de cada tipo ativo</strong> para concluir a vistoria (a foto padrão já conta). Os marcados com 🏊 só são exigidos quando o contrato inclui a piscina. “Outras fotos” é sempre opcional.
+      Um tipo desativado deixa de ser exigido, mas continua nas vistorias já feitas.</p>
+    {% if tipos %}
+    <ul class="lista tipos-vistoria">
+      {% for t in tipos %}
+      <li class="{{ 'inativo' if not t.ativo }}">
+        <div class="item">
+          <form class="inline foto-padrao" method="post" enctype="multipart/form-data"
+                action="{{ url_for('parque.tipo_foto', tipo_id=t.id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <label class="miniatura" title="{{ 'Trocar' if t.foto_padrao else 'Cadastrar' }} a foto padrão de {{ t.nome }}">
+              {% if t.foto_padrao %}<img src="{{ url_for('parque.tipo_foto_ver', tipo_id=t.id) }}?v={{ (t.foto_padrao_em or '')[-8:] }}" alt="Foto padrão de {{ t.nome }}">
+              {% else %}<span aria-hidden="true">📷</span>{% endif %}
+              <input type="file" name="foto" accept="image/*" hidden data-enviar-ao-mudar>
+            </label>
+          </form>
+          <form class="inline renomear" method="post" action="{{ url_for('parque.tipo_alterar', tipo_id=t.id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="acao" value="renomear">
+            <input name="nome" value="{{ t.nome }}" maxlength="60" aria-label="Nome do tipo" {{ 'disabled' if not t.ativo }}>
+            {% if t.ativo %}<button class="btn sec pequeno" type="submit" title="Salvar o nome">💾</button>{% endif %}
+          </form>
+          <div class="acoes">
+            {% set primeiro, ultimo = loop.first, loop.last %}
+            {% for acao, ic, rotulo, travado in [('subir', '▲', 'Subir', primeiro), ('descer', '▼', 'Descer', ultimo)] %}
+            <form class="inline" method="post" action="{{ url_for('parque.tipo_alterar', tipo_id=t.id) }}">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button class="btn sec pequeno" type="submit" name="acao" value="{{ acao }}" aria-label="{{ rotulo }} {{ t.nome }}"
+                      {{ 'disabled' if travado }}>{{ ic }}</button>
+            </form>
+            {% endfor %}
+            <form class="inline" method="post" action="{{ url_for('parque.tipo_alterar', tipo_id=t.id) }}">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button class="btn {{ '' if t.so_com_piscina else 'sec' }} pequeno" type="submit" name="acao"
+                      value="{{ 'piscina_nao' if t.so_com_piscina else 'piscina_sim' }}"
+                      title="{{ 'Exigido só com piscina. Toque para exigir sempre.' if t.so_com_piscina else 'Exigido sempre. Toque para exigir só com piscina.' }}"
+                      aria-label="{{ t.nome }}: {{ 'exigido só com piscina' if t.so_com_piscina else 'exigido sempre' }}">🏊{{ ' só c/ piscina' if t.so_com_piscina }}</button>
+            </form>
+            <form class="inline" method="post" action="{{ url_for('parque.tipo_alterar', tipo_id=t.id) }}">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              {% if t.ativo %}
+              <button class="btn perigo pequeno" type="submit" name="acao" value="desativar">Desativar</button>
+              {% else %}
+              <button class="btn sec pequeno" type="submit" name="acao" value="ativar">Ativar</button>
+              {% endif %}
+            </form>
+          </div>
+        </div>
+      </li>
+      {% endfor %}
+    </ul>
+    {% endif %}
+    <form method="post" action="{{ url_for('parque.tipo_novo') }}" class="filtros" style="margin:12px 0 0">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input name="nome" maxlength="60" placeholder="Novo tipo de foto (ex.: Churrasqueira)" aria-label="Novo tipo de foto" required>
+      <button class="btn sec" type="submit">＋ Incluir</button>
+    </form>
+  </section>
+
+  {# ------------------------------------------------------------ código do caseiro #}
+  <section class="cartao" id="codigo">
+    <h3>🔑 Código de acesso do caseiro</h3>
     <p style="margin-top:0">O caseiro faz as vistorias numa página separada, sem login de obreiro:</p>
     <div class="pix-pagamento" style="margin-top:0">
       <span class="pix-rotulo">Endereço da vistoria</span>
@@ -13,16 +122,16 @@
     </div>
     <p class="dica">{{ 'Já existe um código definido. Ao salvar um novo, o anterior deixa de funcionar.' if codigo_definido else 'Ainda não há código definido.' }}
       O acesso do caseiro vale 12 horas no aparelho; após 5 tentativas erradas, a entrada fica bloqueada por 15 minutos.</p>
+    <form method="post" class="grade" novalidate>
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="grade duas">
+        <div class="campo"><label for="codigo">Novo código (6 números)</label>
+          <input id="codigo" name="codigo" inputmode="numeric" maxlength="6" autocomplete="off" required></div>
+        <div class="campo"><label for="confirmacao">Repita o código</label>
+          <input id="confirmacao" name="confirmacao" inputmode="numeric" maxlength="6" autocomplete="off" required></div>
+      </div>
+      <div class="botoes"><button class="btn" type="submit">Salvar código</button></div>
+    </form>
   </section>
-  <form method="post" class="cartao grade" novalidate>
-    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-    <div class="grade duas">
-      <div class="campo"><label for="codigo">Novo código (6 números)</label>
-        <input id="codigo" name="codigo" inputmode="numeric" maxlength="6" autocomplete="off" required></div>
-      <div class="campo"><label for="confirmacao">Repita o código</label>
-        <input id="confirmacao" name="confirmacao" inputmode="numeric" maxlength="6" autocomplete="off" required></div>
-    </div>
-    <div class="botoes"><button class="btn" type="submit">Salvar código</button></div>
-  </form>
 </div>
 {% endblock %}

@@ -5,8 +5,12 @@
   <div class="cabecalho"><h2>🌳 Parque das Acácias</h2></div>
   <div class="botoes acoes-topo">
     <a class="btn" href="{{ url_for('parque.form') }}">＋ Novo contrato</a>
-    <a class="btn sec" href="{{ url_for('parque.configuracao') }}">🔑 Código do caseiro</a>
+    <a class="btn sec" href="{{ url_for('parque.configuracao') }}">⚙️ Configuração</a>
   </div>
+  {% if pendencias %}
+  <p class="aviso-cancelada">Os contratos não podem ser liberados para assinatura enquanto faltar {{ pendencias | join('; ') }}.
+    Veja em <a href="{{ url_for('parque.configuracao') }}#assinatura">Configuração</a>.</p>
+  {% endif %}
   {% if not codigo_definido %}
   <p class="lembrete">⚠️ O <strong>código de acesso do caseiro</strong> ainda não foi definido. Sem ele, o caseiro não consegue fazer as vistorias.</p>
   {% endif %}
@@ -14,10 +18,19 @@
   <p class="dica">O envio automático de e-mails ainda não está configurado no servidor: copie o link de assinatura na tela de cada contrato e envie ao contratante (ex.: WhatsApp).</p>
   {% endif %}
 
+  <form class="filtros filtros-contratos" method="get" role="search">
+    {% if filtro %}<input type="hidden" name="status" value="{{ filtro }}">{% endif %}
+    <input type="search" name="q" value="{{ busca }}" placeholder="Nome ou CPF/CNPJ" aria-label="Buscar por nome ou CPF/CNPJ">
+    <label class="periodo">De <input type="date" name="de" value="{{ de }}" aria-label="Evento a partir de"></label>
+    <label class="periodo">até <input type="date" name="ate" value="{{ ate }}" aria-label="Evento até"></label>
+    <button class="btn sec" type="submit">Buscar</button>
+    {% if filtrando %}<a class="btn sec" href="{{ url_for('parque.lista', status=filtro or None) }}">Limpar</a>{% endif %}
+  </form>
+
   <nav class="abas" aria-label="Filtrar por situação">
-    <a href="{{ url_for('parque.lista') }}" class="{{ 'ativo' if not filtro }}">Todos</a>
+    <a href="{{ url_for('parque.lista', q=busca or None, de=de or None, ate=ate or None) }}" class="{{ 'ativo' if not filtro }}">Todos</a>
     {% for chave, (rotulo, ic) in STATUS.items() %}
-      <a href="{{ url_for('parque.lista', status=chave) }}" class="{{ 'ativo' if filtro == chave }}">{{ ic }} {{ rotulo }}</a>
+      <a href="{{ url_for('parque.lista', status=chave, q=busca or None, de=de or None, ate=ate or None) }}" class="{{ 'ativo' if filtro == chave }}">{{ ic }} {{ rotulo }}</a>
     {% endfor %}
   </nav>
 
@@ -40,7 +53,7 @@
       {% endfor %}
     </ul>
     {% else %}
-    <div class="vazio-msg"><span class="ic">📄</span>Nenhum contrato {{ 'nesta situação' if filtro else 'cadastrado' }}.</div>
+    <div class="vazio-msg"><span class="ic">📄</span>Nenhum contrato {{ 'encontrado com esses filtros' if filtrando else ('nesta situação' if filtro else 'cadastrado') }}.</div>
     {% endif %}
   </div>
 </div>

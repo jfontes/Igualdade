@@ -16,13 +16,30 @@
     {% if c.status == 'ASSINADO' %}<a class="btn" href="{{ url_for('parque.pdf_final', contrato_id=c.id) }}" target="_blank" rel="noopener">📄 Contrato assinado (PDF)</a>{% endif %}
   </div>
 
-  {% if c.status == 'AGUARDANDO_VISTORIA' %}
+  {% if c.status == 'AGUARDANDO_VISTORIA' and c.vistoria_concluida_em %}
   <section class="cartao destaque-lancar">
-    <p style="margin-top:0"><strong>Aguardando a vistoria do caseiro.</strong> Quando ele concluir as fotos, o link de assinatura é enviado ao contratante.</p>
-    <form method="post" action="{{ url_for('parque.liberar_sem_vistoria', contrato_id=c.id) }}"
-          data-confirmar="Liberar para assinatura SEM a vistoria fotográfica?">
+    <p style="margin-top:0"><strong>Vistoria concluída</strong> em {{ c.vistoria_concluida_em[:10] | data }}, mas o contrato ainda não foi liberado para assinatura.</p>
+    {% if pendencias %}<p class="aviso-cancelada">Falta {{ pendencias | join('; ') }}.</p>{% endif %}
+    <form method="post" action="{{ url_for('parque.liberar_sem_vistoria', contrato_id=c.id) }}">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-      <button class="btn sec pequeno" type="submit">Dispensar vistoria e liberar para assinatura</button>
+      <button class="btn" type="submit" {{ 'disabled' if pendencias }}>✍️ Liberar para assinatura</button>
+    </form>
+  </section>
+  {% elif c.status == 'AGUARDANDO_VISTORIA' %}
+  <section class="cartao destaque-lancar">
+    {% if c.fotos_padrao %}
+    <p style="margin-top:0"><strong>Ainda não liberado para assinatura.</strong> O Anexo I usa as fotos padrão.</p>
+    {% else %}
+    <p style="margin-top:0"><strong>Aguardando a vistoria do caseiro.</strong> Quando ele concluir as fotos, o link de assinatura é enviado ao contratante.</p>
+    {% endif %}
+    {% if pendencias %}<p class="aviso-cancelada">Para liberar, falta {{ pendencias | join('; ') }}.</p>{% endif %}
+    {% if not c.fotos_padrao and padroes_faltando %}
+    <p class="dica">Para liberar sem a vistoria, usando as fotos padrão, falta a foto padrão de: {{ padroes_faltando | join(', ') }}.</p>
+    {% endif %}
+    <form method="post" action="{{ url_for('parque.liberar_sem_vistoria', contrato_id=c.id) }}"
+          {% if not c.fotos_padrao %}data-confirmar="Liberar para assinatura usando as fotos padrão no lugar da vistoria?"{% endif %}>
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="btn sec pequeno" type="submit" {{ 'disabled' if pendencias or padroes_faltando }}>{{ 'Liberar para assinatura' if c.fotos_padrao else '🖼️ Usar fotos padrão e liberar para assinatura' }}</button>
     </form>
   </section>
   {% elif c.status == 'AGUARDANDO_ASSINATURA' %}
@@ -63,32 +80,56 @@
     <h3>Evento</h3>
     <dl class="dados">
       <div><dt>Data</dt><dd>{{ c.evento.data | data }}</dd></div>
-      <div><dt>Horário</dt><dd>{{ c.evento.hora_inicio }} às {{ c.evento.hora_fim }}</dd></div>
+      <div><dt>Horário</dt><dd>{{ c.evento.hora_inicio }} às {{ c.evento.hora_fim }}{% if c.evento.tolerancia_min %} <span class="suave">(tolerância de {{ c.evento.tolerancia_min }} min)</span>{% endif %}</dd></div>
       <div><dt>Tipo</dt><dd>{{ c.evento.tipo_evento }}</dd></div>
       <div><dt>Piscina</dt><dd>{{ 'Incluída' if c.evento.inclui_piscina else 'Não incluída' }}</dd></div>
       <div><dt>Valor total</dt><dd>{{ c.evento.valor_total | moeda }}</dd></div>
-      <div><dt>Pagamento</dt><dd>{{ c.evento.forma_pagamento }}</dd></div>
+      <div><dt>Pagamento</dt><dd>{{ c.evento.pagamento_texto or '—' }}</dd></div>
       {% if c.evento.observacoes %}<div><dt>Observações</dt><dd>{{ c.evento.observacoes }}</dd></div>{% endif %}
     </dl>
   </section>
 
+  {% set q = c.contratante %}
+  {% set rep = q.representante or {} %}
   <section class="cartao">
-    <h3>Contratante</h3>
+    <h3>Contratante · {{ 'Pessoa jurídica' if c.pessoa_juridica else 'Pessoa física' }}</h3>
     <dl class="dados">
-      <div><dt>CPF/CNPJ</dt><dd>{{ c.contratante_cpf_cnpj | cpf_cnpj }}</dd></div>
+      <div><dt>{{ 'CNPJ' if c.pessoa_juridica else 'CPF' }}</dt><dd>{{ c.contratante_cpf_cnpj | cpf_cnpj }}</dd></div>
+      {% if q.rg %}<div><dt>RG</dt><dd>{{ q.rg }}</dd></div>{% endif %}
+      {% if q.nacionalidade %}<div><dt>Nacionalidade</dt><dd>{{ q.nacionalidade }}</dd></div>{% endif %}
+      {% if q.estado_civil %}<div><dt>Estado civil</dt><dd>{{ q.estado_civil }}</dd></div>{% endif %}
+      {% if q.profissao %}<div><dt>Profissão</dt><dd>{{ q.profissao }}</dd></div>{% endif %}
       <div><dt>E-mail</dt><dd>{{ c.contratante_email }}</dd></div>
-      {% if c.contratante.telefone %}<div><dt>Telefone</dt><dd>{{ c.contratante.telefone | tel }}</dd></div>{% endif %}
-      {% if c.contratante.cidade %}<div><dt>Cidade</dt><dd>{{ c.contratante.cidade }}/{{ c.contratante.estado }}</dd></div>{% endif %}
+      {% if q.telefone %}<div><dt>Telefone</dt><dd>{{ q.telefone | tel }}</dd></div>{% endif %}
+      {% if q.logradouro %}<div><dt>{{ 'Sede' if c.pessoa_juridica else 'Endereço' }}</dt><dd>{{ q.logradouro }}{% if q.numero %}, {{ q.numero }}{% endif %}{% if q.complemento %}, {{ q.complemento }}{% endif %} · {{ q.bairro }} · {{ q.cidade }}/{{ q.estado }}{% if q.cep %} · CEP {{ q.cep | cep }}{% endif %}</dd></div>{% endif %}
     </dl>
-    {% if not c.contratante %}<p class="dica" style="margin-bottom:0">A qualificação completa é preenchida pelo contratante no link de assinatura.</p>{% endif %}
+    {% if c.pessoa_juridica %}
+    <h3 style="margin-top:14px">Representante</h3>
+    <dl class="dados">
+      <div><dt>Nome</dt><dd>{{ rep.nome }}</dd></div>
+      <div><dt>Cargo</dt><dd>{{ rep.cargo }}</dd></div>
+      <div><dt>CPF</dt><dd>{{ rep.cpf | cpf_cnpj }}</dd></div>
+      <div><dt>RG</dt><dd>{{ rep.rg }}</dd></div>
+      <div><dt>Nacionalidade · estado civil · profissão</dt><dd>{{ rep.nacionalidade }} · {{ rep.estado_civil }} · {{ rep.profissao }}</dd></div>
+    </dl>
+    {% endif %}
+    {% if not q %}<p class="dica" style="margin-bottom:0">Contrato antigo: a qualificação é preenchida pelo contratante no link de assinatura. Para cadastrar agora, use <strong>Editar</strong>.</p>{% endif %}
   </section>
 
-  {% if c.exige_vistoria %}
+  {% if c.locadora and c.locadora.nome %}
   <section class="cartao">
-    <h3>Vistoria fotográfica {% if c.vistoria_concluida_em %}<span class="selo">concluída em {{ c.vistoria_concluida_em[:10] | data }}</span>{% endif %}</h3>
+    <h3>LOCADORA</h3>
+    <p style="margin:0">Representada pelo Venerável Mestre <strong>{{ c.locadora.nome }}</strong>, CPF {{ c.locadora.cpf | cpf_cnpj }}.
+      <span class="dica">Assinatura padronizada estampada na liberação do contrato.</span></p>
+  </section>
+  {% endif %}
+
+  {% if c.exige_vistoria or c.fotos_padrao or fotos %}
+  <section class="cartao">
+    <h3>{{ 'Fotos padrão (Anexo I)' if c.fotos_padrao else 'Vistoria fotográfica' }} {% if c.vistoria_concluida_em %}<span class="selo">concluída em {{ c.vistoria_concluida_em[:10] | data }}</span>{% endif %}</h3>
     {% if fotos %}
     <div class="galeria">
-      {% for f in fotos %}<a href="{{ url_for('parque.foto', contrato_id=c.id, foto_id=f.id) }}" target="_blank" rel="noopener"><img src="{{ url_for('parque.foto', contrato_id=c.id, foto_id=f.id) }}" alt="Foto {{ loop.index }} da vistoria" loading="lazy"></a>{% endfor %}
+      {% for f in fotos %}<figure><a href="{{ url_for('parque.foto', contrato_id=c.id, foto_id=f.id) }}" target="_blank" rel="noopener"><img src="{{ url_for('parque.foto', contrato_id=c.id, foto_id=f.id) }}" alt="{{ f.legenda or 'Outra foto' }}" loading="lazy"></a><figcaption>{{ f.legenda or 'Outras fotos' }}{% if f.enviado_por == 'padrao' and not c.fotos_padrao %} · padrão{% endif %}</figcaption></figure>{% endfor %}
     </div>
     {% else %}<p class="suave" style="margin:0">Nenhuma foto ainda.</p>{% endif %}
   </section>

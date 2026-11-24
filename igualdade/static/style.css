@@ -606,3 +606,28 @@ code.hash { font-size: .72rem; overflow-wrap: anywhere; word-break: break-all; }
 .validacao.erro { background: var(--erro-fundo); color: var(--erro); }
 .validacao.alerta { background: var(--aviso-fundo); color: var(--aviso); }
 .botoes label.btn { text-transform: none; letter-spacing: 0; cursor: pointer; }
+
+/* ---------- Parque das Acácias: filtros, vistoria por tipo, configuração ---------- */
+.filtros-contratos .periodo { display: flex; align-items: center; gap: 6px; font-size: .85rem; text-transform: none; letter-spacing: 0; color: var(--suave); }
+.filtros-contratos .periodo input { width: auto; }
+.formas-pagamento { display: flex; flex-wrap: wrap; gap: 8px 18px; }
+.checklist-vistoria .item { align-items: center; }
+.checklist-vistoria .miniatura { flex: none; width: 56px; height: 56px; border-radius: 10px; overflow: hidden; display: flex; align-items: center; justify-content: center; background: var(--bordo-claro); font-size: 1.4rem; }
+.checklist-vistoria .miniatura img { width: 100%; height: 100%; object-fit: cover; }
+.checklist-vistoria li.pendente .nome { color: var(--aviso); }
+.checklist-vistoria label.btn { text-transform: none; letter-spacing: 0; cursor: pointer; white-space: nowrap; }
+.galeria figure { margin: 0; }
+.galeria figcaption { font-size: .75rem; color: var(--suave); text-align: center; margin-top: 2px; }
+.tipos-vistoria .item { flex-wrap: wrap; }
+.tipos-vistoria .renomear { display: flex; gap: 6px; flex: 1 1 200px; min-width: 0; }
+.tipos-vistoria .renomear input { min-height: 38px; padding: 6px 10px; }
+.tipos-vistoria li.inativo .renomear input { text-decoration: line-through; color: var(--suave); }
+.assinatura-atual { display: flex; flex-direction: column; gap: 4px; margin: 8px 0 12px; }
+.assinatura-atual img { max-width: 260px; max-height: 90px; object-fit: contain; border-bottom: 1px solid var(--texto); background: #fff; }
+
+.tipos-vistoria .foto-padrao .miniatura {
+  flex: none; width: 52px; height: 52px; border-radius: 10px; overflow: hidden; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; background: var(--bordo-claro); font-size: 1.3rem;
+  border: 1px dashed #d9caca;
+}
+.tipos-vistoria .foto-padrao .miniatura img { width: 100%; height: 100%; object-fit: cover; }

@@ -225,7 +225,9 @@ CREATE TABLE IF NOT EXISTS contrato (
     link_enviado_em      TEXT,
     assinado_em          TEXT,
     cancelado_em         TEXT,
-    motivo_cancelamento  TEXT
+    motivo_cancelamento  TEXT,
+    locadora_json        TEXT,                         -- representante da LOCADORA e assinatura, na liberação
+    fotos_padrao         INTEGER NOT NULL DEFAULT 0    -- 1 = Anexo I com as fotos padrão (sem vistoria)
 );
 
 CREATE INDEX IF NOT EXISTS idx_contrato_status ON contrato(status);
@@ -233,6 +235,8 @@ CREATE INDEX IF NOT EXISTS idx_contrato_status ON contrato(status);
 CREATE TABLE IF NOT EXISTS vistoria_foto (
     id               INTEGER PRIMARY KEY AUTOINCREMENT,
     contrato_id      INTEGER NOT NULL REFERENCES contrato(id) ON DELETE CASCADE,
+    tipo_id          INTEGER REFERENCES vistoria_tipo(id) ON DELETE SET NULL,  -- nulo = outras fotos
+    tipo_nome        TEXT,                             -- nome do tipo quando a foto foi tirada
     arquivo          TEXT    NOT NULL,                 -- relativo a instance/contratos/
     sha256           TEXT    NOT NULL,
     enviado_por      TEXT,
@@ -240,6 +244,30 @@ CREATE TABLE IF NOT EXISTS vistoria_foto (
 );
 
 CREATE INDEX IF NOT EXISTS idx_vistoria_contrato ON vistoria_foto(contrato_id);
+
+-- Tipos de foto exigidos na vistoria (Salão, Banheiros, Palco…). Cada tipo ativo exige uma foto;
+-- desativado, some das próximas vistorias e continua nas antigas. vistoria_foto.tipo_id nulo = "Outras fotos".
+CREATE TABLE IF NOT EXISTS vistoria_tipo (
+    id               INTEGER PRIMARY KEY AUTOINCREMENT,
+    nome             TEXT    NOT NULL,
+    ordem            INTEGER NOT NULL DEFAULT 0,
+    ativo            INTEGER NOT NULL DEFAULT 1,
+    so_com_piscina   INTEGER NOT NULL DEFAULT 0,      -- 1 = exigido só se o contrato incluir a piscina
+    foto_padrao      TEXT,                             -- foto padrão (relativa a instance/contratos/)
+    foto_padrao_em   TEXT                              -- quando foi trocada (Configuração ou vistoria)
+);
+
+-- Assinatura padronizada da LOCADORA: desenhada pelo Venerável, uma por gestão da diretoria.
+-- É estampada no contrato quando ele é liberado para o contratante assinar.
+CREATE TABLE IF NOT EXISTS assinatura_locadora (
+    id               INTEGER PRIMARY KEY AUTOINCREMENT,
+    gestao_id        INTEGER NOT NULL UNIQUE REFERENCES gestao(id) ON DELETE CASCADE,
+    obreiro_id       INTEGER REFERENCES obreiro(id) ON DELETE SET NULL,
+    nome             TEXT    NOT NULL,
+    arquivo          TEXT    NOT NULL,                 -- PNG, relativo a instance/contratos/
+    sha256           TEXT    NOT NULL,
+    criado_em        TEXT    NOT NULL
+);
 
 -- Evidências da assinatura. A selfie NÃO é guardada à parte: entra só no PDF assinado
 -- (manifesto) e é descartada; aqui fica apenas o hash dela.

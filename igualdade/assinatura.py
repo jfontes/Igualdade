@@ -1,7 +1,7 @@
 """Assinatura eletrônica do contrato pelo contratante (link público) e validação pública (QR Code).
 
 Fluxo do link /assinar/<token> (válido por 7 dias, de uso único):
-  1. Qualificação (dados complementares do contratante)
+  1. Conferência dos dados (cadastrados pela gestão do Parque; contratos antigos: o contratante completa)
   2. Leitura do contrato em PDF (com o Anexo I da vistoria); registra o SHA-256 pré-assinatura
   3. Selfie em tempo real (câmera frontal) + assinatura manuscrita na tela + telemetria
   → PDF consolidado (rubrica, anexo e manifesto com QR Code), SHA-256 final, e-mails.
@@ -20,8 +20,8 @@ from PIL import Image, UnidentifiedImageError
 from . import contrato_pdf, email_service
 from .config import LOJA, PARQUE
 from .db import get_db
-from .parque import (AGUARDANDO_ASSINATURA, ASSINADO, agora_utc, apagar_arquivo, detalhar, fotos_da_vistoria,
-                     iso, ler_arquivo, resumo_evento, salvar_arquivo, url_externa)
+from .parque import (AGUARDANDO_ASSINATURA, ASSINADO, ESTADOS_CIVIS, agora_utc, apagar_arquivo, detalhar,
+                     fotos_da_vistoria, iso, ler_arquivo, resumo_evento, salvar_arquivo, url_externa)
 from .util import (UFS, cpf_cnpj_valido, fmt_cpf_cnpj, fmt_moeda, ler_email, ler_telefone, mascarar_doc,
                    mascarar_nome, so_digitos)
 
@@ -30,7 +30,6 @@ from .vistoria import ip_cliente
 
 bp = Blueprint("assinatura", __name__)
 
-ESTADOS_CIVIS = ["Solteiro(a)", "Casado(a)", "União estável", "Separado(a)", "Divorciado(a)", "Viúvo(a)"]
 CAMPOS_OBRIGATORIOS = ["rg", "nacionalidade", "estado_civil", "profissao", "telefone", "cep", "logradouro",
                        "numero", "bairro", "cidade", "estado"]
 MAX_IMAGEM = 3 * 1024 * 1024  # bytes de cada imagem recebida (selfie / rubrica)
@@ -67,7 +66,8 @@ def inicio(token):
     c, resp = _contrato_do_token(token)
     if resp:
         return resp
-    return redirect(url_for("assinatura.dados" if _passos(c) == 1 else "assinatura.leitura", token=token))
+    # primeiro acesso: conferência dos dados; depois de abrir o contrato, segue direto para a leitura
+    return redirect(url_for("assinatura.leitura" if c["hash_pre_assinatura"] else "assinatura.dados", token=token))
 
 
 # ---------------------------------------------------------------- passo 1: qualificação
@@ -77,6 +77,11 @@ def dados(token):
     c, resp = _contrato_do_token(token)
     if resp:
         return resp
+    if c["contratante"].get("tipo_pessoa"):
+        # dados cadastrados pela gestão do Parque: o contratante só confere
+        if request.method == "POST":
+            return redirect(url_for("assinatura.leitura", token=token))
+        return render_template("assinar/conferir.html", c=c, q=c["contratante"], token=token, passo=1)
     erros = {}
     if request.method == "POST":
         f = request.form
@@ -136,8 +141,10 @@ def _garantir_pdf_leitura(c) -> dict:
     """Gera (se preciso) o PDF que o contratante lê e registra o SHA-256 pré-assinatura."""
     if c["pdf_pre_arquivo"] and c["hash_pre_assinatura"] and ler_arquivo(c["pdf_pre_arquivo"]):
         return c
-    fotos = [ler_arquivo(f["arquivo"]) for f in fotos_da_vistoria(c["id"])]
-    pdf, campo = contrato_pdf.pdf_para_leitura(c, c["contratante"], c["evento"], [f for f in fotos if f])
+    fotos = [(ler_arquivo(f["arquivo"]), f["legenda"] or "Outras fotos") for f in fotos_da_vistoria(c["id"])]
+    assinatura_locadora = ler_arquivo((c["locadora"] or {}).get("assinatura_arquivo"))
+    pdf, campo = contrato_pdf.pdf_para_leitura(c, c["contratante"], c["evento"], [f for f in fotos if f[0]],
+                                               assinatura_locadora)
     rel, sha = salvar_arquivo(c["id"], "contrato_para_leitura.pdf", pdf)
     get_db().execute("UPDATE contrato SET pdf_pre_arquivo = ?, hash_pre_assinatura = ?, campo_assinatura_json = ? "
                      "WHERE id = ?", (rel, sha, json.dumps(campo), c["id"]))
@@ -247,6 +254,16 @@ def assinar(token):
         "user_agent": (request.headers.get("User-Agent") or "")[:300], "geolocalizacao": geo,
         "timestamp_utc": iso(agora),
     }
+    rep = c["contratante"].get("representante") or {}
+    if c["pessoa_juridica"] and rep.get("nome"):
+        dados_manifesto["signatario"] = (f"{rep['nome']} · CPF {fmt_cpf_cnpj(rep.get('cpf'))}, representando "
+                                         f"{c['contratante_nome']} · CNPJ {fmt_cpf_cnpj(c['contratante_cpf_cnpj'])}")
+    loc = c["locadora"] or {}
+    if loc.get("nome"):
+        dados_manifesto["locadora"] = (
+            f"assinatura padronizada do Venerável Mestre {loc['nome']}, representante da LOCADORA, "
+            f"cadastrada em {(loc.get('assinatura_cadastrada_em') or '')[:10]} (UTC) e estampada na liberação "
+            f"do contrato; SHA-256 da imagem {loc.get('assinatura_sha256') or '—'}")
     final = contrato_pdf.pdf_assinado(pdf_leitura_bytes, json.loads(c["campo_assinatura_json"]), rubrica, selfie,
                                       dados_manifesto)
     db = get_db()

@@ -279,3 +279,59 @@ def mascarar_nome(nome: str | None) -> str:
     if not partes:
         return "***"
     return " ".join([partes[0].title()] + [p[0].upper() + "***" for p in partes[1:]])
+
+
+# ---------------------------------------------------------------- números por extenso (contratos)
+_UNIDADES = ["zero", "um", "dois", "três", "quatro", "cinco", "seis", "sete", "oito", "nove", "dez", "onze",
+             "doze", "treze", "quatorze", "quinze", "dezesseis", "dezessete", "dezoito", "dezenove"]
+_DEZENAS = ["", "", "vinte", "trinta", "quarenta", "cinquenta", "sessenta", "setenta", "oitenta", "noventa"]
+_CENTENAS = ["", "cento", "duzentos", "trezentos", "quatrocentos", "quinhentos", "seiscentos", "setecentos",
+             "oitocentos", "novecentos"]
+
+
+def _ate_999(n: int) -> str:
+    if n == 100:
+        return "cem"
+    partes = []
+    c, r = divmod(n, 100)
+    if c:
+        partes.append(_CENTENAS[c])
+    if r:
+        if r < 20:
+            partes.append(_UNIDADES[r])
+        else:
+            d, u = divmod(r, 10)
+            partes.append(_DEZENAS[d] + (" e " + _UNIDADES[u] if u else ""))
+    return " e ".join(partes)
+
+
+def numero_por_extenso(n: int) -> str:
+    """0 a 999.999.999, em português ("mil e quinhentos", "dois milhões e trezentos mil")."""
+    n = int(n)
+    if n == 0:
+        return "zero"
+    grupos = []
+    milhoes, resto = divmod(n, 1_000_000)
+    milhares, unidades = divmod(resto, 1000)
+    if milhoes:
+        grupos.append(("um milhão" if milhoes == 1 else _ate_999(milhoes) + " milhões", milhoes))
+    if milhares:
+        grupos.append(("mil" if milhares == 1 else _ate_999(milhares) + " mil", milhares))
+    if unidades:
+        grupos.append((_ate_999(unidades), unidades))
+    texto = grupos[0][0]
+    for t, valor in grupos[1:]:
+        texto += (" e " if valor < 100 or valor % 100 == 0 else " ") + t
+    return texto
+
+
+def reais_por_extenso(centavos: int | None) -> str:
+    """150000 → 'mil e quinhentos reais'; 12550 → 'cento e vinte e cinco reais e cinquenta centavos'."""
+    reais, cent = divmod(int(centavos or 0), 100)
+    partes = []
+    if reais:
+        partes.append(numero_por_extenso(reais) + (" real" if reais == 1 else
+                                                   " de reais" if reais % 1_000_000 == 0 else " reais"))
+    if cent:
+        partes.append(numero_por_extenso(cent) + (" centavo" if cent == 1 else " centavos"))
+    return " e ".join(partes) or "zero real"

@@ -18,6 +18,12 @@ PARQUE = {
     # recebe cópia de todo contrato assinado (cópia externa de segurança)
     "email_locador": "igualdadeacreana@gmail.com",
     "dias_validade_link": 7,
+    # Textos fixos do contrato (modelo da Loja: secretaria/MODELO DE CONTRATO PARQUE DAS ACÁCIAS.docx)
+    "espaco_contrato": "Parque das Acácias Ocirodo Oliveira",
+    "endereco_espaco": "Estrada da Floresta, nº 1.691, Rio Branco/AC",
+    "sede_locadora": "Av. Epaminondas Jácome, nº 3031, Centro, na cidade de Rio Branco/Acre, CEP 69.900-056",
+    "foro": "Rio Branco, Estado do Acre",
+    "cidade_assinatura": "Rio Branco – AC",
 }
 
 # ---------------------------------------------------------------- agenda de sessões

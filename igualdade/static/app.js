@@ -314,6 +314,17 @@
     contar();
   }
 
+  // Contrato do Parque: mostra os campos de pessoa física ou de pessoa jurídica
+  const tiposPessoa = document.querySelectorAll("[data-tipo-pessoa]");
+  if (tiposPessoa.length) {
+    const aplicarTipo = () => {
+      const tipo = document.querySelector("[data-tipo-pessoa]:checked")?.value || "PF";
+      document.querySelectorAll("[data-so-tipo]").forEach((el) => el.classList.toggle("oculto", el.dataset.soTipo !== tipo));
+    };
+    tiposPessoa.forEach((r) => r.addEventListener("change", aplicarTipo));
+    aplicarTipo();
+  }
+
   // Mantém o mês selecionado visível na barra de meses
   document.querySelector("[data-rolar]")?.scrollIntoView({ inline: "center", block: "nearest" });
 

@@ -1,12 +1,15 @@
-// Parque das Acácias: fotos da vistoria (caseiro) e assinatura do contrato (contratante).
+// Parque das Acácias: fotos da vistoria (caseiro), assinatura do contrato (contratante)
+// e assinatura padronizada da LOCADORA (Venerável, na configuração do Parque).
 (function () {
   "use strict";
 
   // ------------------------------------------------------------ fotos da vistoria
   // Reduz cada foto no aparelho (máx. 1600 px) antes de enviar; o servidor ainda comprime para 1280 px.
-  const formFotos = document.querySelector("[data-fotos-vistoria]");
-  if (formFotos) {
-    const status = formFotos.querySelector("[data-fotos-status]");
+  // Um formulário por tipo de foto (com tipo_id) e um para "Outras fotos".
+  document.querySelectorAll("[data-fotos-vistoria]").forEach((formFotos) => {
+    const status = formFotos.querySelector("[data-fotos-status]")
+      || formFotos.closest("li")?.querySelector("[data-fotos-status]") || { textContent: "" };
+    const tipo = formFotos.querySelector("[name=tipo_id]");
     const reduzir = (arquivo) => new Promise((ok) => {
       const img = new Image();
       const url = URL.createObjectURL(arquivo);
@@ -29,6 +32,7 @@
         if (!window.fetch || !window.FormData) { formFotos.submit(); return; }
         const dados = new FormData();
         dados.append("csrf_token", formFotos.querySelector("[name=csrf_token]").value);
+        if (tipo) dados.append("tipo_id", tipo.value);
         for (let i = 0; i < arquivos.length; i++) {
           status.textContent = `Preparando foto ${i + 1} de ${arquivos.length}…`;
           dados.append("fotos", await reduzir(arquivos[i]), `foto_${i + 1}.jpg`);
@@ -42,6 +46,70 @@
           status.textContent = "Não foi possível enviar. Verifique a internet e tente de novo.";
         }
       });
+    });
+  });
+
+  // ------------------------------------------------------------ quadro de assinatura (reutilizável)
+  // Devolve { pontos(), png(), limpar() }; o traço acompanha o tamanho do quadro na tela.
+  const criarQuadro = (quadro) => {
+    const ctx = quadro.getContext("2d");
+    let tracos = [];
+    let atual = null;
+    const redesenhar = () => {
+      ctx.clearRect(0, 0, quadro.width, quadro.height);
+      const r = quadro.getBoundingClientRect();
+      tracos.forEach((t) => {
+        ctx.beginPath();
+        t.forEach(([x, y], i) => (i ? ctx.lineTo(x * r.width, y * r.height) : ctx.moveTo(x * r.width, y * r.height)));
+        ctx.stroke();
+      });
+    };
+    const ajustar = () => {
+      const r = quadro.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      quadro.width = Math.round(r.width * dpr);
+      quadro.height = Math.round(r.height * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.lineWidth = 2.6; ctx.lineCap = "round"; ctx.lineJoin = "round"; ctx.strokeStyle = "#0b1f5c";
+      redesenhar();
+    };
+    const ponto = (ev) => {
+      const r = quadro.getBoundingClientRect();
+      return [+((ev.clientX - r.left) / r.width).toFixed(4), +((ev.clientY - r.top) / r.height).toFixed(4)];
+    };
+    quadro.addEventListener("pointerdown", (ev) => {
+      ev.preventDefault();
+      quadro.setPointerCapture(ev.pointerId);
+      atual = [ponto(ev)];
+      tracos.push(atual);
+    });
+    quadro.addEventListener("pointermove", (ev) => {
+      if (!atual) return;
+      ev.preventDefault();
+      atual.push(ponto(ev));
+      redesenhar();
+    });
+    const soltar = () => { atual = null; };
+    quadro.addEventListener("pointerup", soltar);
+    quadro.addEventListener("pointercancel", soltar);
+    window.addEventListener("resize", ajustar);
+    ajustar();
+    return {
+      pontos: () => tracos.reduce((n, t) => n + t.length, 0),
+      png: () => quadro.toDataURL("image/png"),
+      limpar: () => { tracos = []; redesenhar(); },
+    };
+  };
+
+  // assinatura padronizada da LOCADORA (Venerável)
+  const formLocadora = document.querySelector("[data-assinatura-locadora]");
+  if (formLocadora) {
+    const q = criarQuadro(formLocadora.querySelector("[data-quadro]"));
+    const erroQ = formLocadora.querySelector("[data-erro-quadro]");
+    formLocadora.querySelector("[data-limpar-quadro]").addEventListener("click", () => { q.limpar(); erroQ.textContent = ""; });
+    formLocadora.addEventListener("submit", (ev) => {
+      if (q.pontos() < 15) { ev.preventDefault(); erroQ.textContent = "Faça a assinatura no quadro."; return; }
+      formLocadora.querySelector("[name=assinatura]").value = q.png();
     });
   }
 

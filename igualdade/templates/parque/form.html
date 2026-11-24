@@ -1,33 +1,106 @@
 {% extends "base.html" %}
 {% block titulo %}{{ 'Editar contrato' if contrato else 'Novo contrato' }}{% endblock %}
 {% macro erro(campo) -%}{% if campo in erros %}<span class="erro-campo">{{ erros[campo] }}</span>{% endif %}{%- endmacro %}
+{% macro campo(nome, rotulo, extra='', largo=False, tipo='text') -%}
+  <div class="campo {{ 'largo' if largo }} {{ 'com-erro' if nome in erros }}">
+    <label for="{{ nome }}">{{ rotulo }}</label>
+    <input id="{{ nome }}" name="{{ nome }}" type="{{ tipo }}" value="{{ v[nome] or '' }}" {{ extra | safe }}>
+    {{ erro(nome) }}
+  </div>
+{%- endmacro %}
+{% macro estado_civil(nome) -%}
+  <div class="campo {{ 'com-erro' if nome in erros }}">
+    <label for="{{ nome }}">Estado civil *</label>
+    <select id="{{ nome }}" name="{{ nome }}">
+      <option value="">Escolha…</option>
+      {% for e in ESTADOS_CIVIS %}<option {{ 'selected' if v[nome] == e }}>{{ e }}</option>{% endfor %}
+    </select>
+    {{ erro(nome) }}
+  </div>
+{%- endmacro %}
 {% block conteudo %}
+{% set pj = v.tipo_pessoa == 'PJ' %}
 <div class="estreito">
   <a class="voltar" href="{{ url_for('parque.detalhe', contrato_id=contrato.id) if contrato else url_for('parque.lista') }}">← {{ 'Contrato' if contrato else 'Parque das Acácias' }}</a>
   <h2>{{ self.titulo() }}</h2>
+  {% if 'locadora' in erros %}<p class="aviso-cancelada">{{ erros.locadora }}</p>{% endif %}
   <form method="post" novalidate data-uma-vez>
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
     <section class="cartao grade">
       <h3>Contratante</h3>
+      <div class="opcoes-grau" role="radiogroup" aria-label="Tipo de contratante">
+        <label class="opcao-grau"><input type="radio" name="tipo_pessoa" value="PF" {{ 'checked' if not pj }} data-tipo-pessoa> Pessoa física</label>
+        <label class="opcao-grau"><input type="radio" name="tipo_pessoa" value="PJ" {{ 'checked' if pj }} data-tipo-pessoa> Pessoa jurídica</label>
+      </div>
+      <p class="dica" style="margin:0"><span data-so-tipo="PF" class="{{ 'oculto' if pj }}">Preencha com base no documento de identidade do contratante.</span><span data-so-tipo="PJ" class="{{ 'oculto' if not pj }}">Preencha com base no cartão CNPJ da empresa e na identidade do representante.</span></p>
+
       <div class="campo {{ 'com-erro' if 'contratante_nome' in erros }}">
-        <label for="contratante_nome">Nome completo ou razão social *</label>
+        <label for="contratante_nome"><span data-so-tipo="PF" class="{{ 'oculto' if pj }}">Nome completo *</span><span data-so-tipo="PJ" class="{{ 'oculto' if not pj }}">Razão social *</span></label>
         <input id="contratante_nome" name="contratante_nome" value="{{ v.contratante_nome or '' }}" data-maiusculas required>
         {{ erro('contratante_nome') }}
       </div>
       <div class="grade duas">
         <div class="campo {{ 'com-erro' if 'contratante_cpf_cnpj' in erros }}">
-          <label for="contratante_cpf_cnpj">CPF ou CNPJ *</label>
+          <label for="contratante_cpf_cnpj"><span data-so-tipo="PF" class="{{ 'oculto' if pj }}">CPF *</span><span data-so-tipo="PJ" class="{{ 'oculto' if not pj }}">CNPJ *</span></label>
           <input id="contratante_cpf_cnpj" name="contratante_cpf_cnpj" value="{{ v.contratante_cpf_cnpj or '' }}" inputmode="numeric" maxlength="18" required>
           {{ erro('contratante_cpf_cnpj') }}
         </div>
+        <div data-so-tipo="PF" class="{{ 'oculto' if pj }}">{{ campo('rg', 'RG e órgão emissor *', 'placeholder="Ex.: 123456 SSP/AC"') }}</div>
+      </div>
+      <div class="grade duas {{ 'oculto' if pj }}" data-so-tipo="PF">
+        {{ campo('nacionalidade', 'Nacionalidade *') }}
+        {{ estado_civil('estado_civil') }}
+        {{ campo('profissao', 'Profissão *') }}
+      </div>
+      <div class="grade duas">
+        {{ campo('telefone', 'Telefone / WhatsApp *', 'inputmode="tel" maxlength="15" data-mascara="tel" placeholder="(68) 99999-9999"', tipo='tel') }}
         <div class="campo {{ 'com-erro' if 'contratante_email' in erros }}">
           <label for="contratante_email">E-mail *</label>
           <input id="contratante_email" name="contratante_email" type="email" value="{{ v.contratante_email or '' }}" autocapitalize="off" required>
+          <span class="dica">O link de assinatura e a cópia do contrato vão para este e-mail.</span>
           {{ erro('contratante_email') }}
         </div>
       </div>
-      <p class="dica" style="margin:0">Os demais dados (RG, endereço, estado civil…) o próprio contratante preenche ao abrir o link de assinatura.</p>
+    </section>
+
+    <section class="cartao grade">
+      <h3><span data-so-tipo="PF" class="{{ 'oculto' if pj }}">Endereço</span><span data-so-tipo="PJ" class="{{ 'oculto' if not pj }}">Endereço da sede</span></h3>
+      <div class="grade duas">
+        <div class="campo {{ 'com-erro' if 'cep' in erros }}">
+          <label for="cep">CEP *</label>
+          <input id="cep" name="cep" value="{{ v.cep | cep }}" inputmode="numeric" maxlength="9" data-mascara="cep" autocomplete="postal-code" aria-describedby="cep-status">
+          <small id="cep-status" class="cep-status" aria-live="polite"></small>
+          {{ erro('cep') }}
+        </div>
+        {{ campo('logradouro', 'Logradouro *', 'data-maiusculas', largo=True) }}
+        {{ campo('numero', 'Número *') }}
+        {{ campo('complemento', 'Complemento') }}
+        {{ campo('bairro', 'Bairro *', 'data-maiusculas') }}
+        {{ campo('cidade', 'Cidade *', 'data-maiusculas') }}
+        <div class="campo {{ 'com-erro' if 'estado' in erros }}">
+          <label for="estado">UF *</label>
+          <select id="estado" name="estado">
+            <option value="">—</option>
+            {% for uf in UFS %}<option {{ 'selected' if v.estado == uf }}>{{ uf }}</option>{% endfor %}
+          </select>
+          {{ erro('estado') }}
+        </div>
+      </div>
+    </section>
+
+    <section class="cartao grade {{ 'oculto' if not pj }}" data-so-tipo="PJ">
+      <h3>Representante da empresa</h3>
+      <p class="dica" style="margin:0">Quem assina o contrato em nome da empresa. Os dados vêm da identidade dele.</p>
+      {{ campo('rep_nome', 'Nome completo *', 'data-maiusculas', largo=True) }}
+      <div class="grade duas">
+        {{ campo('rep_cpf', 'CPF *', 'inputmode="numeric" maxlength="14" data-mascara="cpf"') }}
+        {{ campo('rep_rg', 'RG e órgão emissor *', 'placeholder="Ex.: 123456 SSP/AC"') }}
+        {{ campo('rep_cargo', 'Cargo na empresa *', 'placeholder="Ex.: Sócio-administrador"') }}
+        {{ campo('rep_nacionalidade', 'Nacionalidade *') }}
+        {{ estado_civil('rep_estado_civil') }}
+        {{ campo('rep_profissao', 'Profissão *') }}
+      </div>
     </section>
 
     <section class="cartao grade">
@@ -49,6 +122,12 @@
         <div class="campo"><label for="hora_fim">Fim *</label><input id="hora_fim" name="hora_fim" type="time" value="{{ v.hora_fim or '' }}" required></div>
       </div>
       {{ erro('horario') }}
+      <div class="campo">
+        <label for="tolerancia_min">Tolerância para desmontagem após o fim</label>
+        <select id="tolerancia_min" name="tolerancia_min">
+          {% for t in TOLERANCIAS %}<option value="{{ t }}" {{ 'selected' if (v.tolerancia_min or TOLERANCIAS[0]) == t }}>{{ t }} minutos</option>{% endfor %}
+        </select>
+      </div>
       <label class="check"><input type="checkbox" name="inclui_piscina" value="1" {{ 'checked' if v.inclui_piscina }}> Inclui o uso da piscina</label>
     </section>
 
@@ -59,10 +138,19 @@
         <input id="valor_total" name="valor_total" value="{{ v.valor_total or '' }}" inputmode="decimal" data-moeda placeholder="0,00" required>
         {{ erro('valor_total') }}
       </div>
-      <div class="campo {{ 'com-erro' if 'forma_pagamento' in erros }}">
-        <label for="forma_pagamento">Forma e condições de pagamento *</label>
-        <input id="forma_pagamento" name="forma_pagamento" value="{{ v.forma_pagamento or '' }}" maxlength="300" placeholder="Ex.: 50% na reserva (PIX) e 50% até 7 dias antes" required>
-        {{ erro('forma_pagamento') }}
+      <fieldset class="campo {{ 'com-erro' if 'formas_pagamento' in erros }}">
+        <legend>Forma de pagamento * <span class="dica">(marque uma ou mais)</span></legend>
+        <div class="formas-pagamento">
+          {% for f in FORMAS_PAGAMENTO %}
+          <label class="check"><input type="checkbox" name="formas_pagamento" value="{{ f }}" {{ 'checked' if f in (v.formas_pagamento or []) }}> {{ f }}</label>
+          {% endfor %}
+        </div>
+        {% if contrato and not v.formas_pagamento and v.forma_pagamento %}<span class="dica">Antes: “{{ v.forma_pagamento }}”. Marque as formas e, se quiser, copie as condições abaixo.</span>{% endif %}
+        {{ erro('formas_pagamento') }}
+      </fieldset>
+      <div class="campo">
+        <label for="condicoes_pagamento">Condições de pagamento</label>
+        <input id="condicoes_pagamento" name="condicoes_pagamento" value="{{ v.condicoes_pagamento or '' }}" maxlength="300" placeholder="Opcional. Ex.: 50% na reserva e 50% até 7 dias antes">
       </div>
       <div class="campo">
         <label for="observacoes">Observações</label>
@@ -71,10 +159,19 @@
     </section>
 
     {% if not contrato %}
-    <section class="cartao">
-      <label class="check"><input type="checkbox" name="exige_vistoria" value="1" {{ 'checked' if v.exige_vistoria }}> Exigir vistoria fotográfica prévia pelo caseiro</label>
-      <p class="dica" style="margin-bottom:0">Com vistoria, o link de assinatura só é enviado ao contratante depois que o caseiro concluir as fotos. Sem vistoria, o link é enviado ao salvar.</p>
+    <section class="cartao grade {{ 'com-erro' if 'registro' in erros }}">
+      <h3>Registro fotográfico (Anexo I)</h3>
+      <label class="check"><input type="radio" name="registro" value="padrao" {{ 'checked' if v.registro == 'padrao' }}> Usar fotos padrão</label>
+      <p class="dica" style="margin:-6px 0 0 30px">Sem vistoria: o Anexo I sai com as fotos padrão do espaço e o link de assinatura é enviado ao salvar.
+        {% if faltam_sem_piscina %}<br><strong>Falta a foto padrão de: {{ faltam_sem_piscina | join(', ') }}.</strong>
+        {% elif faltam_com_piscina %}<br>Para contratos com piscina, falta a foto padrão de: {{ faltam_com_piscina | join(', ') }}.{% endif %}</p>
+      <label class="check"><input type="radio" name="registro" value="vistoria" {{ 'checked' if v.registro != 'padrao' }}> Vistoria pelo caseiro</label>
+      <p class="dica" style="margin:-6px 0 0 30px">O link de assinatura só é enviado depois que o caseiro concluir a vistoria. As fotos que ele tirar passam a ser as novas fotos padrão.</p>
+      {{ erro('registro') }}
     </section>
+    {% elif contrato.fotos_padrao %}
+    <p class="dica">Registro fotográfico: <strong>fotos padrão</strong>. Se mudar a inclusão da piscina, as fotos do Anexo I são refeitas.</p>
+    {% if 'registro' in erros %}<p class="aviso-cancelada">{{ erros.registro }}</p>{% endif %}
     {% endif %}
 
     <div class="botoes">
