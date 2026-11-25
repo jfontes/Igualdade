@@ -54,6 +54,7 @@ MIGRACOES = [
     ("vistoria_tipo", "foto_padrao", "TEXT"),
     ("vistoria_tipo", "foto_padrao_em", "TEXT"),
     ("contrato", "fotos_padrao", "INTEGER NOT NULL DEFAULT 0"),
+    ("contrato", "vistoria_iniciada_em", "TEXT"),  # quando a vistoria recebeu as cópias das fotos padrão
 ]
 
 # Tipos de foto sugeridos na primeira vez (depois a gestão do Parque ajusta em Configuração)
@@ -78,7 +79,7 @@ def marcar_piscina_condicional(conn: sqlite3.Connection):
     conn.execute("INSERT INTO parque_config (chave, valor) VALUES ('vistoria_piscina_condicional', '1')")
 
 
-def migrar(conn: sqlite3.Connection):
+def migrar(conn: sqlite3.Connection, instance_path: str | None = None):
     # Tabelas novas (CREATE TABLE IF NOT EXISTS não mexe nas existentes)
     conn.executescript((Path(__file__).parent / "schema.sql").read_text(encoding="utf-8"))
     for tabela, coluna, tipo in MIGRACOES:
@@ -88,7 +89,24 @@ def migrar(conn: sqlite3.Connection):
     mover_eventos_cadastrados_como_sessao(conn)
     criar_tipos_vistoria_iniciais(conn)
     marcar_piscina_condicional(conn)
+    mover_fotos_padrao_unicas(conn, Path(instance_path or current_app.instance_path) / "contratos")
     conn.commit()
+
+
+def mover_fotos_padrao_unicas(conn: sqlite3.Connection, pasta: Path):
+    """Só uma vez: a foto padrão única de cada tipo passa a ser a primeira do conjunto de fotos padrão."""
+    if conn.execute("SELECT 1 FROM parque_config WHERE chave = 'vistoria_fotos_padrao_multiplas'").fetchone():
+        return
+    import hashlib
+    for tid, arquivo, em in conn.execute(
+            "SELECT id, foto_padrao, foto_padrao_em FROM vistoria_tipo WHERE foto_padrao IS NOT NULL").fetchall():
+        caminho = pasta / arquivo
+        if caminho.is_file():
+            conn.execute("INSERT INTO vistoria_tipo_foto (tipo_id, arquivo, sha256, ordem, criado_em) "
+                         "VALUES (?, ?, ?, 1, ?)",
+                         (tid, arquivo, hashlib.sha256(caminho.read_bytes()).hexdigest(), em or ""))
+    conn.execute("UPDATE vistoria_tipo SET foto_padrao = NULL, foto_padrao_em = NULL")
+    conn.execute("INSERT INTO parque_config (chave, valor) VALUES ('vistoria_fotos_padrao_multiplas', '1')")
 
 
 def mover_eventos_cadastrados_como_sessao(conn: sqlite3.Connection) -> int:
@@ -126,7 +144,7 @@ def init_app(app):
     if Path(app.config["DATABASE"]).exists():
         conn = conectar(app.config["DATABASE"])
         try:
-            migrar(conn)
+            migrar(conn, app.instance_path)
         finally:
             conn.close()
     app.cli.add_command(init_db_command)

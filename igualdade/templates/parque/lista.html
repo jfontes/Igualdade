@@ -21,8 +21,8 @@
   <form class="filtros filtros-contratos" method="get" role="search">
     {% if filtro %}<input type="hidden" name="status" value="{{ filtro }}">{% endif %}
     <input type="search" name="q" value="{{ busca }}" placeholder="Nome ou CPF/CNPJ" aria-label="Buscar por nome ou CPF/CNPJ">
-    <label class="periodo">De <input type="date" name="de" value="{{ de }}" aria-label="Evento a partir de"></label>
-    <label class="periodo">até <input type="date" name="ate" value="{{ ate }}" aria-label="Evento até"></label>
+    <label class="periodo">De <input name="de" value="{{ de | campo_data }}" aria-label="Evento a partir de" class="data-curta" inputmode="numeric" maxlength="10" placeholder="dd/mm/aaaa" autocomplete="off" data-mascara="data"></label>
+    <label class="periodo">até <input name="ate" value="{{ ate | campo_data }}" aria-label="Evento até" class="data-curta" inputmode="numeric" maxlength="10" placeholder="dd/mm/aaaa" autocomplete="off" data-mascara="data"></label>
     <button class="btn sec" type="submit">Buscar</button>
     {% if filtrando %}<a class="btn sec" href="{{ url_for('parque.lista', status=filtro or None) }}">Limpar</a>{% endif %}
   </form>

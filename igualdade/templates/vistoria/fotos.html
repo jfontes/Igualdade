@@ -1,6 +1,42 @@
 {% extends "publico/_base.html" %}
 {% block titulo %}Vistoria – {{ c.contratante_nome }}{% endblock %}
-{% block scripts %}<script src="{{ url_for('static', filename='contrato.js') }}?v=2" defer></script>{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='contrato.js') }}?v=4" defer></script>{% endblock %}
+{% macro botoes_foto(rotulo_camera) %}
+  <div class="botoes" style="margin-top:0">
+    <label class="btn sec pequeno">📷 {{ rotulo_camera }}
+      <input type="file" name="fotos" accept="image/*" capture="environment" multiple hidden data-enviar-fotos>
+    </label>
+    <label class="btn sec pequeno">🖼️ Da galeria
+      <input type="file" name="fotos" accept="image/*" multiple hidden data-enviar-fotos>
+    </label>
+  </div>
+{% endmacro %}
+{% macro galeria(fotos, rotulo) %}
+  {% if fotos %}
+  <div class="galeria">
+    {% for f in fotos %}
+    <figure>
+      <a href="{{ url_for('vistoria.foto', contrato_id=c.id, foto_id=f.id) }}" target="_blank" rel="noopener">
+        <img src="{{ url_for('vistoria.foto', contrato_id=c.id, foto_id=f.id) }}" alt="{{ f.legenda }}" loading="lazy"></a>
+      <form method="post" action="{{ url_for('vistoria.remover_foto', contrato_id=c.id, foto_id=f.id) }}" data-confirmar="Remover esta foto?">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="btn perigo pequeno" type="submit" aria-label="Remover {{ f.legenda }}">✕</button>
+      </form>
+    </figure>
+    {% endfor %}
+  </div>
+  {% endif %}
+{% endmacro %}
+{% macro remover_todas(fotos, nome, campo, valor) %}
+  {% if fotos | length > 1 %}
+  <form method="post" action="{{ url_for('vistoria.remover_todas', contrato_id=c.id) }}" class="remover-todas"
+        data-confirmar="Remover as {{ fotos | length }} fotos de {{ nome }}?">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="{{ campo }}" value="{{ valor }}">
+    <button class="btn perigo pequeno" type="submit">🗑️ Remover todas de {{ nome }}</button>
+  </form>
+  {% endif %}
+{% endmacro %}
 {% block conteudo %}
 <div class="estreito">
   <a class="voltar" href="{{ url_for('vistoria.fila') }}">← Vistorias pendentes</a>
@@ -8,72 +44,45 @@
   <p class="suave">{{ c.evento.tipo_evento }} · {{ c.evento.data | data }} · {{ c.evento.hora_inicio }}–{{ c.evento.hora_fim }}
     · {{ 'com piscina' if c.evento.inclui_piscina else 'sem piscina' }}</p>
 
-  <section class="cartao">
-    <h3>Fotos obrigatórias</h3>
-    <p class="dica" style="margin-top:0">Tire <strong>uma foto de cada item</strong>. Onde já existe a foto padrão, confira se o local
-      continua igual: se mudou, toque em <strong>Atualizar foto</strong> (a foto nova passa a ser a padrão).</p>
-    <ul class="lista checklist-vistoria">
-      {% for t in tipos %}
-      {% set f = por_tipo.get(t.id) %}
-      {% set padrao = not f and t.foto_padrao %}
-      <li class="{{ 'feito' if f or padrao else 'pendente' }}">
-        <div class="item">
-          {% if f %}
-            <a href="{{ url_for('vistoria.foto', contrato_id=c.id, foto_id=f.id) }}" target="_blank" rel="noopener" class="miniatura">
-              <img src="{{ url_for('vistoria.foto', contrato_id=c.id, foto_id=f.id) }}" alt="Foto de {{ t.nome }}" loading="lazy"></a>
-          {% elif padrao %}
-            <a href="{{ url_for('vistoria.foto_padrao', tipo_id=t.id) }}" target="_blank" rel="noopener" class="miniatura">
-              <img src="{{ url_for('vistoria.foto_padrao', tipo_id=t.id) }}?v={{ (t.foto_padrao_em or '')[-8:] }}" alt="Foto padrão de {{ t.nome }}" loading="lazy"></a>
-          {% else %}
-            <span class="miniatura vazia" aria-hidden="true">📷</span>
-          {% endif %}
-          <div class="corpo">
-            <div class="nome">{{ '✅' if f or padrao else '⬜' }} {{ t.nome }}</div>
-            <div class="sub" data-fotos-status>{{ 'Foto de hoje registrada.' if f else ('Foto padrão. Se o local mudou, atualize.' if padrao else 'Falta a foto.') }}</div>
-          </div>
-          <form method="post" action="{{ url_for('vistoria.enviar_fotos', contrato_id=c.id) }}" enctype="multipart/form-data"
-                class="inline" data-fotos-vistoria>
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <input type="hidden" name="tipo_id" value="{{ t.id }}">
-            <label class="btn {{ 'sec' if f or padrao }} pequeno">{{ '🔄 Trocar' if f else ('📷 Atualizar foto' if padrao else '📷 Tirar foto') }}
-              <input type="file" name="fotos" accept="image/*" capture="environment" hidden data-enviar-fotos>
-            </label>
-          </form>
-        </div>
-      </li>
-      {% endfor %}
-    </ul>
-  </section>
+  <p class="dica">A vistoria já começa com as <strong>fotos padrão</strong> de cada item. Confira o local: o que estiver igual,
+    deixe como está; o que mudou, remova a foto antiga (✕) e tire a nova. Cada item precisa de <strong>pelo menos uma foto</strong>.
+    Ao concluir, as fotos de cada item passam a ser as novas fotos padrão.</p>
 
-  <section class="cartao">
-    <h3>Outras fotos <span class="suave">(opcional)</span></h3>
+  {% for t in tipos %}
+  {% set fs = por_tipo.get(t.id, []) %}
+  <section class="cartao tipo-vistoria {{ 'feito' if fs else 'pendente' }}">
     <form method="post" action="{{ url_for('vistoria.enviar_fotos', contrato_id=c.id) }}" enctype="multipart/form-data" data-fotos-vistoria>
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-      <p class="dica" style="margin-top:0">Algo que mereça registro além dos itens acima (um estrago, um objeto deixado no local…).</p>
-      <div class="botoes" style="margin-top:0">
-        <label class="btn sec">📷 Tirar foto
-          <input type="file" name="fotos" accept="image/*" capture="environment" multiple hidden data-enviar-fotos>
-        </label>
-        <label class="btn sec">🖼️ Da galeria
-          <input type="file" name="fotos" accept="image/*" multiple hidden data-enviar-fotos>
-        </label>
-      </div>
-      <p class="dica" data-fotos-status>As fotos são enviadas assim que escolhidas.</p>
+      <input type="hidden" name="tipo_id" value="{{ t.id }}">
+      <h3>{{ '✅' if fs else '⬜' }} {{ t.nome }} <span class="suave">· {{ fs | length }} foto{{ 's' if fs | length != 1 }}</span></h3>
+      {{ botoes_foto('Tirar foto') }}
+      <p class="dica" data-fotos-status>{{ '' if fs else 'Falta a foto deste item.' }}</p>
     </form>
-    {% if outras %}
-    <div class="galeria">
-      {% for f in outras %}
-      <figure>
-        <img src="{{ url_for('vistoria.foto', contrato_id=c.id, foto_id=f.id) }}" alt="Outra foto {{ loop.index }}" loading="lazy">
-        <form method="post" action="{{ url_for('vistoria.remover_foto', contrato_id=c.id, foto_id=f.id) }}" data-confirmar="Remover esta foto?">
-          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-          <button class="btn perigo pequeno" type="submit" aria-label="Remover outra foto {{ loop.index }}">🗑️</button>
-        </form>
-      </figure>
-      {% endfor %}
-    </div>
-    {% endif %}
+    {{ galeria(fs, t.nome) }}
+    {{ remover_todas(fs, t.nome, 'tipo_id', t.id) }}
   </section>
+  {% endfor %}
+
+  <section class="cartao">
+    <form method="post" action="{{ url_for('vistoria.enviar_fotos', contrato_id=c.id) }}" enctype="multipart/form-data" data-fotos-vistoria>
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <h3>Outras fotos <span class="suave">(opcional)</span></h3>
+      <p class="dica" style="margin-top:0">Algo que mereça registro além dos itens acima (um estrago, um objeto deixado no local…).</p>
+      {{ botoes_foto('Tirar foto') }}
+      <p class="dica" data-fotos-status></p>
+    </form>
+    {{ galeria(outras, 'Outras fotos') }}
+    {{ remover_todas(outras, 'Outras fotos', 'tipo', 'outras') }}
+  </section>
+
+  {% set total = por_tipo.values() | map('length') | sum + outras | length %}
+  {% if total %}
+  <form method="post" action="{{ url_for('vistoria.remover_todas', contrato_id=c.id) }}" class="remover-todas"
+        data-confirmar="Remover TODAS as {{ total }} fotos desta vistoria? Os itens ficarão sem foto.">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button class="btn perigo pequeno" type="submit">🗑️ Remover todas as fotos da vistoria ({{ total }})</button>
+  </form>
+  {% endif %}
 
   {% if pendentes %}
   <p class="lembrete">Ainda falta a foto de: <strong>{{ pendentes | join(', ') }}</strong>.</p>

@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block titulo %}Configuração do Parque{% endblock %}
-{% block scripts %}<script src="{{ url_for('static', filename='contrato.js') }}?v=2" defer></script>{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='contrato.js') }}?v=4" defer></script>{% endblock %}
 {% block conteudo %}
 <div class="estreito">
   <a class="voltar" href="{{ url_for('parque.lista') }}">← Parque das Acácias</a>
@@ -49,25 +49,16 @@
   {# ------------------------------------------------------------ tipos de foto #}
   <section class="cartao" id="tipos">
     <h3>📷 Fotos exigidas na vistoria</h3>
-    <p class="dica" style="margin-top:0">Toque no quadro da foto para cadastrar ou trocar a <strong>foto padrão</strong> de cada tipo.
-      Com todas as fotos padrão cadastradas, o contrato pode sair sem vistoria, usando essas fotos.
-      Na vistoria, o caseiro vê a foto padrão e pode atualizá-la; a foto nova passa a ser a padrão.</p>
-    <p class="dica">O caseiro precisa de <strong>uma foto de cada tipo ativo</strong> para concluir a vistoria (a foto padrão já conta). Os marcados com 🏊 só são exigidos quando o contrato inclui a piscina. “Outras fotos” é sempre opcional.
+    <p class="dica" style="margin-top:0">Cada tipo pode ter <strong>quantas fotos padrão forem necessárias</strong> (toque em ＋ para incluir, ✕ para remover).
+      Com fotos padrão em todos os tipos, o contrato pode sair sem vistoria, usando essas fotos.
+      Na vistoria, o caseiro começa com as fotos padrão e atualiza só o que mudou; ao concluir, as fotos dele passam a ser as padrão.</p>
+    <p class="dica">O caseiro precisa de <strong>pelo menos uma foto de cada tipo ativo</strong> para concluir a vistoria. Os marcados com 🏊 só são exigidos quando o contrato inclui a piscina. “Outras fotos” é sempre opcional.
       Um tipo desativado deixa de ser exigido, mas continua nas vistorias já feitas.</p>
     {% if tipos %}
     <ul class="lista tipos-vistoria">
       {% for t in tipos %}
-      <li class="{{ 'inativo' if not t.ativo }}">
+      <li class="{{ 'inativo' if not t.ativo }}" id="tipo-{{ t.id }}">
         <div class="item">
-          <form class="inline foto-padrao" method="post" enctype="multipart/form-data"
-                action="{{ url_for('parque.tipo_foto', tipo_id=t.id) }}">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <label class="miniatura" title="{{ 'Trocar' if t.foto_padrao else 'Cadastrar' }} a foto padrão de {{ t.nome }}">
-              {% if t.foto_padrao %}<img src="{{ url_for('parque.tipo_foto_ver', tipo_id=t.id) }}?v={{ (t.foto_padrao_em or '')[-8:] }}" alt="Foto padrão de {{ t.nome }}">
-              {% else %}<span aria-hidden="true">📷</span>{% endif %}
-              <input type="file" name="foto" accept="image/*" hidden data-enviar-ao-mudar>
-            </label>
-          </form>
           <form class="inline renomear" method="post" action="{{ url_for('parque.tipo_alterar', tipo_id=t.id) }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <input type="hidden" name="acao" value="renomear">
@@ -99,6 +90,26 @@
               {% endif %}
             </form>
           </div>
+        </div>
+        <div class="fotos-padrao">
+          {% for f in padroes.get(t.id, []) %}
+          <figure>
+            <a href="{{ url_for('parque.tipo_foto_ver', foto_id=f.id) }}" target="_blank" rel="noopener">
+              <img src="{{ url_for('parque.tipo_foto_ver', foto_id=f.id) }}" alt="Foto padrão {{ loop.index }} de {{ t.nome }}" loading="lazy"></a>
+            <form method="post" action="{{ url_for('parque.tipo_foto_remover', foto_id=f.id) }}" data-confirmar="Remover esta foto padrão de {{ t.nome }}?">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button class="btn perigo pequeno" type="submit" aria-label="Remover a foto padrão {{ loop.index }} de {{ t.nome }}">✕</button>
+            </form>
+          </figure>
+          {% endfor %}
+          <form method="post" enctype="multipart/form-data" action="{{ url_for('parque.tipo_foto', tipo_id=t.id) }}" data-fotos-vistoria class="incluir-foto">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <label title="Incluir fotos padrão de {{ t.nome }}">
+              <span aria-hidden="true">＋</span><span class="suave">Incluir foto</span>
+              <input type="file" name="fotos" accept="image/*" multiple hidden data-enviar-fotos>
+            </label>
+            <span class="dica" data-fotos-status>{{ '' if padroes.get(t.id) else 'Sem foto padrão.' }}</span>
+          </form>
         </div>
       </li>
       {% endfor %}

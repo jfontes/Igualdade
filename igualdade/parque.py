@@ -72,6 +72,15 @@ def gere_parque() -> bool:
                 or "veneravel" in cargos_vigentes().get(current_user.id, set()))
 
 
+def pode_excluir_assinado() -> bool:
+    """Só o Venerável da gestão vigente ou o Administrador geral (não o Administrador do Parque)."""
+    if not current_user.is_authenticated:
+        return False
+    from .auth import cargos_vigentes
+    return bool(getattr(current_user, "admin_cadastro", False)
+                or "veneravel" in cargos_vigentes().get(current_user.id, set()))
+
+
 def parque_required(view):
     @wraps(view)
     @login_required
@@ -146,17 +155,35 @@ def texto_pagamento(evento: dict) -> str:
     return texto + (f" — {evento['condicoes_pagamento']}" if evento.get("condicoes_pagamento") else "")
 
 
-def fotos_da_vistoria(contrato_id: int):
-    """Fotos na ordem dos tipos; "Outras fotos" (sem tipo) no fim."""
-    return get_db().execute(
-        "SELECT f.*, COALESCE(t.nome, f.tipo_nome) AS legenda FROM vistoria_foto f "
+def fotos_da_vistoria(contrato_id: int) -> list[dict]:
+    """Fotos na ordem dos tipos; "Outras fotos" (sem tipo) no fim. A legenda numera as fotos
+    do mesmo tipo: "Salão (1/3)"; com uma só, fica "Salão"."""
+    fotos = [dict(f) for f in get_db().execute(
+        "SELECT f.*, COALESCE(t.nome, f.tipo_nome, 'Outras fotos') AS legenda FROM vistoria_foto f "
         "LEFT JOIN vistoria_tipo t ON t.id = f.tipo_id WHERE f.contrato_id = ? "
-        "ORDER BY f.tipo_id IS NULL, COALESCE(t.ordem, 0), f.id", (contrato_id,)).fetchall()
+        "ORDER BY f.tipo_id IS NULL, COALESCE(t.ordem, 0), f.tipo_id, f.id", (contrato_id,))]
+    grupos: dict = {}
+    for f in fotos:
+        grupos.setdefault(f["tipo_id"], []).append(f)
+    for grupo in grupos.values():
+        if len(grupo) > 1:
+            for n, f in enumerate(grupo, start=1):
+                f["legenda"] = f"{f['legenda']} ({n}/{len(grupo)})"
+    return fotos
 
 
-def tipos_vistoria(somente_ativos: bool = True):
-    sql = "SELECT * FROM vistoria_tipo" + (" WHERE ativo = 1" if somente_ativos else "")
-    return get_db().execute(sql + " ORDER BY ordem, nome").fetchall()
+def tipos_vistoria(somente_ativos: bool = True) -> list[dict]:
+    """Tipos de foto com a quantidade de fotos padrão (`qtd_padrao`)."""
+    sql = ("SELECT t.*, (SELECT COUNT(*) FROM vistoria_tipo_foto p WHERE p.tipo_id = t.id) AS qtd_padrao "
+           "FROM vistoria_tipo t" + (" WHERE t.ativo = 1" if somente_ativos else ""))
+    return [dict(t) for t in get_db().execute(sql + " ORDER BY t.ordem, t.nome")]
+
+
+def fotos_padrao_por_tipo() -> dict:
+    grupos: dict = {}
+    for f in get_db().execute("SELECT * FROM vistoria_tipo_foto ORDER BY ordem, id"):
+        grupos.setdefault(f["tipo_id"], []).append(f)
+    return grupos
 
 
 def tipos_para(piscina: bool):
@@ -170,37 +197,56 @@ def tipos_exigidos(contrato_id: int):
     return tipos_para(bool(evento.get("inclui_piscina")))
 
 
-def _tipos_com_foto(contrato_id: int) -> set[int]:
+def _tipos_com_foto(contrato_id: int) -> set:
     return {r["tipo_id"] for r in get_db().execute(
         "SELECT DISTINCT tipo_id FROM vistoria_foto WHERE contrato_id = ? AND tipo_id IS NOT NULL", (contrato_id,))}
 
 
-def tipos_pendentes(contrato_id: int) -> list[str]:
-    """Tipos exigidos sem foto nesta vistoria e sem foto padrão (a padrão já conta como feita)."""
+def tipos_pendentes(contrato_id: int) -> list:
+    """Tipos exigidos ainda sem nenhuma foto nesta vistoria."""
     com_foto = _tipos_com_foto(contrato_id)
-    return [t["nome"] for t in tipos_exigidos(contrato_id) if t["id"] not in com_foto and not t["foto_padrao"]]
+    return [t["nome"] for t in tipos_exigidos(contrato_id) if t["id"] not in com_foto]
 
 
-def padroes_faltando(piscina: bool) -> list[str]:
-    """Tipos exigidos (com ou sem piscina) que ainda não têm foto padrão."""
-    return [t["nome"] for t in tipos_para(piscina) if not t["foto_padrao"]]
+def padroes_faltando(piscina: bool) -> list:
+    """Tipos exigidos (com ou sem piscina) que ainda não têm nenhuma foto padrão."""
+    return [t["nome"] for t in tipos_para(piscina) if not t["qtd_padrao"]]
 
 
-def definir_foto_padrao(tipo_id: int, jpeg: bytes):
-    """Troca a foto padrão do tipo (a anterior é apagada: os contratos guardam cópias próprias)."""
+def incluir_foto_padrao(tipo_id: int, jpeg: bytes, ordem: int | None = None):
+    """Grava mais uma foto padrão no tipo (o commit fica com quem chama)."""
     db = get_db()
-    anterior = db.execute("SELECT foto_padrao FROM vistoria_tipo WHERE id = ?", (tipo_id,)).fetchone()
-    rel, _sha = salvar_arquivo("padrao", f"tipo_{tipo_id}_{secrets.token_hex(4)}.jpg", jpeg)
-    db.execute("UPDATE vistoria_tipo SET foto_padrao = ?, foto_padrao_em = ? WHERE id = ?",
-               (rel, iso(agora_utc()), tipo_id))
-    db.commit()
-    if anterior and anterior["foto_padrao"]:
-        apagar_arquivo(anterior["foto_padrao"])
+    if ordem is None:
+        ordem = (db.execute("SELECT MAX(ordem) FROM vistoria_tipo_foto WHERE tipo_id = ?",
+                            (tipo_id,)).fetchone()[0] or 0) + 1
+    rel, sha = salvar_arquivo("padrao", f"tipo_{tipo_id}_{secrets.token_hex(6)}.jpg", jpeg)
+    db.execute("INSERT INTO vistoria_tipo_foto (tipo_id, arquivo, sha256, ordem, criado_em) VALUES (?, ?, ?, ?, ?)",
+               (tipo_id, rel, sha, ordem, iso(agora_utc())))
+
+
+def remover_foto_padrao(foto_id: int):
+    db = get_db()
+    f = db.execute("SELECT arquivo FROM vistoria_tipo_foto WHERE id = ?", (foto_id,)).fetchone()
+    if f:
+        db.execute("DELETE FROM vistoria_tipo_foto WHERE id = ?", (foto_id,))
+        db.commit()
+        apagar_arquivo(f["arquivo"])  # os contratos guardam cópias próprias
+
+
+def gravar_foto_contrato(contrato_id: int, tipo, dados: bytes, origem: str):
+    """Grava uma foto no contrato (tipo None = "Outras fotos"; o commit fica com quem chama)."""
+    db = get_db()
+    cur = db.execute("INSERT INTO vistoria_foto (contrato_id, tipo_id, tipo_nome, arquivo, sha256, enviado_por, "
+                     "criado_em) VALUES (?, ?, ?, '', '', ?, ?)",
+                     (contrato_id, tipo["id"] if tipo else None, tipo["nome"] if tipo else None, origem,
+                      iso(agora_utc())))
+    rel, sha = salvar_arquivo(contrato_id, f"vistoria_{cur.lastrowid:05d}.jpg", dados)
+    db.execute("UPDATE vistoria_foto SET arquivo = ?, sha256 = ? WHERE id = ?", (rel, sha, cur.lastrowid))
 
 
 def copiar_fotos_padrao(contrato_id: int, so_faltantes: bool = False) -> int:
-    """Copia para o contrato as fotos padrão dos tipos exigidos. Com `so_faltantes`, só dos tipos que ainda
-    não têm foto (fim da vistoria); sem, substitui todas as fotos por tipo (contrato com fotos padrão)."""
+    """Copia para o contrato todas as fotos padrão dos tipos exigidos. Com `so_faltantes`, só dos tipos
+    que ainda não têm foto (início da vistoria); sem, substitui as fotos por tipo (contrato sem vistoria)."""
     db = get_db()
     com_foto = _tipos_com_foto(contrato_id)
     if not so_faltantes:
@@ -209,19 +255,54 @@ def copiar_fotos_padrao(contrato_id: int, so_faltantes: bool = False) -> int:
             db.execute("DELETE FROM vistoria_foto WHERE id = ?", (f["id"],))
             apagar_arquivo(f["arquivo"])
         com_foto = set()
+    padroes = fotos_padrao_por_tipo()
     copiadas = 0
     for t in tipos_exigidos(contrato_id):
-        dados = ler_arquivo(t["foto_padrao"])
-        if t["id"] in com_foto or not dados:
+        if t["id"] in com_foto:
             continue
-        cur = db.execute("INSERT INTO vistoria_foto (contrato_id, tipo_id, tipo_nome, arquivo, sha256, enviado_por, "
-                         "criado_em) VALUES (?, ?, ?, '', '', 'padrao', ?)",
-                         (contrato_id, t["id"], t["nome"], iso(agora_utc())))
-        rel, sha = salvar_arquivo(contrato_id, f"vistoria_{cur.lastrowid:05d}.jpg", dados)
-        db.execute("UPDATE vistoria_foto SET arquivo = ?, sha256 = ? WHERE id = ?", (rel, sha, cur.lastrowid))
-        copiadas += 1
+        for p in padroes.get(t["id"], []):
+            dados = ler_arquivo(p["arquivo"])
+            if dados:
+                gravar_foto_contrato(contrato_id, t, dados, "padrao")
+                copiadas += 1
     db.commit()
     return copiadas
+
+
+def preparar_vistoria(contrato_id: int):
+    """Na primeira vez que o caseiro abre a vistoria, ela começa com as fotos padrão de cada tipo;
+    ele atualiza só o que mudou."""
+    db = get_db()
+    c = db.execute("SELECT vistoria_iniciada_em FROM contrato WHERE id = ?", (contrato_id,)).fetchone()
+    if c and not c["vistoria_iniciada_em"]:
+        copiar_fotos_padrao(contrato_id, so_faltantes=True)
+        db.execute("UPDATE contrato SET vistoria_iniciada_em = ? WHERE id = ?", (iso(agora_utc()), contrato_id))
+        db.commit()
+
+
+def atualizar_padroes_pela_vistoria(contrato_id: int) -> list:
+    """Ao concluir a vistoria, as fotos de cada tipo substituem o conjunto padrão do tipo (só onde mudou).
+    Devolve os nomes dos tipos atualizados."""
+    db = get_db()
+    padroes = fotos_padrao_por_tipo()
+    atualizados = []
+    for t in tipos_exigidos(contrato_id):
+        do_dia = db.execute("SELECT arquivo, sha256 FROM vistoria_foto WHERE contrato_id = ? AND tipo_id = ? "
+                            "ORDER BY id", (contrato_id, t["id"])).fetchall()
+        antigas = padroes.get(t["id"], [])
+        if not do_dia or [f["sha256"] for f in do_dia] == [p["sha256"] for p in antigas]:
+            continue
+        for n, f in enumerate(do_dia, start=1):
+            dados = ler_arquivo(f["arquivo"])
+            if dados:
+                incluir_foto_padrao(t["id"], dados, ordem=n)
+        for p in antigas:
+            db.execute("DELETE FROM vistoria_tipo_foto WHERE id = ?", (p["id"],))
+        db.commit()
+        for p in antigas:
+            apagar_arquivo(p["arquivo"])
+        atualizados.append(t["nome"])
+    return atualizados
 
 
 def url_externa(endpoint: str, **kw) -> str:
@@ -430,10 +511,11 @@ def _ler_form(form) -> tuple[dict, dict]:
           "observacoes": (form.get("observacoes") or "").strip()[:1000] or None}
     try:
         ev["data"] = ler_data(form.get("data"))
+        if not ev["data"]:
+            erros["data"] = "Informe a data do evento."
     except ValueError:
-        ev["data"] = None
-    if not ev["data"]:
-        erros["data"] = "Informe a data do evento."
+        ev["data"] = (form.get("data") or "").strip()[:10]  # volta ao campo como foi digitada
+        erros["data"] = "Data inválida. Use dd/mm/aaaa."
     if not ev["tipo_evento"]:
         erros["tipo_evento"] = "Informe o tipo de evento (ex.: casamento, aniversário)."
     if not (ev["hora_inicio"] and ev["hora_fim"]):
@@ -466,7 +548,7 @@ def _novo_codigo() -> str:
 def lista():
     filtro = request.args.get("status", "")
     busca = " ".join((request.args.get("q") or "").split())
-    de, ate = (request.args.get("de") or "").strip(), (request.args.get("ate") or "").strip()
+    de, ate = (_data_filtro(request.args.get("de")), _data_filtro(request.args.get("ate")))
     sql = "SELECT * FROM contrato"
     params = []
     if filtro in STATUS:
@@ -488,6 +570,14 @@ def lista():
                            busca=busca, de=de, ate=ate, filtrando=bool(busca or de or ate),
                            codigo_definido=codigo_caseiro_definido(), email_ok=email_service.configurado(),
                            pendencias=pendencias_liberacao())
+
+
+def _data_filtro(valor) -> str:
+    """Data do filtro (dd/mm/aaaa ou ISO) em ISO; inválida ou vazia → ''."""
+    try:
+        return ler_data(valor) or ""
+    except ValueError:
+        return ""
 
 
 @bp.route("/novo", methods=["GET", "POST"])
@@ -601,6 +691,7 @@ def detalhe(contrato_id):
     return render_template("parque/detalhe.html", c=c, fotos=fotos_da_vistoria(contrato_id), link=link,
                            padroes_faltando=padroes_faltando(bool(evento.get("inclui_piscina"))),
                            evid=evid, email_ok=email_service.configurado(), pendencias=pendencias_liberacao(),
+                           pode_excluir=pode_excluir_assinado(),
                            url_validacao=url_externa("assinatura.validar", codigo=c["codigo_verificador"]))
 
 
@@ -655,6 +746,48 @@ def cancelar(contrato_id):
     return redirect(url_for("parque.detalhe", contrato_id=contrato_id))
 
 
+@bp.route("/<int:contrato_id>/excluir", methods=["POST"])
+@parque_required
+def excluir_assinado(contrato_id):
+    """Exclui um contrato assinado por engano (para fazer um novo). Pede motivo, confirmação e a senha."""
+    import shutil
+    if not pode_excluir_assinado():
+        abort(403)
+    c = buscar(contrato_id)
+    voltar = redirect(url_for("parque.detalhe", contrato_id=contrato_id) + "#excluir")
+    if c["status"] != ASSINADO:
+        flash("Só contratos assinados são excluídos por aqui. Os demais podem ser cancelados.", "erro")
+        return voltar
+    motivo = " ".join((request.form.get("motivo") or "").split())[:300]
+    db = get_db()
+    usuario = db.execute("SELECT senha_hash FROM obreiro WHERE id = ?", (current_user.id,)).fetchone()
+    if not motivo:
+        flash("Informe o motivo da exclusão.", "erro")
+        return voltar
+    if request.form.get("confirmo") != "1":
+        flash("Marque a confirmação de que o contrato assinado será excluído.", "erro")
+        return voltar
+    if not (usuario and usuario["senha_hash"] and check_password_hash(usuario["senha_hash"], request.form.get("senha") or "")):
+        current_app.logger.warning("Exclusão do contrato %s recusada: senha incorreta (obreiro %s)",
+                                   c["codigo_verificador"], current_user.id)
+        flash("Senha incorreta. O contrato não foi excluído.", "erro")
+        return voltar
+    evento = json.loads(c["evento_dados_json"] or "{}")
+    db.execute("INSERT INTO contrato_excluido (contrato_id, codigo_verificador, contratante_nome, contratante_cpf_cnpj, "
+               "evento_data, assinado_em, hash_final_sha256, motivo, excluido_em, excluido_por) "
+               "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+               (c["id"], c["codigo_verificador"], c["contratante_nome"], c["contratante_cpf_cnpj"], evento.get("data"),
+                c["assinado_em"], c["hash_final_sha256"], motivo, iso(agora_utc()), current_user.id))
+    db.execute("DELETE FROM contrato WHERE id = ?", (contrato_id,))  # fotos e evidências saem em cascata
+    db.commit()
+    shutil.rmtree(pasta_contratos() / str(contrato_id), ignore_errors=True)
+    current_app.logger.info("Contrato assinado %s excluído por obreiro %s: %s",
+                            c["codigo_verificador"], current_user.id, motivo)
+    flash(f"Contrato {c['codigo_verificador']} de {c['contratante_nome']} excluído. "
+          "Cadastre um novo contrato para colher a assinatura de novo.", "ok")
+    return redirect(url_for("parque.lista"))
+
+
 @bp.route("/<int:contrato_id>/contrato-assinado.pdf")
 @parque_required
 def pdf_final(contrato_id):
@@ -707,7 +840,7 @@ def configuracao():
     locadora, pendencias = representante_locadora()
     return render_template("parque/configuracao.html", codigo_definido=codigo_caseiro_definido(),
                            url_vistoria=url_externa("vistoria.entrar"), email_ok=email_service.configurado(),
-                           tipos=tipos_vistoria(somente_ativos=False), gestao=gestao, ven=ven,
+                           tipos=tipos_vistoria(somente_ativos=False), padroes=fotos_padrao_por_tipo(), gestao=gestao, ven=ven,
                            assinatura=assinatura, locadora=locadora, pendencias=pendencias,
                            sou_veneravel=bool(ven and ven["obreiro_id"] == current_user.id))
 
@@ -771,49 +904,56 @@ def tipo_alterar(tipo_id):
     return _ir_configuracao("tipos")
 
 
-@bp.route("/configuracao/tipos/<int:tipo_id>/foto", methods=["POST"])
+@bp.route("/configuracao/tipos/<int:tipo_id>/fotos", methods=["POST"])
 @parque_required
 def tipo_foto(tipo_id):
-    """Cadastra, troca ou remove a foto padrão de um tipo."""
+    """Inclui fotos padrão num tipo (uma ou várias de uma vez)."""
     from .vistoria import comprimir
     db = get_db()
     t = db.execute("SELECT * FROM vistoria_tipo WHERE id = ?", (tipo_id,)).fetchone()
     if t is None:
         abort(404)
-    if request.form.get("acao") == "remover":
-        db.execute("UPDATE vistoria_tipo SET foto_padrao = NULL, foto_padrao_em = ? WHERE id = ?",
-                   (iso(agora_utc()), tipo_id))
-        db.commit()
-        apagar_arquivo(t["foto_padrao"])
-        flash(f"Foto padrão de \"{t['nome']}\" removida.", "ok")
-        return _ir_configuracao("tipos")
-    arquivo = request.files.get("foto")
-    if not arquivo or not arquivo.filename:
+    arquivos = [a for a in request.files.getlist("fotos") if a and a.filename]
+    if not arquivos:
         flash("Escolha a foto.", "erro")
-        return _ir_configuracao("tipos")
-    try:
-        definir_foto_padrao(tipo_id, comprimir(arquivo))
-    except ValueError:
-        flash("O arquivo enviado não é uma imagem.", "erro")
-        return _ir_configuracao("tipos")
-    flash(f"Foto padrão de \"{t['nome']}\" atualizada.", "ok")
-    return _ir_configuracao("tipos")
+        return _ir_configuracao(f"tipo-{tipo_id}")
+    gravadas = recusadas = 0
+    for arquivo in arquivos:
+        try:
+            incluir_foto_padrao(tipo_id, comprimir(arquivo))
+            gravadas += 1
+        except ValueError:
+            recusadas += 1
+    db.commit()
+    if gravadas:
+        flash(f"{gravadas} foto(s) padrão incluída(s) em \"{t['nome']}\".", "ok")
+    if recusadas:
+        flash(f"{recusadas} arquivo(s) não eram imagens e foram ignorados.", "erro")
+    return _ir_configuracao(f"tipo-{tipo_id}")
 
 
-@bp.route("/configuracao/tipos/<int:tipo_id>/foto.jpg")
+@bp.route("/configuracao/fotos-padrao/<int:foto_id>/remover", methods=["POST"])
 @parque_required
-def tipo_foto_ver(tipo_id):
-    return enviar_foto_padrao(tipo_id)
+def tipo_foto_remover(foto_id):
+    f = get_db().execute("SELECT p.tipo_id, t.nome FROM vistoria_tipo_foto p JOIN vistoria_tipo t ON t.id = p.tipo_id "
+                         "WHERE p.id = ?", (foto_id,)).fetchone()
+    if f is None:
+        abort(404)
+    remover_foto_padrao(foto_id)
+    flash(f"Foto padrão de \"{f['nome']}\" removida.", "ok")
+    return _ir_configuracao(f"tipo-{f['tipo_id']}")
 
 
-def enviar_foto_padrao(tipo_id: int):
+@bp.route("/configuracao/fotos-padrao/<int:foto_id>.jpg")
+@parque_required
+def tipo_foto_ver(foto_id):
     import io
-    t = get_db().execute("SELECT foto_padrao FROM vistoria_tipo WHERE id = ?", (tipo_id,)).fetchone()
-    dados = ler_arquivo(t["foto_padrao"]) if t else None
+    f = get_db().execute("SELECT arquivo FROM vistoria_tipo_foto WHERE id = ?", (foto_id,)).fetchone()
+    dados = ler_arquivo(f["arquivo"]) if f else None
     if not dados:
         abort(404)
     resp = send_file(io.BytesIO(dados), mimetype="image/jpeg")
-    resp.headers["Cache-Control"] = "private, max-age=3600"
+    resp.headers["Cache-Control"] = "private, max-age=86400"  # cada foto tem endereço próprio e não muda
     return resp
 
 

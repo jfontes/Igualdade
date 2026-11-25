@@ -108,7 +108,8 @@
       <div class="grade duas">
         <div class="campo {{ 'com-erro' if 'data' in erros }}">
           <label for="data">Data do evento *</label>
-          <input id="data" name="data" type="date" value="{{ v.data or '' }}" required>
+          <input id="data" name="data" value="{{ v.data | campo_data }}" inputmode="numeric"
+                 maxlength="10" placeholder="dd/mm/aaaa" autocomplete="off" data-mascara="data" required>
           {{ erro('data') }}
         </div>
         <div class="campo {{ 'com-erro' if 'tipo_evento' in erros }}">

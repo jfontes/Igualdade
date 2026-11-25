@@ -631,3 +631,23 @@ code.hash { font-size: .72rem; overflow-wrap: anywhere; word-break: break-all; }
   border: 1px dashed #d9caca;
 }
 .tipos-vistoria .foto-padrao .miniatura img { width: 100%; height: 100%; object-fit: cover; }
+
+/* Parque: várias fotos por tipo (configuração e vistoria) */
+.fotos-padrao { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; margin-top: 8px; }
+.fotos-padrao figure { margin: 0; position: relative; }
+.fotos-padrao img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 10px; border: 1px solid var(--borda); display: block; }
+.fotos-padrao figure form { position: absolute; top: 4px; right: 4px; margin: 0; }
+.fotos-padrao .incluir-foto { margin: 0; display: flex; flex-direction: column; gap: 2px; }
+.fotos-padrao .incluir-foto label {
+  aspect-ratio: 4 / 3; border: 1px dashed #d9caca; border-radius: 10px; background: var(--bordo-claro); cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 1.3rem; line-height: 1.1;
+}
+.fotos-padrao .incluir-foto label .suave { font-size: .7rem; }
+.fotos-padrao .incluir-foto .dica { font-size: .7rem; margin: 0; text-align: center; }
+.tipo-vistoria h3 { margin-bottom: 8px; }
+.tipo-vistoria.pendente h3 { color: var(--aviso); }
+.tipo-vistoria .galeria { margin-top: 8px; }
+.tipo-vistoria label.btn, .cartao label.btn.pequeno { text-transform: none; letter-spacing: 0; cursor: pointer; }
+.remover-todas { margin: 8px 0 0; text-align: right; }
+.remover-todas + form .btn.bloco, form.remover-todas + p { margin-top: 12px; }
+.periodo input.data-curta { width: 9.5em; }

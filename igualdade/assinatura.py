@@ -338,6 +338,10 @@ def validar(codigo=None):
                 conferencia = {"hash": hash_enviado, "confere": hash_enviado == c["hash_final_sha256"]}
             else:
                 flash("Escolha o arquivo PDF para conferir.", "erro")
-    return render_template("validar.html", codigo=codigo, c=c, conferencia=conferencia,
+    excluido = None
+    if codigo and not c:
+        excluido = get_db().execute("SELECT * FROM contrato_excluido WHERE codigo_verificador = ?",
+                                    (codigo.upper(),)).fetchone()
+    return render_template("validar.html", codigo=codigo, c=c, conferencia=conferencia, excluido=excluido,
                            nome=mascarar_nome(c["contratante_nome"]) if c else None,
                            doc=mascarar_doc(c["contratante_cpf_cnpj"]) if c else None)

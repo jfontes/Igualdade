@@ -18,7 +18,7 @@
       {% for campo, rotulo in [('inicio', 'Início da gestão'), ('fim', 'Fim da gestão')] %}
       <div class="campo {{ 'com-erro' if campo in erros }}">
         <label for="{{ campo }}">{{ rotulo }}</label>
-        <input id="{{ campo }}" name="{{ campo }}" type="date" value="{{ g[campo] or '' }}" required>
+        <input id="{{ campo }}" name="{{ campo }}" value="{{ (request.form.get(campo) if request.method == 'POST' else g[campo]) | campo_data }}" required inputmode="numeric" maxlength="10" placeholder="dd/mm/aaaa" autocomplete="off" data-mascara="data">
         {% if campo in erros %}<span class="erro-campo">{{ erros[campo] }}</span>{% endif %}
       </div>
       {% endfor %}

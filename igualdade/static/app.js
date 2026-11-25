@@ -21,6 +21,10 @@
       const meio = v.length === 11 ? 7 : 6;
       return `(${v.slice(0, 2)}) ${v.slice(2, meio)}${v.length > meio ? "-" + v.slice(meio) : ""}`;
     },
+    data(v) {  // dd/mm/aaaa, independente do idioma do navegador
+      v = digitos(v).slice(0, 8);
+      return v.length > 4 ? `${v.slice(0, 2)}/${v.slice(2, 4)}/${v.slice(4)}` : v.length > 2 ? `${v.slice(0, 2)}/${v.slice(2)}` : v;
+    },
   };
 
   document.querySelectorAll("[data-mascara]").forEach((el) => {

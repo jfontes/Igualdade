@@ -91,10 +91,11 @@ def _ler_form(form):
     for campo in ("inicio", "fim"):
         try:
             dados[campo] = ler_data(form.get(campo))
+            if not dados[campo]:
+                erros[campo] = "Informe a data."
         except ValueError:
             dados[campo] = None
-        if not dados[campo]:
-            erros[campo] = "Informe a data."
+            erros[campo] = "Data inválida. Use dd/mm/aaaa."
     if dados["inicio"] and dados["fim"] and dados["fim"] < dados["inicio"]:
         erros["fim"] = "O fim da gestão deve ser depois do início."
 

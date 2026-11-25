@@ -10,7 +10,7 @@ from flask import Blueprint, abort, flash, redirect, render_template, request, u
 
 from .auth import admin_required
 from .db import get_db
-from .sessoes import _destino_voltar, _limites_mes
+from .sessoes import _destino_voltar, _limites_mes, conferir_mes
 from .util import ler_data
 
 bp = Blueprint("eventos", __name__, url_prefix="/admin/eventos")
@@ -48,10 +48,11 @@ def _ler_form(form):
     }
     try:
         dados["data"] = ler_data(form.get("data"))
+        if not dados["data"]:
+            erros["data"] = "Informe a data do evento."
     except ValueError:
         dados["data"] = None
-    if not dados["data"]:
-        erros["data"] = "Informe a data do evento."
+        erros["data"] = "Data inválida. Use dd/mm/aaaa."
     if not dados["titulo"]:
         erros["titulo"] = "Informe o nome do evento (ex.: Dia das Mães)."
     if dados["hora"] and not re.fullmatch(r"([01]\d|2[0-3]):[0-5]\d", dados["hora"]):
@@ -84,6 +85,7 @@ def form(evento_id=None):
     erros = {}
     if request.method == "POST":
         dados, erros = _ler_form(request.form)
+        conferir_mes(dados, erros)
         if not erros:
             colunas = list(dados)
             if evento is None:

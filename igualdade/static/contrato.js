@@ -130,6 +130,11 @@
   const pararCamera = () => { if (fluxo) { fluxo.getTracks().forEach((t) => t.stop()); fluxo = null; } };
   const abrirCamera = async () => {
     erro.textContent = "";
+    if (!window.isSecureContext) {
+      // câmera só funciona em endereço seguro (https); acontece no teste local por http://IP-DO-PC
+      aviso.textContent = "A câmera só funciona em endereço seguro (https). Abra o link enviado pelo sistema, que começa com https://.";
+      return;
+    }
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
       aviso.textContent = "Este navegador não permite usar a câmera. Abra o link no Chrome ou no Safari do celular.";
       return;

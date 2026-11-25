@@ -17,9 +17,9 @@ from PIL import Image, ImageOps, UnidentifiedImageError
 from . import fotos as _fotos  # noqa: F401  (aplica o limite de pixels do Pillow)
 from .db import get_db
 from .parque import (AGUARDANDO_VISTORIA, PendenciaLocadora, agora_utc, apagar_arquivo, buscar,
-                     conferir_codigo_caseiro, codigo_caseiro_definido, copiar_fotos_padrao, definir_foto_padrao,
-                     detalhar, enviar_foto, enviar_foto_padrao, fotos_da_vistoria, iso, liberar_para_assinatura,
-                     salvar_arquivo, tipos_exigidos, tipos_pendentes)
+                     atualizar_padroes_pela_vistoria, conferir_codigo_caseiro, codigo_caseiro_definido, detalhar,
+                     enviar_foto, fotos_da_vistoria, gravar_foto_contrato, iso, liberar_para_assinatura,
+                     preparar_vistoria, tipos_exigidos, tipos_pendentes)
 
 bp = Blueprint("vistoria", __name__, url_prefix="/vistoria")
 
@@ -140,8 +140,12 @@ def contrato(contrato_id):
     c = _contrato_em_vistoria(contrato_id)
     if c is None:
         return redirect(url_for("vistoria.fila"))
+    preparar_vistoria(contrato_id)
     fotos = fotos_da_vistoria(contrato_id)
-    por_tipo = {f["tipo_id"]: f for f in fotos if f["tipo_id"]}
+    por_tipo: dict = {}
+    for f in fotos:
+        if f["tipo_id"]:
+            por_tipo.setdefault(f["tipo_id"], []).append(f)
     return render_template("vistoria/fotos.html", c=c, tipos=tipos_exigidos(contrato_id), por_tipo=por_tipo,
                            outras=[f for f in fotos if not f["tipo_id"]],
                            pendentes=tipos_pendentes(contrato_id))
@@ -157,39 +161,24 @@ def enviar_fotos(contrato_id):
     if not arquivos:
         flash("Escolha ou tire ao menos uma foto.", "erro")
         return redirect(url_for("vistoria.contrato", contrato_id=contrato_id))
-    db = get_db()
+    preparar_vistoria(contrato_id)
     tipo = None
     if request.form.get("tipo_id"):
         tipo = next((t for t in tipos_exigidos(contrato_id) if t["id"] == request.form.get("tipo_id", type=int)), None)
         if tipo is None:
             flash("Este tipo de foto não é mais exigido. Atualize a página.", "erro")
             return redirect(url_for("vistoria.contrato", contrato_id=contrato_id))
-        arquivos = arquivos[:1]  # uma foto por tipo: a nova substitui a anterior
     gravadas = recusadas = 0
     for arquivo in arquivos:
         try:
-            jpeg = comprimir(arquivo)
+            gravar_foto_contrato(contrato_id, tipo, comprimir(arquivo), "caseiro")
+            gravadas += 1
         except ValueError:
             recusadas += 1
-            continue
-        if tipo is not None:
-            for antiga in db.execute("SELECT id, arquivo FROM vistoria_foto WHERE contrato_id = ? AND tipo_id = ?",
-                                     (contrato_id, tipo["id"])).fetchall():
-                db.execute("DELETE FROM vistoria_foto WHERE id = ?", (antiga["id"],))
-                apagar_arquivo(antiga["arquivo"])
-        cur = db.execute("INSERT INTO vistoria_foto (contrato_id, tipo_id, tipo_nome, arquivo, sha256, enviado_por, "
-                         "criado_em) VALUES (?, ?, ?, '', '', 'caseiro', ?)",
-                         (contrato_id, tipo["id"] if tipo else None, tipo["nome"] if tipo else None,
-                          iso(agora_utc())))
-        rel, sha = salvar_arquivo(contrato_id, f"vistoria_{cur.lastrowid:05d}.jpg", jpeg)
-        db.execute("UPDATE vistoria_foto SET arquivo = ?, sha256 = ? WHERE id = ?", (rel, sha, cur.lastrowid))
-        gravadas += 1
-        if tipo is not None:
-            db.commit()
-            definir_foto_padrao(tipo["id"], jpeg)  # a foto do dia passa a ser a padrão desse tipo
-    db.commit()
+    get_db().commit()
     if gravadas:
-        flash(f"Foto de {tipo['nome']} registrada." if tipo else f"{gravadas} foto(s) adicionada(s).", "ok")
+        flash((f"{gravadas} foto(s) de {tipo['nome']} registrada(s)." if tipo
+               else f"{gravadas} foto(s) adicionada(s)."), "ok")
     if recusadas:
         flash(f"{recusadas} arquivo(s) não eram imagens e foram ignorados.", "erro")
     return redirect(url_for("vistoria.contrato", contrato_id=contrato_id))
@@ -211,16 +200,35 @@ def remover_foto(contrato_id, foto_id):
     return redirect(url_for("vistoria.contrato", contrato_id=contrato_id))
 
 
+@bp.route("/<int:contrato_id>/fotos/remover-todas", methods=["POST"])
+@caseiro_required
+def remover_todas(contrato_id):
+    """Remove todas as fotos da vistoria, ou só as de um tipo (tipo_id) ou só as "Outras fotos" (tipo=outras)."""
+    if _contrato_em_vistoria(contrato_id) is None:
+        return redirect(url_for("vistoria.fila"))
+    db = get_db()
+    sql, args, alvo = "SELECT id, arquivo FROM vistoria_foto WHERE contrato_id = ?", [contrato_id], "da vistoria"
+    if request.form.get("tipo") == "outras":
+        sql, alvo = sql + " AND tipo_id IS NULL", "de Outras fotos"
+    elif request.form.get("tipo_id", type=int):
+        tipo = next((t for t in tipos_exigidos(contrato_id) if t["id"] == request.form.get("tipo_id", type=int)), None)
+        if tipo is None:
+            abort(400)
+        sql, alvo = sql + " AND tipo_id = ?", f"de {tipo['nome']}"
+        args.append(tipo["id"])
+    fotos = db.execute(sql, args).fetchall()
+    db.executemany("DELETE FROM vistoria_foto WHERE id = ?", [(f["id"],) for f in fotos])
+    db.commit()
+    for f in fotos:
+        apagar_arquivo(f["arquivo"])
+    flash(f"{len(fotos)} foto(s) {alvo} removida(s)." if fotos else "Não havia fotos para remover.", "ok")
+    return redirect(url_for("vistoria.contrato", contrato_id=contrato_id))
+
+
 @bp.route("/<int:contrato_id>/foto/<int:foto_id>")
 @caseiro_required
 def foto(contrato_id, foto_id):
     return enviar_foto(contrato_id, foto_id)
-
-
-@bp.route("/padrao/<int:tipo_id>.jpg")
-@caseiro_required
-def foto_padrao(tipo_id):
-    return enviar_foto_padrao(tipo_id)
 
 
 @bp.route("/<int:contrato_id>/concluir", methods=["POST"])
@@ -232,10 +240,10 @@ def concluir(contrato_id):
     if faltam:
         flash("Ainda falta a foto de: " + ", ".join(faltam) + ".", "erro")
         return redirect(url_for("vistoria.contrato", contrato_id=contrato_id))
-    if not fotos_da_vistoria(contrato_id) and not any(t["foto_padrao"] for t in tipos_exigidos(contrato_id)):
+    if not fotos_da_vistoria(contrato_id):
         flash("Adicione ao menos uma foto antes de concluir a vistoria.", "erro")
         return redirect(url_for("vistoria.contrato", contrato_id=contrato_id))
-    copiar_fotos_padrao(contrato_id, so_faltantes=True)  # itens não atualizados entram com a foto padrão
+    atualizar_padroes_pela_vistoria(contrato_id)  # o conjunto de fotos de cada tipo passa a ser o padrão
     get_db().execute("UPDATE contrato SET vistoria_concluida_em = ? WHERE id = ?", (iso(agora_utc()), contrato_id))
     get_db().commit()
     try:

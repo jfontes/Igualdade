@@ -129,12 +129,30 @@
     <h3>{{ 'Fotos padrão (Anexo I)' if c.fotos_padrao else 'Vistoria fotográfica' }} {% if c.vistoria_concluida_em %}<span class="selo">concluída em {{ c.vistoria_concluida_em[:10] | data }}</span>{% endif %}</h3>
     {% if fotos %}
     <div class="galeria">
-      {% for f in fotos %}<figure><a href="{{ url_for('parque.foto', contrato_id=c.id, foto_id=f.id) }}" target="_blank" rel="noopener"><img src="{{ url_for('parque.foto', contrato_id=c.id, foto_id=f.id) }}" alt="{{ f.legenda or 'Outra foto' }}" loading="lazy"></a><figcaption>{{ f.legenda or 'Outras fotos' }}{% if f.enviado_por == 'padrao' and not c.fotos_padrao %} · padrão{% endif %}</figcaption></figure>{% endfor %}
+      {% for f in fotos %}<figure><a href="{{ url_for('parque.foto', contrato_id=c.id, foto_id=f.id) }}" target="_blank" rel="noopener"><img src="{{ url_for('parque.foto', contrato_id=c.id, foto_id=f.id) }}" alt="{{ f.legenda or 'Outra foto' }}" loading="lazy"></a><figcaption>{{ f.legenda or 'Outras fotos' }}</figcaption></figure>{% endfor %}
     </div>
     {% else %}<p class="suave" style="margin:0">Nenhuma foto ainda.</p>{% endif %}
   </section>
   {% endif %}
 
+  {% if c.status == 'ASSINADO' and pode_excluir %}
+  <details class="cartao" id="excluir">
+    <summary>Excluir contrato assinado</summary>
+    <p class="dica" style="margin-top:0">Use só quando a assinatura foi feita por engano. O contrato, o PDF assinado, as fotos e as
+      evidências da assinatura são apagados e não podem ser recuperados. Fica registrado apenas o código, o contratante e o motivo,
+      e a página de validação passa a informar que o contrato foi excluído. Depois, cadastre um novo contrato.</p>
+    <form method="post" action="{{ url_for('parque.excluir_assinado', contrato_id=c.id) }}" class="grade"
+          data-confirmar="Excluir DEFINITIVAMENTE o contrato assinado {{ c.codigo_verificador }} de {{ c.contratante_nome }}?">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="campo"><label for="motivo-exclusao">Motivo *</label>
+        <input id="motivo-exclusao" name="motivo" required maxlength="300" placeholder="Ex.: assinado com a data do evento errada"></div>
+      <label class="check"><input type="checkbox" name="confirmo" value="1" required> Confirmo que este contrato assinado será excluído definitivamente.</label>
+      <div class="campo"><label for="senha-exclusao">Sua senha *</label>
+        <input id="senha-exclusao" name="senha" type="password" required autocomplete="current-password"></div>
+      <button class="btn perigo" type="submit">🗑️ Excluir contrato assinado</button>
+    </form>
+  </details>
+  {% endif %}
   {% if c.status not in ('ASSINADO', 'CANCELADO') %}
   <details class="cartao">
     <summary>Cancelar contrato</summary>

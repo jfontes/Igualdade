@@ -68,6 +68,7 @@ def create_app() -> Flask:
     app.cli.add_command(admin.criar_admin_command)
 
     app.jinja_env.filters["data"] = util.fmt_data
+    app.jinja_env.filters["campo_data"] = util.campo_data
     app.jinja_env.filters["cpf"] = util.fmt_cpf
     app.jinja_env.filters["cep"] = util.fmt_cep
     app.jinja_env.filters["tel"] = util.fmt_tel

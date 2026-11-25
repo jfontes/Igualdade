@@ -44,7 +44,7 @@
       </div>
       <div class="campo">
         <label for="data">Data do pagamento *</label>
-        <input id="data" name="data" type="date" value="{{ form.data }}" max="{{ hoje }}" required>
+        <input id="data" name="data" value="{{ form.data | campo_data }}" required inputmode="numeric" maxlength="10" placeholder="dd/mm/aaaa" autocomplete="off" data-mascara="data">
       </div>
     </div>
     <fieldset class="campo">

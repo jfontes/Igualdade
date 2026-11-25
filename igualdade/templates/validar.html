@@ -9,6 +9,11 @@
       <input id="codigo" name="codigo" placeholder="IGA-XXXX-XXXX" autocapitalize="characters" required></div>
     <button class="btn" type="submit">Validar</button>
   </form>
+  {% elif excluido %}
+  <section class="cartao concluido"><span class="ic">⚠️</span><h3>Contrato excluído</h3>
+    <p>O contrato <strong>{{ excluido.codigo_verificador }}</strong> foi assinado, mas excluído pela LOCADORA em
+      {{ excluido.excluido_em[:10] | data }}. <strong>Ele não tem mais validade.</strong></p>
+    <p class="dica">Se houver um novo contrato para o mesmo evento, ele tem outro código verificador.</p></section>
   {% elif not c %}
   <section class="cartao concluido"><span class="ic">❌</span><h3>Código não encontrado</h3>
     <p>Nenhum contrato com o código <strong>{{ codigo }}</strong>. <a href="{{ url_for('assinatura.validar') }}">Tentar outro código</a></p></section>

@@ -8,7 +8,7 @@ from .auth import admin_required
 from .config import DIA_DA_SESSAO
 from .db import get_db
 from .feriados import dias_sem_sessao, recesso
-from .util import MESES, ler_data
+from .util import MESES, fmt_data, ler_data
 
 bp = Blueprint("sessoes", __name__, url_prefix="/admin/sessoes")
 
@@ -100,10 +100,11 @@ def _ler_form(form):
     }
     try:
         dados["data"] = ler_data(form.get("data"))
+        if not dados["data"]:
+            erros["data"] = "Informe a data da sessão."
     except ValueError:
         dados["data"] = None
-    if not dados["data"]:
-        erros["data"] = "Informe a data da sessão."
+        erros["data"] = "Data inválida. Use dd/mm/aaaa."
     if dados["tipo"] not in TIPOS:
         erros["tipo"] = "Escolha o tipo da sessão."
     if dados["grau"] not in GRAUS + [None]:
@@ -136,6 +137,13 @@ def _limites_mes(valor: str | None):
         return None
 
 
+def conferir_mes(dados: dict, erros: dict):
+    """Vindo do "+" de um mês (campo oculto `mes`), a data tem de ser daquele mês."""
+    limites = _limites_mes(request.values.get("mes"))
+    if limites and dados.get("data") and not limites[0] <= dados["data"] <= limites[1]:
+        erros["data"] = f"Escolha um dia entre {fmt_data(limites[0])} e {fmt_data(limites[1])}."
+
+
 def _voltar_agenda(data_iso: str | None):
     if (destino := _destino_voltar()):
         return redirect(destino)
@@ -156,6 +164,7 @@ def form(sessao_id=None):
             abort(404)
     if request.method == "POST":
         dados, erros = _ler_form(request.form)
+        conferir_mes(dados, erros)
         if not erros:
             if sessao is None:
                 db.execute("INSERT INTO sessao (tipo, grau, ordem_do_dia, cancelada, motivo_cancelamento, data) "

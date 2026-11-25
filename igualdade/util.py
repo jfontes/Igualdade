@@ -49,10 +49,16 @@ def cpf_valido(cpf: str) -> bool:
 
 
 def ler_data(valor: str | None) -> str | None:
-    """Converte o valor de um <input type=date> em ISO; vazio → None. Lança ValueError se inválida."""
+    """Converte 'dd/mm/aaaa' (campo com máscara) ou 'aaaa-mm-dd' (<input type=date>) em ISO;
+    vazio → None. Lança ValueError se inválida."""
     valor = (valor or "").strip()
     if not valor:
         return None
+    if "/" in valor:
+        d, m, a = valor.split("/")
+        if len(a) != 4:
+            raise ValueError("ano com 4 números")
+        return date(int(a), int(m), int(d)).isoformat()
     return date.fromisoformat(valor).isoformat()
 
 
@@ -98,6 +104,14 @@ def fmt_data(iso: str | None) -> str:
         return f"{iso[5:7]}/{iso[2:4]}"
     a, m, d = iso.split("-")
     return f"{d}/{m}/{a}"
+
+
+def campo_data(valor) -> str:
+    """Valor para o campo de data com máscara: '2027-03-20' → '20/03/2027'; texto digitado volta igual."""
+    valor = (str(valor) if valor else "").strip()
+    if len(valor) == 10 and valor[4] == "-" and valor[7] == "-":
+        return f"{valor[8:]}/{valor[5:7]}/{valor[:4]}"
+    return valor
 
 
 def fmt_data_extenso(iso: str | None) -> str:

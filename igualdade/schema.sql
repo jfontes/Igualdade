@@ -232,6 +232,22 @@ CREATE TABLE IF NOT EXISTS contrato (
 
 CREATE INDEX IF NOT EXISTS idx_contrato_status ON contrato(status);
 
+-- Contratos assinados que foram excluídos (assinatura equivocada): fica o registro para a página de
+-- validação responder "excluído" a quem tiver o PDF. Arquivos e dados pessoais completos são apagados.
+CREATE TABLE IF NOT EXISTS contrato_excluido (
+    id                   INTEGER PRIMARY KEY AUTOINCREMENT,
+    contrato_id          INTEGER NOT NULL,
+    codigo_verificador   TEXT    NOT NULL UNIQUE,
+    contratante_nome     TEXT    NOT NULL,
+    contratante_cpf_cnpj TEXT    NOT NULL,
+    evento_data          TEXT,
+    assinado_em          TEXT,
+    hash_final_sha256    TEXT,
+    motivo               TEXT    NOT NULL,
+    excluido_em          TEXT    NOT NULL,
+    excluido_por         INTEGER REFERENCES obreiro(id) ON DELETE SET NULL
+);
+
 CREATE TABLE IF NOT EXISTS vistoria_foto (
     id               INTEGER PRIMARY KEY AUTOINCREMENT,
     contrato_id      INTEGER NOT NULL REFERENCES contrato(id) ON DELETE CASCADE,
@@ -253,9 +269,22 @@ CREATE TABLE IF NOT EXISTS vistoria_tipo (
     ordem            INTEGER NOT NULL DEFAULT 0,
     ativo            INTEGER NOT NULL DEFAULT 1,
     so_com_piscina   INTEGER NOT NULL DEFAULT 0,      -- 1 = exigido só se o contrato incluir a piscina
-    foto_padrao      TEXT,                             -- foto padrão (relativa a instance/contratos/)
-    foto_padrao_em   TEXT                              -- quando foi trocada (Configuração ou vistoria)
+    foto_padrao      TEXT,                             -- (antigo: foto padrão única; passou para vistoria_tipo_foto)
+    foto_padrao_em   TEXT
 );
+
+-- Fotos padrão de cada tipo (quantas forem necessárias). O contrato sem vistoria usa todas; a vistoria
+-- começa com cópias delas e, ao ser concluída, o conjunto do dia substitui o conjunto padrão do tipo.
+CREATE TABLE IF NOT EXISTS vistoria_tipo_foto (
+    id               INTEGER PRIMARY KEY AUTOINCREMENT,
+    tipo_id          INTEGER NOT NULL REFERENCES vistoria_tipo(id) ON DELETE CASCADE,
+    arquivo          TEXT    NOT NULL,                 -- relativo a instance/contratos/
+    sha256           TEXT    NOT NULL,
+    ordem            INTEGER NOT NULL DEFAULT 0,
+    criado_em        TEXT    NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_tipo_foto ON vistoria_tipo_foto(tipo_id, ordem);
 
 -- Assinatura padronizada da LOCADORA: desenhada pelo Venerável, uma por gestão da diretoria.
 -- É estampada no contrato quando ele é liberado para o contratante assinar.

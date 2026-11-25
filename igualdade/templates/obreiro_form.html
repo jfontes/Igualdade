@@ -6,7 +6,7 @@
 {% macro data(campo, rotulo) -%}
   <div class="campo">
     <label for="{{ campo }}">{{ rotulo }}</label>
-    <input id="{{ campo }}" name="{{ campo }}" type="date" value="{{ o[campo] or '' }}" max="9999-12-31">
+    <input id="{{ campo }}" name="{{ campo }}" value="{{ (request.form.get(campo) if request.method == 'POST' else o[campo]) | campo_data }}" inputmode="numeric" maxlength="10" placeholder="dd/mm/aaaa" autocomplete="off" data-mascara="data">
   </div>
 {%- endmacro %}
 

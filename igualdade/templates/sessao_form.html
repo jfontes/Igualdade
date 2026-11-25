@@ -13,8 +13,7 @@
     <div class="grade duas">
       <div class="campo {{ 'com-erro' if 'data' in erros }}">
         <label for="data">Data</label>
-        <input id="data" name="data" type="date" value="{{ s.data or '' }}" required
-               {% if limites %}min="{{ limites[0] }}" max="{{ limites[1] }}"{% endif %}
+        <input id="data" name="data" value="{{ (request.form.get('data') if request.method == 'POST' else s.data) | campo_data }}" required inputmode="numeric" maxlength="10" placeholder="dd/mm/aaaa" autocomplete="off" data-mascara="data"
                {% if 'data' in erros %}autofocus aria-invalid="true" aria-describedby="erro-data"{% endif %}>
         {% if 'data' in erros %}<span class="erro-campo" id="erro-data">{{ erros.data }}</span>{% endif %}
       </div>
