@@ -651,3 +651,12 @@ code.hash { font-size: .72rem; overflow-wrap: anywhere; word-break: break-all; }
 .remover-todas { margin: 8px 0 0; text-align: right; }
 .remover-todas + form .btn.bloco, form.remover-todas + p { margin-top: 12px; }
 .periodo input.data-curta { width: 9.5em; }
+
+/* Contrato do Parque: limpeza pós-evento e valor total */
+.limpeza-opcoes { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 18px; }
+.limpeza-opcoes .limpeza-valor { display: flex; align-items: center; gap: 8px; font-weight: 600; }
+.limpeza-opcoes .limpeza-valor input { width: 8.5em; }
+.limpeza-opcoes .limpeza-valor input:disabled { opacity: .45; }
+.valor-total-contrato { margin: 0; padding: 10px 12px; border-radius: 10px; background: var(--bordo-claro); }
+.valor-total-contrato strong { font-size: 1.1rem; }
+label.btn.desativado { opacity: .5; pointer-events: none; }

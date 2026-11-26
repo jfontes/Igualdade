@@ -134,10 +134,25 @@
 
     <section class="cartao grade">
       <h3>Pagamento</h3>
-      <div class="campo {{ 'com-erro' if 'valor_total' in erros }}">
-        <label for="valor_total">Valor total (R$) *</label>
-        <input id="valor_total" name="valor_total" value="{{ v.valor_total or '' }}" inputmode="decimal" data-moeda placeholder="0,00" required>
-        {{ erro('valor_total') }}
+      <div class="grade" data-valores-contrato>
+        <div class="campo {{ 'com-erro' if 'valor_locacao' in erros }}">
+          <label for="valor_locacao">Valor da locação (R$) *</label>
+          <input id="valor_locacao" name="valor_locacao" value="{{ v.valor_locacao or '' }}" inputmode="decimal" data-moeda placeholder="0,00" required>
+          {{ erro('valor_locacao') }}
+        </div>
+        <fieldset class="campo {{ 'com-erro' if 'limpeza_inclusa' in erros or 'valor_limpeza' in erros }}">
+          <legend>Limpeza pós-evento inclusa *</legend>
+          <div class="limpeza-opcoes">
+            <label class="check"><input type="radio" name="limpeza_inclusa" value="sim" {{ 'checked' if v.limpeza_inclusa == True }} required> Sim</label>
+            <label class="check"><input type="radio" name="limpeza_inclusa" value="nao" {{ 'checked' if v.limpeza_inclusa == False }}> Não</label>
+            <label class="limpeza-valor">Valor (R$)
+              <input id="valor_limpeza" name="valor_limpeza" value="{{ v.valor_limpeza or v.valor_limpeza_padrao }}" inputmode="decimal"
+                     data-moeda placeholder="0,00" aria-label="Valor da limpeza pós-evento" {{ 'disabled' if v.limpeza_inclusa != True }}>
+            </label>
+          </div>
+          {{ erro('limpeza_inclusa') }}{{ erro('valor_limpeza') }}
+        </fieldset>
+        <p class="valor-total-contrato">Valor total do contrato: <strong data-valor-total>{{ ('R$ ' ~ v.valor_total) if v.valor_total else '—' }}</strong></p>
       </div>
       <fieldset class="campo {{ 'com-erro' if 'formas_pagamento' in erros }}">
         <legend>Forma de pagamento * <span class="dica">(marque uma ou mais)</span></legend>

@@ -425,6 +425,35 @@
     });
   });
 
+  // Contrato do Parque: limpeza pós-evento (Sim habilita o valor) e valor total = locação + limpeza
+  document.querySelectorAll("[data-valores-contrato]").forEach((bloco) => {
+    const locacao = bloco.querySelector("[name=valor_locacao]");
+    const limpeza = bloco.querySelector("[name=valor_limpeza]");
+    const total = bloco.querySelector("[data-valor-total]");
+    const sugestao = limpeza.value;
+    const numero = (v) => {
+      v = (v || "").trim();
+      if (!v) return 0;
+      if (v.includes(",")) v = v.replace(/\./g, "").replace(",", ".");
+      else if (/^\d{1,3}(\.\d{3})+$/.test(v)) v = v.replace(/\./g, "");
+      const n = Number(v);
+      return Number.isFinite(n) && n > 0 ? n : 0;
+    };
+    const atualizar = () => {
+      const sim = bloco.querySelector("[name=limpeza_inclusa][value=sim]").checked;
+      limpeza.disabled = !sim;
+      if (sim && !limpeza.value) limpeza.value = sugestao;
+      const soma = numero(locacao.value) + (sim ? numero(limpeza.value) : 0);
+      total.textContent = soma ? "R$ " + soma.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "—";
+    };
+    bloco.querySelectorAll("[name=limpeza_inclusa]").forEach((r) => r.addEventListener("change", () => {
+      atualizar();
+      if (!limpeza.disabled) limpeza.focus();
+    }));
+    [locacao, limpeza].forEach((el) => { el.addEventListener("input", atualizar); el.addEventListener("blur", atualizar); });
+    atualizar();
+  });
+
   // PWA: permite "Adicionar à tela inicial"
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => navigator.serviceWorker.register("/sw.js").catch(() => {}));

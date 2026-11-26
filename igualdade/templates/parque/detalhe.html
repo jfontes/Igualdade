@@ -83,7 +83,13 @@
       <div><dt>Horário</dt><dd>{{ c.evento.hora_inicio }} às {{ c.evento.hora_fim }}{% if c.evento.tolerancia_min %} <span class="suave">(tolerância de {{ c.evento.tolerancia_min }} min)</span>{% endif %}</dd></div>
       <div><dt>Tipo</dt><dd>{{ c.evento.tipo_evento }}</dd></div>
       <div><dt>Piscina</dt><dd>{{ 'Incluída' if c.evento.inclui_piscina else 'Não incluída' }}</dd></div>
-      <div><dt>Valor total</dt><dd>{{ c.evento.valor_total | moeda }}</dd></div>
+      {% if c.evento.limpeza_inclusa %}
+      <div><dt>Locação</dt><dd>{{ c.evento.valor_locacao | moeda }}</dd></div>
+      <div><dt>Limpeza pós-evento</dt><dd>{{ c.evento.valor_limpeza | moeda }}</dd></div>
+      {% elif 'limpeza_inclusa' in c.evento %}
+      <div><dt>Limpeza pós-evento</dt><dd>Não inclusa (por conta do contratante)</dd></div>
+      {% endif %}
+      <div><dt>Valor total</dt><dd><strong>{{ c.evento.valor_total | moeda }}</strong></dd></div>
       <div><dt>Pagamento</dt><dd>{{ c.evento.pagamento_texto or '—' }}</dd></div>
       {% if c.evento.observacoes %}<div><dt>Observações</dt><dd>{{ c.evento.observacoes }}</dd></div>{% endif %}
     </dl>

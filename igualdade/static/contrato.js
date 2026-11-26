@@ -4,46 +4,108 @@
   "use strict";
 
   // ------------------------------------------------------------ fotos da vistoria
-  // Reduz cada foto no aparelho (máx. 1600 px) antes de enviar; o servidor ainda comprime para 1280 px.
+  // Cada foto é reduzida no aparelho para 1280 px (o tamanho final gravado), ficando com ~150–300 KB,
+  // e enviada UMA POR VEZ, com progresso, até 3 tentativas e limite de tempo: na internet do celular
+  // um envio grande e único costumava cair no meio. O servidor confirma quantas fotos gravou.
   // Um formulário por tipo de foto (com tipo_id) e um para "Outras fotos".
+  const LADO_MAX = 1280;
+  const TENTATIVAS_ENVIO = 3;
+  const TEMPO_MAX_MS = 90000;
+  const reduzirFoto = (arquivo) => new Promise((ok) => {
+    const img = new Image();
+    const url = URL.createObjectURL(arquivo);
+    img.onload = () => {
+      const escala = Math.min(1, LADO_MAX / Math.max(img.width, img.height));
+      const c = document.createElement("canvas");
+      c.width = Math.round(img.width * escala);
+      c.height = Math.round(img.height * escala);
+      c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(url);
+      c.toBlob((b) => ok(b || arquivo), "image/jpeg", 0.8);
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); ok(arquivo); };
+    img.src = url;
+  });
+  // Envia uma foto; resolve com a resposta JSON do servidor ou rejeita (rede, tempo, erro do servidor)
+  const enviarUma = (acao, campos, foto, nome, progresso) => new Promise((ok, falha) => {
+    const dados = new FormData();
+    Object.entries(campos).forEach(([k, v]) => dados.append(k, v));
+    dados.append("fotos", foto, nome);
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", acao);
+    xhr.setRequestHeader("X-Requested-With", "fetch");
+    xhr.timeout = TEMPO_MAX_MS;
+    xhr.upload.onprogress = (e) => { if (e.lengthComputable) progresso(Math.round((e.loaded / e.total) * 100)); };
+    xhr.onload = () => {
+      let r = null;
+      try { r = JSON.parse(xhr.responseText); } catch (_) { /* página de login: acesso expirou */ }
+      if (xhr.status === 200 && r && r.gravadas > 0) { ok(r); return; }
+      const e = new Error(r ? r.mensagem || "recusada" : xhr.status === 200 ? "acesso" : String(xhr.status));
+      if (r && r.vazio) e.message = "rede";  // a foto não chegou inteira: tenta de novo
+      e.definitivo = (Boolean(r) && !r.vazio) || [200, 400, 403, 404].includes(xhr.status) && !r;  // repetir não resolve
+      falha(e);
+    };
+    xhr.onerror = () => falha(new Error("rede"));
+    xhr.ontimeout = () => falha(new Error("tempo"));
+    xhr.send(dados);
+  });
   document.querySelectorAll("[data-fotos-vistoria]").forEach((formFotos) => {
     const status = formFotos.querySelector("[data-fotos-status]")
       || formFotos.closest("li")?.querySelector("[data-fotos-status]") || { textContent: "" };
     const tipo = formFotos.querySelector("[name=tipo_id]");
-    const reduzir = (arquivo) => new Promise((ok) => {
-      const img = new Image();
-      const url = URL.createObjectURL(arquivo);
-      img.onload = () => {
-        const escala = Math.min(1, 1600 / Math.max(img.width, img.height));
-        const c = document.createElement("canvas");
-        c.width = Math.round(img.width * escala);
-        c.height = Math.round(img.height * escala);
-        c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
-        URL.revokeObjectURL(url);
-        c.toBlob((b) => ok(b || arquivo), "image/jpeg", 0.85);
-      };
-      img.onerror = () => { URL.revokeObjectURL(url); ok(arquivo); };
-      img.src = url;
-    });
+    let ocupado = false;
     formFotos.querySelectorAll("[data-enviar-fotos]").forEach((input) => {
       input.addEventListener("change", async () => {
         const arquivos = [...input.files];
-        if (!arquivos.length) return;
-        if (!window.fetch || !window.FormData) { formFotos.submit(); return; }
-        const dados = new FormData();
-        dados.append("csrf_token", formFotos.querySelector("[name=csrf_token]").value);
-        if (tipo) dados.append("tipo_id", tipo.value);
-        for (let i = 0; i < arquivos.length; i++) {
-          status.textContent = `Preparando foto ${i + 1} de ${arquivos.length}…`;
-          dados.append("fotos", await reduzir(arquivos[i]), `foto_${i + 1}.jpg`);
+        input.value = "";
+        if (!arquivos.length || ocupado) return;
+        if (!window.FormData || !window.XMLHttpRequest) { formFotos.submit(); return; }
+        ocupado = true;
+        formFotos.querySelectorAll("label.btn").forEach((b) => b.classList.add("desativado"));
+        const campos = { csrf_token: formFotos.querySelector("[name=csrf_token]").value };
+        if (tipo) campos.tipo_id = tipo.value;
+        const n = arquivos.length;
+        let enviadas = 0;
+        const falhas = [];
+        for (let i = 0; i < n; i++) {
+          const rotulo = n > 1 ? `foto ${i + 1} de ${n}` : "foto";
+          status.textContent = `Preparando ${rotulo}…`;
+          const foto = await reduzirFoto(arquivos[i]);
+          let ultimoErro = null;
+          for (let t = 1; t <= TENTATIVAS_ENVIO; t++) {
+            try {
+              const nova = t > 1 ? ` (tentativa ${t} de ${TENTATIVAS_ENVIO})` : "";
+              await enviarUma(formFotos.action, campos, foto, `foto_${i + 1}.jpg`,
+                (p) => { status.textContent = `Enviando ${rotulo}: ${p}%${nova}`; });
+              enviadas++;
+              ultimoErro = null;
+              break;
+            } catch (e) {
+              ultimoErro = e;
+              if (e.definitivo) break;
+              await new Promise((r) => setTimeout(r, 1500 * t));
+            }
+          }
+          if (ultimoErro) falhas.push({ i: i + 1, erro: ultimoErro.message });
         }
-        status.textContent = "Enviando…";
-        try {
-          const r = await fetch(formFotos.action, { method: "POST", body: dados, credentials: "same-origin" });
-          if (!r.ok) throw new Error(r.status);
-          location.reload();
-        } catch (_) {
-          status.textContent = "Não foi possível enviar. Verifique a internet e tente de novo.";
+        ocupado = false;
+        formFotos.querySelectorAll("label.btn").forEach((b) => b.classList.remove("desativado"));
+        if (!falhas.length) { location.reload(); return; }
+        const rede = ["rede", "tempo", "502", "503", "504", "0"];
+        const motivo = falhas.some((f) => f.erro === "acesso")
+          ? "O acesso expirou. Recarregue a página e entre de novo."
+          : falhas.every((f) => rede.includes(f.erro))
+            ? "A internet está lenta ou caiu. Tente de novo (de preferência no Wi-Fi)."
+            : /^\d+$/.test(falhas[0].erro) ? `Erro no servidor (código ${falhas[0].erro}). Tente de novo.` : falhas[0].erro;
+        status.textContent = (enviadas ? `${enviadas} de ${n} foto(s) enviada(s). ` : "")
+          + `Não foi possível enviar ${falhas.length > 1 ? falhas.length + " fotos" : "a foto"}. ${motivo}`;
+        if (enviadas && status.append) {
+          const recarregar = document.createElement("button");
+          recarregar.type = "button";
+          recarregar.className = "btn sec pequeno";
+          recarregar.textContent = "Ver as fotos enviadas";
+          recarregar.addEventListener("click", () => location.reload());
+          status.append(" ", recarregar);
         }
       });
     });

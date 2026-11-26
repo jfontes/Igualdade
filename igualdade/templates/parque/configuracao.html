@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block titulo %}Configuração do Parque{% endblock %}
-{% block scripts %}<script src="{{ url_for('static', filename='contrato.js') }}?v=4" defer></script>{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='contrato.js') }}?v=6" defer></script>{% endblock %}
 {% block conteudo %}
 <div class="estreito">
   <a class="voltar" href="{{ url_for('parque.lista') }}">← Parque das Acácias</a>
@@ -104,9 +104,9 @@
           {% endfor %}
           <form method="post" enctype="multipart/form-data" action="{{ url_for('parque.tipo_foto', tipo_id=t.id) }}" data-fotos-vistoria class="incluir-foto">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <label title="Incluir fotos padrão de {{ t.nome }}">
-              <span aria-hidden="true">＋</span><span class="suave">Incluir foto</span>
-              <input type="file" name="fotos" accept="image/*" multiple hidden data-enviar-fotos>
+            <label title="Adicionar foto padrão de {{ t.nome }} (câmera ou galeria)">
+              <span aria-hidden="true">＋</span><span class="suave">Adicionar foto</span>
+              <input type="file" name="fotos" accept="image/*" hidden data-enviar-fotos>
             </label>
             <span class="dica" data-fotos-status>{{ '' if padroes.get(t.id) else 'Sem foto padrão.' }}</span>
           </form>

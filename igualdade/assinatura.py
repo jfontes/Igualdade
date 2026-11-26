@@ -335,7 +335,10 @@ def validar(codigo=None):
             arquivo = request.files.get("pdf")
             if arquivo and arquivo.filename:
                 hash_enviado = hashlib.sha256(arquivo.read()).hexdigest()  # não é gravado
-                conferencia = {"hash": hash_enviado, "confere": hash_enviado == c["hash_final_sha256"]}
+                conferencia = {"hash": hash_enviado, "confere": hash_enviado == c["hash_final_sha256"],
+                               # o PDF "para leitura" (aberto antes de assinar) fica no celular com nome parecido
+                               "e_leitura": hash_enviado == c["hash_pre_assinatura"],
+                               "nome": arquivo.filename}
             else:
                 flash("Escolha o arquivo PDF para conferir.", "erro")
     excluido = None

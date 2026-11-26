@@ -19,7 +19,7 @@ from .db import get_db
 from .parque import (AGUARDANDO_VISTORIA, PendenciaLocadora, agora_utc, apagar_arquivo, buscar,
                      atualizar_padroes_pela_vistoria, conferir_codigo_caseiro, codigo_caseiro_definido, detalhar,
                      enviar_foto, fotos_da_vistoria, gravar_foto_contrato, iso, liberar_para_assinatura,
-                     preparar_vistoria, tipos_exigidos, tipos_pendentes)
+                     preparar_vistoria, resposta_envio, tipos_exigidos, tipos_pendentes)
 
 bp = Blueprint("vistoria", __name__, url_prefix="/vistoria")
 
@@ -155,19 +155,18 @@ def contrato(contrato_id):
 @caseiro_required
 def enviar_fotos(contrato_id):
     c = _contrato_em_vistoria(contrato_id)
+    destino = url_for("vistoria.contrato", contrato_id=contrato_id)
     if c is None:
-        return redirect(url_for("vistoria.fila"))
+        return resposta_envio(0, 0, "Este contrato não está mais aguardando vistoria.", url_for("vistoria.fila"))
     arquivos = [a for a in request.files.getlist("fotos") if a and a.filename]
     if not arquivos:
-        flash("Escolha ou tire ao menos uma foto.", "erro")
-        return redirect(url_for("vistoria.contrato", contrato_id=contrato_id))
+        return resposta_envio(0, 0, "Escolha ou tire ao menos uma foto.", destino)
     preparar_vistoria(contrato_id)
     tipo = None
     if request.form.get("tipo_id"):
         tipo = next((t for t in tipos_exigidos(contrato_id) if t["id"] == request.form.get("tipo_id", type=int)), None)
         if tipo is None:
-            flash("Este tipo de foto não é mais exigido. Atualize a página.", "erro")
-            return redirect(url_for("vistoria.contrato", contrato_id=contrato_id))
+            return resposta_envio(0, 0, "Este tipo de foto não é mais exigido. Atualize a página.", destino)
     gravadas = recusadas = 0
     for arquivo in arquivos:
         try:
@@ -176,12 +175,8 @@ def enviar_fotos(contrato_id):
         except ValueError:
             recusadas += 1
     get_db().commit()
-    if gravadas:
-        flash((f"{gravadas} foto(s) de {tipo['nome']} registrada(s)." if tipo
-               else f"{gravadas} foto(s) adicionada(s)."), "ok")
-    if recusadas:
-        flash(f"{recusadas} arquivo(s) não eram imagens e foram ignorados.", "erro")
-    return redirect(url_for("vistoria.contrato", contrato_id=contrato_id))
+    return resposta_envio(gravadas, recusadas, (f"{gravadas} foto(s) de {tipo['nome']} registrada(s)." if tipo
+                                                else f"{gravadas} foto(s) adicionada(s)."), destino)
 
 
 @bp.route("/<int:contrato_id>/fotos/<int:foto_id>/remover", methods=["POST"])

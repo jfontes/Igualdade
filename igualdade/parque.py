@@ -269,6 +269,25 @@ def copiar_fotos_padrao(contrato_id: int, so_faltantes: bool = False) -> int:
     return copiadas
 
 
+def resposta_envio(gravadas: int, recusadas: int, mensagem: str, destino: str):
+    """Resposta do envio de fotos: JSON para a tela (envio foto a foto, que confere se gravou) ou,
+    sem JavaScript, aviso + volta para a página."""
+    if request.headers.get("X-Requested-With") == "fetch":
+        from flask import jsonify
+        # vazio = a foto não chegou inteira (conexão caiu no meio do envio): a tela tenta de novo
+        return jsonify(gravadas=gravadas, recusadas=recusadas,
+                       vazio=not gravadas and not recusadas and not request.files.getlist("fotos"),
+                       mensagem=mensagem if gravadas else (
+                           "O arquivo não é uma imagem." if recusadas else mensagem))
+    if gravadas:
+        flash(mensagem, "ok")
+    elif not recusadas:
+        flash(mensagem, "erro")
+    if recusadas:
+        flash(f"{recusadas} arquivo(s) não eram imagens e foram ignorados.", "erro")
+    return redirect(destino)
+
+
 def preparar_vistoria(contrato_id: int):
     """Na primeira vez que o caseiro abre a vistoria, ela começa com as fotos padrão de cada tipo;
     ele atualiza só o que mudou."""
@@ -520,13 +539,29 @@ def _ler_form(form) -> tuple[dict, dict]:
         erros["tipo_evento"] = "Informe o tipo de evento (ex.: casamento, aniversário)."
     if not (ev["hora_inicio"] and ev["hora_fim"]):
         erros["horario"] = "Informe o horário de início e de fim."
+    # valor da locação + (opcional) taxa de limpeza pós-evento = valor total do contrato
     try:
-        ev["valor_total"] = ler_moeda(form.get("valor_total"))
-        if ev["valor_total"] is None:
-            erros["valor_total"] = "Informe o valor total."
+        ev["valor_locacao"] = ler_moeda(form.get("valor_locacao"))
+        if ev["valor_locacao"] is None:
+            erros["valor_locacao"] = "Informe o valor da locação."
     except ValueError:
-        ev["valor_total"] = None
-        erros["valor_total"] = "Valor inválido."
+        ev["valor_locacao"] = form.get("valor_locacao")
+        erros["valor_locacao"] = "Valor inválido."
+    limpeza = form.get("limpeza_inclusa")
+    ev["limpeza_inclusa"] = limpeza == "sim"
+    ev["valor_limpeza"] = None
+    if limpeza not in ("sim", "nao"):
+        erros["limpeza_inclusa"] = "Informe se a limpeza pós-evento está inclusa."
+    elif ev["limpeza_inclusa"]:
+        try:
+            ev["valor_limpeza"] = ler_moeda(form.get("valor_limpeza"))
+            if ev["valor_limpeza"] is None:
+                erros["valor_limpeza"] = "Informe o valor da limpeza."
+        except ValueError:
+            ev["valor_limpeza"] = form.get("valor_limpeza")
+            erros["valor_limpeza"] = "Valor inválido."
+    ev["valor_total"] = (ev["valor_locacao"] + (ev["valor_limpeza"] or 0)
+                         if isinstance(ev["valor_locacao"], int) and isinstance(ev["valor_limpeza"] or 0, int) else None)
     if not ev["formas_pagamento"]:
         erros["formas_pagamento"] = "Marque ao menos uma forma de pagamento."
     d["evento"] = ev
@@ -636,14 +671,18 @@ def form(contrato_id=None):
         valores = d | d["evento"] | _valores_contratante(d["contratante"])
     elif atual:
         valores = atual | atual["evento"] | _valores_contratante(atual["contratante"])
-        valores["valor_total"] = fmt_moeda(atual["evento"].get("valor_total"), simbolo=False)
+        ev = atual["evento"]
+        if "limpeza_inclusa" not in ev:  # contrato anterior à limpeza: o valor total era só da locação
+            valores["valor_locacao"], valores["limpeza_inclusa"] = ev.get("valor_total"), False
     else:
         valores = {"registro": "padrao" if not padroes_faltando(False) else "vistoria",
                    "tipo_pessoa": "PF", "nacionalidade": "Brasileira",
                    "rep_nacionalidade": "Brasileira", "hora_inicio": HORARIO_PADRAO[0], "hora_fim": HORARIO_PADRAO[1],
                    "tolerancia_min": TOLERANCIAS[0], "formas_pagamento": ["Pix"], "condicoes_pagamento": "À vista"}
-    if request.method == "POST" and isinstance(valores.get("valor_total"), int):
-        valores["valor_total"] = fmt_moeda(valores["valor_total"], simbolo=False)
+    for campo in ("valor_locacao", "valor_limpeza", "valor_total"):
+        if isinstance(valores.get(campo), int):
+            valores[campo] = fmt_moeda(valores[campo], simbolo=False)
+    valores["valor_limpeza_padrao"] = fmt_moeda(PARQUE["valor_limpeza_padrao"], simbolo=False)
     if valores.get("contratante_cpf_cnpj"):
         valores["contratante_cpf_cnpj"] = fmt_cpf_cnpj(valores["contratante_cpf_cnpj"])
     if valores.get("rep_cpf"):
@@ -913,10 +952,10 @@ def tipo_foto(tipo_id):
     t = db.execute("SELECT * FROM vistoria_tipo WHERE id = ?", (tipo_id,)).fetchone()
     if t is None:
         abort(404)
+    destino = url_for("parque.configuracao") + f"#tipo-{tipo_id}"
     arquivos = [a for a in request.files.getlist("fotos") if a and a.filename]
     if not arquivos:
-        flash("Escolha a foto.", "erro")
-        return _ir_configuracao(f"tipo-{tipo_id}")
+        return resposta_envio(0, 0, "Escolha a foto.", destino)
     gravadas = recusadas = 0
     for arquivo in arquivos:
         try:
@@ -925,11 +964,7 @@ def tipo_foto(tipo_id):
         except ValueError:
             recusadas += 1
     db.commit()
-    if gravadas:
-        flash(f"{gravadas} foto(s) padrão incluída(s) em \"{t['nome']}\".", "ok")
-    if recusadas:
-        flash(f"{recusadas} arquivo(s) não eram imagens e foram ignorados.", "erro")
-    return _ir_configuracao(f"tipo-{tipo_id}")
+    return resposta_envio(gravadas, recusadas, f"{gravadas} foto(s) padrão incluída(s) em \"{t['nome']}\".", destino)
 
 
 @bp.route("/configuracao/fotos-padrao/<int:foto_id>/remover", methods=["POST"])

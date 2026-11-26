@@ -43,8 +43,13 @@
     <input type="file" name="pdf" accept="application/pdf,.pdf" required>
     <button class="btn sec" type="submit">Conferir arquivo</button>
     {% if conferencia %}
-      {% if conferencia.confere %}<p class="validacao ok">✅ O arquivo é idêntico ao documento assinado.</p>
-      {% else %}<p class="validacao erro">❌ O arquivo é diferente do documento assinado (SHA-256 <code class="hash">{{ conferencia.hash }}</code>).</p>{% endif %}
+      {% if conferencia.confere %}<p class="validacao ok">✅ O arquivo <strong>{{ conferencia.nome }}</strong> é idêntico ao documento assinado.</p>
+      {% elif conferencia.e_leitura %}<p class="validacao alerta">⚠️ O arquivo <strong>{{ conferencia.nome }}</strong> é a versão
+        <strong>para leitura</strong>, aberta antes da assinatura — ela não tem a assinatura nem o manifesto. Confira o arquivo
+        <strong>contrato-{{ c.codigo_verificador }}-assinado.pdf</strong> (baixado ao final da assinatura) ou o PDF recebido por e-mail.</p>
+      {% else %}<p class="validacao erro">❌ O arquivo <strong>{{ conferencia.nome }}</strong> é diferente do documento assinado
+        (SHA-256 <code class="hash">{{ conferencia.hash }}</code>). Confira se escolheu o PDF assinado, sem abrir e salvar de novo
+        em outro aplicativo (isso altera o arquivo).</p>{% endif %}
     {% endif %}
   </form>
   {% endif %}

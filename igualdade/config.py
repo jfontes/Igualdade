@@ -18,6 +18,7 @@ PARQUE = {
     # recebe cópia de todo contrato assinado (cópia externa de segurança)
     "email_locador": "igualdadeacreana@gmail.com",
     "dias_validade_link": 7,
+    "valor_limpeza_padrao": 15000,  # centavos: sugestão da taxa de limpeza pós-evento (R$ 150,00)
     # Textos fixos do contrato (modelo da Loja: secretaria/MODELO DE CONTRATO PARQUE DAS ACÁCIAS.docx)
     "espaco_contrato": "Parque das Acácias Ocirodo Oliveira",
     "endereco_espaco": "Estrada da Floresta, nº 1.691, Rio Branco/AC",

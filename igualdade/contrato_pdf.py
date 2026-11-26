@@ -138,6 +138,21 @@ def _qualificacao_locataria(contrato: dict, q: dict) -> str:
             f"{_e(local)}, {contato};")
 
 
+def _reais(valor) -> str:
+    return f"R$ {fmt_moeda(valor, simbolo=False) or '—'} ({reais_por_extenso(valor)})"
+
+
+def _valor_clausula(evento: dict, total) -> str:
+    """4.1: valor total; com limpeza inclusa, discrimina locação + taxa de limpeza."""
+    inicio = ("<b>4.1.</b> Pela locação do espaço físico e demais áreas descritas na Cláusula Segunda, a LOCATÁRIA "
+              "pagará à LOCADORA ")
+    if evento.get("limpeza_inclusa") and evento.get("valor_limpeza"):
+        return (inicio + f"o valor de {_reais(evento.get('valor_locacao'))}, acrescido de "
+                f"{_reais(evento['valor_limpeza'])} referente à taxa de limpeza pós-evento, totalizando "
+                f"{_reais(total)}.")
+    return inicio + f"o valor total de {_reais(total)}."
+
+
 def _clausulas(contrato: dict, contratante: dict, evento: dict, com_vistoria: bool) -> list:
     piscina = bool(evento.get("inclui_piscina"))
     valor = evento.get("valor_total")
@@ -195,8 +210,7 @@ def _clausulas(contrato: dict, contratante: dict, evento: dict, com_vistoria: bo
           "materiais, salvo ajuste diverso por escrito."),
 
         C("CLÁUSULA QUARTA – DO VALOR E DAS FORMAS DE PAGAMENTO"),
-        P("<b>4.1.</b> Pela locação do espaço físico e demais áreas descritas na Cláusula Segunda, a LOCATÁRIA pagará à "
-          f"LOCADORA o valor total de R$ {fmt_moeda(valor, simbolo=False) or '—'} ({reais_por_extenso(valor)})."),
+        P(_valor_clausula(evento, valor)),
         P(f"<b>4.2.</b> {pagamento}"),
         P("<b>4.3.</b> O(s) comprovante(s) de pagamento(s) servirão como recibo e prova de quitação dos valores pagos, "
           "devendo ser enviado ao contato oficial da LOCADORA. A confirmação da reserva e a entrega das chaves/acesso "
@@ -214,7 +228,11 @@ def _clausulas(contrato: dict, contratante: dict, evento: dict, com_vistoria: bo
           "pela legislação municipal vigente de Rio Branco/AC, pelas normas técnicas da ABNT (NBR 10.151) e pelo "
           "art. 42 da Lei das Contravenções Penais, bem como a eventual regularidade de taxas de direitos autorais "
           "(ECAD), se aplicáveis ao tipo de evento."),
-        P("<b>5.3.</b> <b>Limpeza Pós-Evento:</b> Fica sob responsabilidade da LOCATÁRIA a limpeza pós-evento do espaço "
+        P("<b>5.3.</b> <b>Limpeza Pós-Evento:</b> A limpeza pós-evento do espaço utilizado será realizada pela "
+          "LOCADORA, conforme a taxa de limpeza prevista na subcláusula 4.1, cabendo à LOCATÁRIA retirar seus "
+          "materiais de decoração, equipamentos e demais itens próprios até o horário limite da subcláusula 3.3."
+          if evento.get("limpeza_inclusa") else
+          "<b>5.3.</b> <b>Limpeza Pós-Evento:</b> Fica sob responsabilidade da LOCATÁRIA a limpeza pós-evento do espaço "
           "utilizado, devendo o local ser entregue livre de resíduos sólidos, restos de alimentos, bebidas e "
           "materiais de decoração, acondicionados nos recipientes adequados (salvo se contratada taxa adicional de "
           "limpeza junto à LOCADORA)."),

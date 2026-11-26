@@ -7,7 +7,9 @@
   <section class="cartao">
     <dl class="dados">
       <div><dt>Evento</dt><dd>{{ c.evento.tipo_evento }} · {{ c.evento.data | data }}, {{ c.evento.hora_inicio }} às {{ c.evento.hora_fim }}</dd></div>
-      <div><dt>Valor</dt><dd>{{ c.evento.valor_total | moeda }}</dd></div>
+      <div><dt>Valor</dt><dd>{{ c.evento.valor_total | moeda }}{% if c.evento.limpeza_inclusa %}
+        <span class="suave">(locação {{ c.evento.valor_locacao | moeda }} + limpeza {{ c.evento.valor_limpeza | moeda }})</span>{% endif %}</dd></div>
+      {% if 'limpeza_inclusa' in c.evento %}<div><dt>Limpeza pós-evento</dt><dd>{{ 'Inclusa (feita pela LOCADORA)' if c.evento.limpeza_inclusa else 'Não inclusa (por sua conta)' }}</dd></div>{% endif %}
       <div><dt>Piscina</dt><dd>{{ 'Incluída' if c.evento.inclui_piscina else 'Não incluída' }}</dd></div>
       <div><dt>Vistoria</dt><dd>{{ qtd_fotos ~ ' foto(s) no Anexo I' if qtd_fotos else 'sem vistoria fotográfica' }}</dd></div>
     </dl>
